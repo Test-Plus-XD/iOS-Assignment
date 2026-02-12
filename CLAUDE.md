@@ -4,12 +4,12 @@
 A SwiftUI-based iOS application for basic item tracking with timestamps. Uses SwiftData for persistent storage.
 
 ## Technology Stack
-- **Language**: Swift 5.9+
+- **Language**: Swift 6.0
 - **UI Framework**: SwiftUI
 - **Data Persistence**: SwiftData
 - **Architecture**: MVVM with reactive data binding
 - **Testing**: XCTest (UI), Swift Testing (Unit)
-- **Minimum iOS**: 17+
+- **Minimum iOS**: 26+
 
 ## Project Structure
 ```
