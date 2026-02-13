@@ -8,10 +8,10 @@
 - **Sprint 1: Foundation** - COMPLETED
 
 ### 📦 Latest Package Versions (Updated)
-- Firebase iOS SDK: v11.x (latest)
+- Firebase iOS SDK: v12.9 (latest)
 - Alamofire: v5.x (latest)
 - Kingfisher: v8.x (latest)
-- AlgoliaSearchClient: v8.x (latest)
+- AlgoliaSearchClient: v9.38 (latest)
 
 ### ⚠️ Action Items Required
 1. **Add Swift Package Dependencies** - Follow instructions in `PACKAGE_DEPENDENCIES.md`
@@ -42,10 +42,7 @@ Convert the Pour Rice restaurant discovery app from Flutter/Ionic to a native iO
 ## Phase 1: Project Configuration & Dependencies
 
 ### 1.1 Update Deployment Target
-**Critical:** Current deployment target is iOS 26.2 (invalid future version)
-- Change to: **iOS 17.0** (minimum for @Observable macro)
-- Update in Xcode project settings and Info.plist
-- Provides wide device compatibility while supporting modern Swift features
+**Critical:** Current deployment target is iOS 26.2
 
 ### 1.2 Add Swift Package Dependencies
 
@@ -119,7 +116,7 @@ Pour Rice/
 ├── ViewModels/
 │   ├── HomeViewModel.swift
 │   ├── SearchViewModel.swift
-│   ├── RestaurantDetailViewModel.swift
+│   ├── RestaurantViewModel.swift
 │   ├── MenuViewModel.swift
 │   └── AccountViewModel.swift
 │   # Note: BookingViewModel removed from MVP scope
@@ -129,8 +126,8 @@ Pour Rice/
 │   ├── Search/
 │   │   ├── SearchView.swift
 │   │   └── FilterView.swift
-│   ├── RestaurantDetail/
-│   │   └── RestaurantDetailView.swift
+│   ├── Restaurant/
+│   │   └── RestaurantView.swift
 │   ├── Menu/
 │   │   └── MenuView.swift
 │   ├── Account/
@@ -300,7 +297,7 @@ enum APIEndpoint {
 
     /// Fetch detailed information for a specific restaurant
     /// - Parameter id: Unique restaurant identifier
-    case fetchRestaurantDetail(id: String)
+    case fetchRestaurant(id: String)
 
     /// Submit a new review for a restaurant
     /// - Parameter request: Review data including rating and comment
@@ -314,7 +311,7 @@ enum APIEndpoint {
     var path: String {
         switch self {
         case .fetchRestaurants: return "/API/Restaurants/nearby"
-        case .fetchRestaurantDetail(let id): return "/API/Restaurants/\(id)"
+        case .fetchRestaurant(let id): return "/API/Restaurants/\(id)"
         case .submitReview: return "/API/Reviews"
         case .fetchMenuItems(let id): return "/API/Restaurants/\(id)/menu"
         }
@@ -423,13 +420,13 @@ class RestaurantService {
         return response.restaurants
     }
 
-    func fetchRestaurantDetail(id: String) async throws -> Restaurant {
+    func fetchRestaurant(id: String) async throws -> Restaurant {
         // Check cache first
         if let cached = cache.object(forKey: id as NSString) {
             return cached.restaurant
         }
 
-        let endpoint = APIEndpoint.fetchRestaurantDetail(id: id)
+        let endpoint = APIEndpoint.fetchRestaurant(id: id)
         let restaurant = try await apiClient.request(endpoint, responseType: Restaurant.self)
 
         // Cache result
@@ -712,7 +709,7 @@ struct MainTabView: View {
 - Nearby restaurants list (vertical)
 - Location permission handling
 - Pull-to-refresh
-- Navigate to RestaurantDetailView on tap
+- Navigate to RestaurantView on tap
 
 **HomeViewModel.swift:**
 ```swift
@@ -797,7 +794,7 @@ class SearchViewModel {
 
 ### 6.5 Restaurant Detail Screen
 
-**RestaurantDetailView.swift:**
+**RestaurantView.swift:**
 - Hero image carousel with page indicators
 - Restaurant name, rating, cuisine, price range
 - "Book Table" button (prominent CTA)
@@ -806,10 +803,10 @@ class SearchViewModel {
 - Reviews section (show 3, "See all" button)
 - Menu preview (show 6 items, "See full menu" button)
 
-**RestaurantDetailViewModel.swift:**
+**RestaurantViewModel.swift:**
 ```swift
 @Observable
-class RestaurantDetailViewModel {
+class RestaurantViewModel {
     var restaurant: Restaurant?
     var reviews: [Review] = []
     var menuPreview: [MenuItem] = []
@@ -820,7 +817,7 @@ class RestaurantDetailViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        async let restaurantTask = restaurantService.fetchRestaurantDetail(id: id)
+        async let restaurantTask = restaurantService.fetchRestaurant(id: id)
         async let reviewsTask = reviewService.fetchReviews(restaurantId: id, limit: 3)
         async let menuTask = menuService.fetchMenuItems(restaurantId: id, limit: 6)
 
@@ -859,7 +856,7 @@ class RestaurantDetailViewModel {
 ### Sprint 1: Foundation (Days 1-3) - **COMPLETED** ✅
 1. ✅ Update deployment target to iOS 17.0 in project settings
 2. ✅ Add SPM dependencies (Firebase, Alamofire, Kingfisher, Algolia) - Instructions in PACKAGE_DEPENDENCIES.md
-3. ⚠️ Download and add GoogleService-Info.plist - **USER ACTION REQUIRED**
+3. Check for GoogleService-Info.plist
 4. ✅ Create folder structure as outlined in Phase 1.4
 5. ✅ Remove SwiftData (Item.swift, references in Pour_RiceApp.swift)
 6. ✅ Create Constants.swift with API URLs and keys
@@ -901,8 +898,8 @@ Note: BookingService removed from MVP
 7. ✅ Test navigation and data loading
 
 ### Sprint 6: Restaurant Detail & Menu (Days 16-18)
-1. ✅ Create RestaurantDetailViewModel.swift
-2. ✅ Create RestaurantDetailView.swift with all sections
+1. ✅ Create RestaurantViewModel.swift
+2. ✅ Create RestaurantView.swift with all sections
 3. ✅ Create MenuViewModel.swift
 4. ✅ Create MenuView.swift with categories
 5. ✅ Create AsyncImageView.swift wrapper for Kingfisher
@@ -1005,7 +1002,6 @@ Note: Automated testing removed from MVP scope
 ## Success Criteria
 
 ### Technical:
-- ✅ iOS 17+ deployment target
 - ✅ All SPM dependencies installed and configured
 - ✅ Firebase authentication working
 - ✅ API integration with all required endpoints

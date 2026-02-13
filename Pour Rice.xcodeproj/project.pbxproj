@@ -6,6 +6,26 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CD5900A82F3DE06F000E3C82 /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = CD5900A72F3DE06F000E3C82 /* AsyncAlgorithms */; };
+		CD74097F2F3F8BF1000A59BE /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CD74097E2F3F8BF1000A59BE /* Alamofire */; };
+		CD7409852F3F8C06000A59BE /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409842F3F8C06000A59BE /* Kingfisher */; };
+		CD7409872F3F8C1A000A59BE /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409862F3F8C1A000A59BE /* Core */; };
+		CD7409892F3F8C26000A59BE /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409882F3F8C26000A59BE /* Search */; };
+		CD74098B2F3F8C35000A59BE /* Analytics in Frameworks */ = {isa = PBXBuildFile; productRef = CD74098A2F3F8C35000A59BE /* Analytics */; };
+		CD74098D2F3F8C42000A59BE /* QuerySuggestions in Frameworks */ = {isa = PBXBuildFile; productRef = CD74098C2F3F8C42000A59BE /* QuerySuggestions */; };
+		CD74098F2F3F8C56000A59BE /* Monitoring in Frameworks */ = {isa = PBXBuildFile; productRef = CD74098E2F3F8C56000A59BE /* Monitoring */; };
+		CD7409912F3F8C64000A59BE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409902F3F8C64000A59BE /* FirebaseCore */; };
+		CD7409932F3F8C77000A59BE /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409922F3F8C77000A59BE /* FirebaseAnalyticsCore */; };
+		CD7409952F3F8C82000A59BE /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409942F3F8C82000A59BE /* FirebaseAnalytics */; };
+		CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409962F3F8C8C000A59BE /* FirebaseAuth */; };
+		CD7409992F3F8C95000A59BE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409982F3F8C95000A59BE /* FirebaseFirestore */; };
+		CD74099F2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = CD74099E2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta */; };
+		CD7409A12F3F8CCD000A59BE /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A02F3F8CCD000A59BE /* FirebaseMessaging */; };
+		CD7409A32F3F8CD6000A59BE /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A22F3F8CD6000A59BE /* FirebaseStorage */; };
+		CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CDEC24A32F3AE8A30038A578 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -23,15 +43,49 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		CD7409832F3F8BF7000A59BE /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		CDEC24932F3AE8A20038A578 /* Pour Rice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pour Rice.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CDEC24A22F3AE8A30038A578 /* Pour RiceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Pour RiceTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CDEC24AC2F3AE8A30038A578 /* Pour RiceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Pour RiceUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CD74097B2F3F86F8000A59BE /* Exceptions for "Pour Rice" folder in "Pour RiceTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = CDEC24A12F3AE8A30038A578 /* Pour RiceTests */;
+		};
+		CD74097C2F3F86F8000A59BE /* Exceptions for "Pour Rice" folder in "Pour RiceUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = CDEC24AB2F3AE8A30038A578 /* Pour RiceUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CDEC24952F3AE8A20038A578 /* Pour Rice */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CD74097B2F3F86F8000A59BE /* Exceptions for "Pour Rice" folder in "Pour RiceTests" target */,
+				CD74097C2F3F86F8000A59BE /* Exceptions for "Pour Rice" folder in "Pour RiceUITests" target */,
+			);
 			path = "Pour Rice";
 			sourceTree = "<group>";
 		};
@@ -52,6 +106,23 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD7409A12F3F8CCD000A59BE /* FirebaseMessaging in Frameworks */,
+				CD7409852F3F8C06000A59BE /* Kingfisher in Frameworks */,
+				CD74098D2F3F8C42000A59BE /* QuerySuggestions in Frameworks */,
+				CD7409952F3F8C82000A59BE /* FirebaseAnalytics in Frameworks */,
+				CD5900A82F3DE06F000E3C82 /* AsyncAlgorithms in Frameworks */,
+				CD74099F2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta in Frameworks */,
+				CD7409892F3F8C26000A59BE /* Search in Frameworks */,
+				CD74098B2F3F8C35000A59BE /* Analytics in Frameworks */,
+				CD7409A32F3F8CD6000A59BE /* FirebaseStorage in Frameworks */,
+				CD7409912F3F8C64000A59BE /* FirebaseCore in Frameworks */,
+				CD7409932F3F8C77000A59BE /* FirebaseAnalyticsCore in Frameworks */,
+				CD7409872F3F8C1A000A59BE /* Core in Frameworks */,
+				CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */,
+				CD74098F2F3F8C56000A59BE /* Monitoring in Frameworks */,
+				CD74097F2F3F8BF1000A59BE /* Alamofire in Frameworks */,
+				CD7409992F3F8C95000A59BE /* FirebaseFirestore in Frameworks */,
+				CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +143,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CD74097D2F3F8BF1000A59BE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CDEC248A2F3AE8A20038A578 = {
 			isa = PBXGroup;
 			children = (
 				CDEC24952F3AE8A20038A578 /* Pour Rice */,
 				CDEC24A52F3AE8A30038A578 /* Pour RiceTests */,
 				CDEC24AF2F3AE8A30038A578 /* Pour RiceUITests */,
+				CD74097D2F3F8BF1000A59BE /* Frameworks */,
 				CDEC24942F3AE8A20038A578 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -102,6 +181,7 @@
 				CDEC248F2F3AE8A20038A578 /* Sources */,
 				CDEC24902F3AE8A20038A578 /* Frameworks */,
 				CDEC24912F3AE8A20038A578 /* Resources */,
+				CD7409832F3F8BF7000A59BE /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -112,6 +192,23 @@
 			);
 			name = "Pour Rice";
 			packageProductDependencies = (
+				CD5900A72F3DE06F000E3C82 /* AsyncAlgorithms */,
+				CD74097E2F3F8BF1000A59BE /* Alamofire */,
+				CD7409842F3F8C06000A59BE /* Kingfisher */,
+				CD7409862F3F8C1A000A59BE /* Core */,
+				CD7409882F3F8C26000A59BE /* Search */,
+				CD74098A2F3F8C35000A59BE /* Analytics */,
+				CD74098C2F3F8C42000A59BE /* QuerySuggestions */,
+				CD74098E2F3F8C56000A59BE /* Monitoring */,
+				CD7409902F3F8C64000A59BE /* FirebaseCore */,
+				CD7409922F3F8C77000A59BE /* FirebaseAnalyticsCore */,
+				CD7409942F3F8C82000A59BE /* FirebaseAnalytics */,
+				CD7409962F3F8C8C000A59BE /* FirebaseAuth */,
+				CD7409982F3F8C95000A59BE /* FirebaseFirestore */,
+				CD74099E2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta */,
+				CD7409A02F3F8CCD000A59BE /* FirebaseMessaging */,
+				CD7409A22F3F8CD6000A59BE /* FirebaseStorage */,
+				CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */,
 			);
 			productName = "Pour Rice";
 			productReference = CDEC24932F3AE8A20038A578 /* Pour Rice.app */;
@@ -195,6 +292,13 @@
 			);
 			mainGroup = CDEC248A2F3AE8A20038A578;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CD5900A22F3DD269000E3C82 /* XCRemoteSwiftPackageReference "Alamofire" */,
+				CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				CD5900A42F3DDDC7000E3C82 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */,
+				CD5900A62F3DE06F000E3C82 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CDEC24942F3AE8A20038A578 /* Products */;
 			projectDirPath = "";
@@ -400,11 +504,11 @@
 				DEVELOPMENT_TEAM = SN36Y72MA3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -413,12 +517,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Pour-Rice.Pour-Rice";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -432,11 +539,11 @@
 				DEVELOPMENT_TEAM = SN36Y72MA3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -445,12 +552,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Pour-Rice.Pour-Rice";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -578,6 +688,137 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CD5900A22F3DD269000E3C82 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.11.1;
+			};
+		};
+		CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+		CD5900A42F3DDDC7000E3C82 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
+		CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/algolia/algoliasearch-client-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.38.0;
+			};
+		};
+		CD5900A62F3DE06F000E3C82 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-async-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CD5900A72F3DE06F000E3C82 /* AsyncAlgorithms */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A62F3DE06F000E3C82 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;
+			productName = AsyncAlgorithms;
+		};
+		CD74097E2F3F8BF1000A59BE /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A22F3DD269000E3C82 /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+		CD7409842F3F8C06000A59BE /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A42F3DDDC7000E3C82 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		CD7409862F3F8C1A000A59BE /* Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Core;
+		};
+		CD7409882F3F8C26000A59BE /* Search */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Search;
+		};
+		CD74098A2F3F8C35000A59BE /* Analytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Analytics;
+		};
+		CD74098C2F3F8C42000A59BE /* QuerySuggestions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = QuerySuggestions;
+		};
+		CD74098E2F3F8C56000A59BE /* Monitoring */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
+			productName = Monitoring;
+		};
+		CD7409902F3F8C64000A59BE /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		CD7409922F3F8C77000A59BE /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		CD7409942F3F8C82000A59BE /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		CD7409962F3F8C8C000A59BE /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		CD7409982F3F8C95000A59BE /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		CD74099E2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseInAppMessaging-Beta";
+		};
+		CD7409A02F3F8CCD000A59BE /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		CD7409A22F3F8CD6000A59BE /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseInstallations;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CDEC248B2F3AE8A20038A578 /* Project object */;
 }
