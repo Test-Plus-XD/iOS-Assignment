@@ -26,7 +26,7 @@
 - ✅ `Models/Restaurant.swift` - Restaurant data model with Location and OpeningHour
 - ✅ `Models/User.swift` - User profile model
 - ✅ `Models/Review.swift` - Review and rating model
-- ✅ `Models/MenuItem.swift` - Menu item model with dietary info
+- ✅ `Models/Menu.swift` - Menu item model with dietary info
 
 #### Network Layer
 - ✅ `Core/Network/APIClient.swift` - Base network client with header injection
@@ -146,7 +146,7 @@ Pour Rice/
 │   ├── Restaurant.swift            # Restaurant model
 │   ├── User.swift                  # User profile
 │   ├── Review.swift                # Review model
-│   ├── MenuItem.swift              # Menu item
+│   ├── Menu.swift              # Menu item
 │   └── BilingualText.swift         # EN/TC text
 │   # Note: Booking.swift removed from MVP scope
 ├── ViewModels/
@@ -597,7 +597,7 @@ Create similar models for:
 - `Models/User.swift` - User profile with uid, email, displayName, type, preferences
 - `Models/Booking.swift` - Booking with restaurantId, userId, dateTime, numberOfGuests, status
 - `Models/Review.swift` - Review with restaurantId, userId, rating, comment, images
-- `Models/MenuItem.swift` - MenuItem with name (BilingualText), description (BilingualText), price, image
+- `Models/Menu.swift` - Menu with name (BilingualText), description (BilingualText), price, image
 
 ---
 
@@ -845,7 +845,7 @@ class SearchViewModel {
 class RestaurantViewModel {
     var restaurant: Restaurant?
     var reviews: [Review] = []
-    var menuPreview: [MenuItem] = []
+    var menuPreview: [Menu] = []
     var isLoading = false
     var error: Error?
 
@@ -901,7 +901,7 @@ class RestaurantViewModel {
 ### Sprint 2: Models & Network (Days 4-6) - **COMPLETED** ✅
 1. ✅ Create BilingualText.swift model
 2. ✅ Create Restaurant.swift with custom decoding for API responses
-3. ✅ Create User.swift, Review.swift, MenuItem.swift models
+3. ✅ Create User.swift, Review.swift, Menu.swift models
 4. ✅ Create APIClient.swift with automatic header injection
 5. ✅ Create APIEndpoint.swift with all REST endpoints
 6. ✅ Create APIError.swift with British English localized errors

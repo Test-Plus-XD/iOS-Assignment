@@ -39,7 +39,7 @@ Pour Rice/
 │   ├── (Restaurant.swift - Sprint 2)
 │   ├── (User.swift - Sprint 2)
 │   ├── (Review.swift - Sprint 2)
-│   └── (MenuItem.swift - Sprint 2)
+│   └── (Menu.swift - Sprint 2)
 │
 ├── 🧠 ViewModels/                       [Empty - Ready for MVVM logic]
 │   ├── (HomeViewModel.swift - Sprint 5)
@@ -185,7 +185,7 @@ See `PACKAGE_DEPENDENCIES.md` for installation instructions.
 2. Models/Restaurant.swift
 3. Models/User.swift
 4. Models/Review.swift
-5. Models/MenuItem.swift
+5. Models/Menu.swift
 6. Core/Network/APIClient.swift
 7. Core/Network/APIEndpoint.swift
 8. Core/Network/APIError.swift

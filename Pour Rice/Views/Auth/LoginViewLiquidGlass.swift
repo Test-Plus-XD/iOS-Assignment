@@ -1,52 +1,37 @@
 //
-//  LoginView.swift
+//  LoginViewLiquidGlass.swift
 //  Pour Rice
 //
-//  User login screen with email/password authentication.
-//  Follows iOS Human Interface Guidelines for form design.
+//  Liquid Glass variant of the login screen
+//  Demonstrates Liquid Glass material adoption for authentication UI
+//  Applies frosted glass effects to form elements and modal sheets
+//
+//  LIQUID GLASS IN AUTH FLOWS:
+//  - Regular variant on interactive controls (buttons, input containers)
+//  - Controls highlight with glass effect when activated
+//  - Modals use glass material for sheets and popovers
+//  - Maintains legibility while creating depth and visual hierarchy
 //
 
 import SwiftUI
 
-/// Login view for existing users to sign in.
-/// Provides email/password authentication with validation, error handling, and password reset.
-/// Supports navigation to sign-up flow for new users.
-struct LoginView: View {
+/// Login view with Liquid Glass effects on interactive elements
+/// Enhances the authentication form with frosted glass material
+/// Demonstrates glass effect variants and usage patterns
+struct LoginViewLiquidGlass: View {
 
     // MARK: - Environment
 
-    /// Auth service for sign-in operations.
-    /// Injected via environment for dependency injection and testability.
     @Environment(\.authService) private var authService
 
     // MARK: - State Properties
 
-    /// User's email address input.
-    /// Bound to email text field for two-way data flow.
     @State private var email = ""
-
-    /// User's password input.
-    /// Bound to secure field for two-way data flow.
     @State private var password = ""
-
-    /// Controls password visibility toggle.
-    /// When true, displays password as plain text instead of dots.
     @State private var isPasswordVisible = false
-
-    /// Tracks if sign-in is in progress.
-    /// Used to show loading indicator and disable form during network request.
     @State private var isLoading = false
-
-    /// Error message to display.
-    /// Set when authentication fails (invalid credentials, network error, etc.).
     @State private var errorMessage: String?
-
-    /// Controls navigation to sign-up screen.
-    /// Triggers when user taps "Sign Up" link.
     @State private var showingSignUp = false
-
-    /// Controls password reset sheet presentation.
-    /// Shows modal sheet for password reset flow.
     @State private var showingPasswordReset = false
 
     // MARK: - Body
@@ -59,26 +44,26 @@ struct LoginView: View {
                     // MARK: - Logo & Title
 
                     VStack(spacing: Constants.UI.spacingMedium) {
-                        // App logo or icon (SF Symbol for now, replace with custom logo later)
                         Image(systemName: "fork.knife.circle.fill")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 100, height: 100)
                             .foregroundStyle(.accent)
+                            // Apply Liquid Glass to logo container
+                            .padding()
+                            .glassEffect(in: Circle())
 
-                        // App name from localised strings
                         Text("app_name")
                             .font(.largeTitle)
                             .fontWeight(.bold)
 
-                        // Login subtitle (e.g., "Welcome back!")
                         Text("login_subtitle")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, Constants.UI.spacingExtraLarge)
 
-                    // MARK: - Login Form
+                    // MARK: - Login Form Container with Glass Effect
 
                     VStack(spacing: Constants.UI.spacingMedium) {
 
@@ -88,13 +73,12 @@ struct LoginView: View {
                                 .font(.subheadline)
                                 .fontWeight(.medium)
 
-                            // Email text field with appropriate keyboard and autocomplete settings
                             TextField(String(localized: "email_placeholder"), text: $email)
                                 .textFieldStyle(.roundedBorder)
-                                .textContentType(.emailAddress) // Enables QuickType email suggestions
-                                .keyboardType(.emailAddress) // Shows @ and . keys
-                                .autocapitalization(.none) // Prevents auto-capitalisation
-                                .autocorrectionDisabled() // Disables autocorrect for emails
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled()
                         }
 
                         // Password field with visibility toggle
@@ -104,7 +88,6 @@ struct LoginView: View {
                                 .fontWeight(.medium)
 
                             HStack {
-                                // Toggle between SecureField and TextField for password visibility
                                 if isPasswordVisible {
                                     TextField(String(localized: "password_placeholder"), text: $password)
                                         .textContentType(.password)
@@ -113,7 +96,6 @@ struct LoginView: View {
                                         .textContentType(.password)
                                 }
 
-                                // Eye icon button to toggle password visibility
                                 Button {
                                     isPasswordVisible.toggle()
                                 } label: {
@@ -124,7 +106,7 @@ struct LoginView: View {
                             .textFieldStyle(.roundedBorder)
                         }
 
-                        // Forgot password button (trailing alignment)
+                        // Forgot password button with glass effect
                         HStack {
                             Spacer()
                             Button {
@@ -134,21 +116,28 @@ struct LoginView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.accent)
                             }
+                            // Apply interactive glass effect to button
+                            .glassEffect(in: Capsule())
                         }
                     }
+                    .padding()
+                    // Apply glass effect to entire form container
+                    .glassEffect(in: RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal, Constants.UI.spacingLarge)
 
-                    // MARK: - Error Message
+                    // MARK: - Error Message with Glass Background
 
-                    // Display error message if sign-in fails
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
                             .font(.subheadline)
                             .foregroundStyle(.red)
+                            .padding()
+                            // Glass effect with Clear variant for error visibility
+                            .glassEffect(.clear, in: RoundedRectangle(cornerRadius: 12))
                             .padding(.horizontal, Constants.UI.spacingLarge)
                     }
 
-                    // MARK: - Sign In Button
+                    // MARK: - Sign In Button with Glass Effect
 
                     Button {
                         Task {
@@ -156,7 +145,6 @@ struct LoginView: View {
                         }
                     } label: {
                         if isLoading {
-                            // Show loading spinner whilst authenticating
                             ProgressView()
                                 .tint(.white)
                                 .frame(maxWidth: .infinity)
@@ -168,12 +156,13 @@ struct LoginView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .disabled(!isFormValid || isLoading) // Disable if form invalid or loading
+                    .disabled(!isFormValid || isLoading)
+                    // Apply interactive glass effect with interactive mode enabled
+                    .glassEffect(.regular.interactive(true), in: Capsule())
                     .padding(.horizontal, Constants.UI.spacingLarge)
 
                     // MARK: - Sign Up Link
 
-                    // Link to sign-up screen for new users
                     HStack(spacing: 4) {
                         Text("no_account")
                             .foregroundStyle(.secondary)
@@ -184,6 +173,8 @@ struct LoginView: View {
                             Text("sign_up")
                                 .fontWeight(.semibold)
                         }
+                        // Apply glass effect to sign-up button
+                        .glassEffect(in: Capsule())
                     }
                     .font(.subheadline)
 
@@ -192,50 +183,38 @@ struct LoginView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $showingSignUp) {
-                SignUpView()
+                SignUpViewLiquidGlass()
             }
+            // Password reset sheet with glass effects
             .sheet(isPresented: $showingPasswordReset) {
-                PasswordResetView(email: email)
+                PasswordResetViewLiquidGlass(email: email)
             }
         }
     }
 
     // MARK: - Form Validation
 
-    /// Validates if the form fields are properly filled.
-    /// Checks for non-empty email with @ symbol and minimum password length.
-    /// - Returns: true if form is valid, false otherwise
     private var isFormValid: Bool {
         return !email.isEmpty &&
-               email.contains("@") && // Basic email validation (@ symbol required)
-               password.count >= 6 // Firebase minimum password length
+               email.contains("@") &&
+               password.count >= 6
     }
 
     // MARK: - Actions
 
-    /// Attempts to sign in with email and password.
-    /// Shows loading state, provides haptic feedback, and handles errors.
-    /// On success, AuthService updates app state to navigate to main screen.
     private func signIn() async {
-        // Clear previous error messages
         errorMessage = nil
         isLoading = true
 
-        // Provide haptic feedback when user taps sign-in button
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
 
         do {
-            // Attempt Firebase authentication
             try await authService.signIn(email: email, password: password)
 
-            // Success - AuthService will handle navigation via state change
-
         } catch {
-            // Show error message to user (e.g., "Invalid credentials")
             errorMessage = error.localizedDescription
 
-            // Provide error haptic feedback (vibration pattern)
             let notificationFeedback = UINotificationFeedbackGenerator()
             notificationFeedback.notificationOccurred(.error)
         }
@@ -244,43 +223,22 @@ struct LoginView: View {
     }
 }
 
-// MARK: - Password Reset View
+// MARK: - Password Reset View with Liquid Glass
 
-/// Sheet view for password reset functionality.
-/// Allows users to request a password reset email from Firebase.
-/// Pre-fills email field if user entered email on login screen.
-struct PasswordResetView: View {
+/// Sheet view for password reset with Liquid Glass effects
+/// Demonstrates glass material in modal sheets and form elements
+struct PasswordResetViewLiquidGlass: View {
 
-    /// Pre-filled email from login screen.
-    /// Used to populate the email field for convenience.
     let email: String
 
-    /// Dismisses the sheet.
-    /// Used to close the modal after successful reset or cancellation.
     @Environment(\.dismiss) private var dismiss
-
-    /// Auth service for password reset.
-    /// Injected via environment for Firebase integration.
     @Environment(\.authService) private var authService
 
-    /// Email input for password reset.
-    /// Initialised with pre-filled email from login screen.
     @State private var resetEmail: String
-
-    /// Loading state.
-    /// True whilst sending reset email request to Firebase.
     @State private var isLoading = false
-
-    /// Success state.
-    /// True after reset email successfully sent.
     @State private var resetSent = false
-
-    /// Error message.
-    /// Displayed if reset request fails (invalid email, network error, etc.).
     @State private var errorMessage: String?
 
-    /// Initialiser that pre-fills email field.
-    /// - Parameter email: Email address from login screen (may be empty)
     init(email: String) {
         self.email = email
         _resetEmail = State(initialValue: email)
@@ -291,29 +249,28 @@ struct PasswordResetView: View {
             VStack(spacing: Constants.UI.spacingLarge) {
 
                 if resetSent {
-                    // Success state - show confirmation message
+                    // Success state with glass effect
                     VStack(spacing: Constants.UI.spacingMedium) {
-                        // Green checkmark icon
                         Image(systemName: "checkmark.circle.fill")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 60, height: 60)
                             .foregroundStyle(.green)
 
-                        // Success title
                         Text("password_reset_sent")
                             .font(.title3)
                             .fontWeight(.semibold)
 
-                        // Instructions to check email
                         Text("password_reset_check_email")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
                     .padding()
+                    // Apply glass effect to success message
+                    .glassEffect(in: RoundedRectangle(cornerRadius: 16))
+                    .padding()
 
-                    // Done button to dismiss sheet
                     Button {
                         dismiss()
                     } label: {
@@ -321,17 +278,17 @@ struct PasswordResetView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    // Apply interactive glass effect
+                    .glassEffect(.regular.interactive(true), in: Capsule())
                     .padding(.horizontal)
 
                 } else {
-                    // Input state - show email field and send button
+                    // Input state with glass effects
                     VStack(alignment: .leading, spacing: Constants.UI.spacingMedium) {
-                        // Instructions for password reset
                         Text("password_reset_instructions")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
-                        // Email text field (pre-filled if user entered email on login screen)
                         TextField(String(localized: "email_placeholder"), text: $resetEmail)
                             .textFieldStyle(.roundedBorder)
                             .textContentType(.emailAddress)
@@ -339,23 +296,26 @@ struct PasswordResetView: View {
                             .autocapitalization(.none)
                     }
                     .padding()
+                    // Apply glass effect to input container
+                    .glassEffect(in: RoundedRectangle(cornerRadius: 16))
+                    .padding()
 
-                    // Display error message if reset fails
+                    // Error message with glass effect
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
                             .font(.subheadline)
                             .foregroundStyle(.red)
+                            .padding()
+                            .glassEffect(.clear, in: RoundedRectangle(cornerRadius: 12))
                             .padding(.horizontal)
                     }
 
-                    // Send reset link button
                     Button {
                         Task {
                             await sendPasswordReset()
                         }
                     } label: {
                         if isLoading {
-                            // Show loading spinner whilst sending
                             ProgressView()
                                 .tint(.white)
                                 .frame(maxWidth: .infinity)
@@ -365,7 +325,9 @@ struct PasswordResetView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(resetEmail.isEmpty || isLoading) // Disable if email empty or loading
+                    .disabled(resetEmail.isEmpty || isLoading)
+                    // Apply interactive glass effect
+                    .glassEffect(.regular.interactive(true), in: Capsule())
                     .padding(.horizontal)
                 }
 
@@ -375,30 +337,27 @@ struct PasswordResetView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    // Cancel button to dismiss sheet
                     Button {
                         dismiss()
                     } label: {
                         Text("cancel")
                     }
+                    // Apply glass effect to toolbar button
+                    .glassEffect(in: Capsule())
                 }
             }
         }
     }
 
-    /// Sends password reset email via Firebase.
-    /// Updates UI state to show success message or error.
     private func sendPasswordReset() async {
         errorMessage = nil
         isLoading = true
 
         do {
-            // Request password reset email from Firebase
             try await authService.sendPasswordReset(email: resetEmail)
-            resetSent = true // Show success message
+            resetSent = true
 
         } catch {
-            // Display error message (invalid email, network error, etc.)
             errorMessage = error.localizedDescription
         }
 
@@ -406,9 +365,19 @@ struct PasswordResetView: View {
     }
 }
 
+// MARK: - Placeholder for SignUpViewLiquidGlass
+
+/// Placeholder for sign-up view with Liquid Glass effects
+/// To be implemented in next phase
+struct SignUpViewLiquidGlass: View {
+    var body: some View {
+        Text("Sign Up coming soon...")
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
-    LoginView()
+    LoginViewLiquidGlass()
         .environment(\.authService, AuthService(apiClient: DefaultAPIClient()))
 }
