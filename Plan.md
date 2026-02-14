@@ -2,26 +2,62 @@
 
 ## 📊 Project Status & Progress
 
-**Last Updated:** 11 February 2026
+**Last Updated:** 14 February 2026
 
 ### ✅ Completed Sprints
-- **Sprint 1: Foundation** - COMPLETED
+- **Sprint 1: Foundation** - COMPLETED ✅
+- **Sprint 2: Models & Network** - COMPLETED ✅
+- **Sprint 3: Core Services** - COMPLETED ✅
+- **Sprint 4: Authentication Flow** - COMPLETED ✅
 
 ### 📦 Latest Package Versions (Updated)
-- Firebase iOS SDK: v12.9 (latest)
-- Alamofire: v5.x (latest)
-- Kingfisher: v8.x (latest)
-- AlgoliaSearchClient: v9.38 (latest)
+- Firebase iOS SDK: v12.9 (latest) - ✅ INSTALLED
+- Alamofire: v5.x (latest) - ✅ INSTALLED
+- Kingfisher: v8.x (latest) - ✅ INSTALLED
+- AlgoliaSearchClient: v9.38 (latest) - ✅ INSTALLED
 
 ### ⚠️ Action Items Required
-1. **Add Swift Package Dependencies** - Follow instructions in `PACKAGE_DEPENDENCIES.md`
-2. **Add GoogleService-Info.plist** - Download from Firebase Console and add to project
+1. ✅ **Add Swift Package Dependencies** - COMPLETED by user
+2. ✅ **GoogleService-Info.plist** - Already present in project
 
-### 📁 Files Created
+### 📁 Files Created in Sprints 1-4
+#### Models
+- ✅ `Models/BilingualText.swift` - Bilingual text support (EN/TC)
+- ✅ `Models/Restaurant.swift` - Restaurant data model with Location and OpeningHour
+- ✅ `Models/User.swift` - User profile model
+- ✅ `Models/Review.swift` - Review and rating model
+- ✅ `Models/MenuItem.swift` - Menu item model with dietary info
+
+#### Network Layer
+- ✅ `Core/Network/APIClient.swift` - Base network client with header injection
+- ✅ `Core/Network/APIEndpoint.swift` - All API endpoint definitions
+- ✅ `Core/Network/APIError.swift` - Localized error handling
+
+#### Core Services
+- ✅ `Core/Services/AuthService.swift` - Firebase authentication service
+- ✅ `Core/Services/RestaurantService.swift` - Restaurant API with caching
+- ✅ `Core/Services/ReviewService.swift` - Review submission and fetching
+- ✅ `Core/Services/MenuService.swift` - Menu operations with filtering
+- ✅ `Core/Services/AlgoliaService.swift` - Search service integration
+- ✅ `Core/Services/LocationService.swift` - GPS location service
+
+#### Views & UI
+- ✅ `Views/Auth/LoginView.swift` - Email/password login screen
+- ✅ `Views/Auth/SignUpView.swift` - User registration screen
+- ✅ `Core/Extensions/View+Extensions.swift` - SwiftUI view helpers and service environment
+
+#### App Configuration
+- ✅ `App/AppDelegate.swift` - Firebase initialization
+- ✅ `Pour_RiceApp.swift` - Updated with auth state management
 - ✅ `Core/Utilities/Constants.swift` - API configuration and app constants
 - ✅ `Resources/Localizable.xcstrings` - String Catalog with 30+ bilingual keys
-- ✅ `PACKAGE_DEPENDENCIES.md` - Package installation guide
 - ✅ Folder structure: App, Core, Models, ViewModels, Views, Resources
+
+### 🚀 Next Steps
+- **Sprint 5**: Home & Search screens implementation
+- **Sprint 6**: Restaurant Detail & Menu screens
+- **Sprint 7**: Account screen & Polish
+- All created files need to be added to Xcode project (drag & drop into appropriate groups)
 
 ---
 
@@ -855,38 +891,40 @@ class RestaurantViewModel {
 
 ### Sprint 1: Foundation (Days 1-3) - **COMPLETED** ✅
 1. ✅ Update deployment target to iOS 17.0 in project settings
-2. ✅ Add SPM dependencies (Firebase, Alamofire, Kingfisher, Algolia) - Instructions in PACKAGE_DEPENDENCIES.md
-3. Check for GoogleService-Info.plist
+2. ✅ Add SPM dependencies (Firebase, Alamofire, Kingfisher, Algolia) - User completed on macOS
+3. ✅ GoogleService-Info.plist already present in project
 4. ✅ Create folder structure as outlined in Phase 1.4
-5. ✅ Remove SwiftData (Item.swift, references in Pour_RiceApp.swift)
+5. ⚠️ Item.swift kept as requested (SwiftData integration preserved)
 6. ✅ Create Constants.swift with API URLs and keys
 7. ✅ Set up String Catalog with initial localization strings (30+ keys)
 
-### Sprint 2: Models & Network (Days 4-6)
+### Sprint 2: Models & Network (Days 4-6) - **COMPLETED** ✅
 1. ✅ Create BilingualText.swift model
-2. ✅ Create Restaurant.swift with custom decoding
-3. ✅ Create User.swift, Booking.swift, Review.swift, MenuItem.swift
-4. ✅ Create APIClient.swift with header injection
-5. ✅ Create APIEndpoint.swift with all endpoints
-6. ✅ Create APIError.swift with localized errors
-7. ✅ Test API integration with simple fetch
+2. ✅ Create Restaurant.swift with custom decoding for API responses
+3. ✅ Create User.swift, Review.swift, MenuItem.swift models
+4. ✅ Create APIClient.swift with automatic header injection
+5. ✅ Create APIEndpoint.swift with all REST endpoints
+6. ✅ Create APIError.swift with British English localized errors
+7. ⚠️ Test API integration - Requires Xcode on macOS
 
-### Sprint 3: Core Services (Days 7-9)
+### Sprint 3: Core Services (Days 7-9) - **COMPLETED** ✅
 1. ✅ Create AppDelegate.swift for Firebase initialisation
-2. ✅ Create AuthService.swift with sign in/up/out (detailed comments)
-3. ✅ Create RestaurantService.swift with caching (detailed comments)
-4. ✅ Create ReviewService.swift (detailed comments)
-5. ✅ Create MenuService.swift (detailed comments)
-6. ✅ Create AlgoliaService.swift (detailed comments)
+2. ✅ Create AuthService.swift with sign in/up/out (@Observable, detailed comments)
+3. ✅ Create RestaurantService.swift with NSCache caching (detailed comments)
+4. ✅ Create ReviewService.swift with validation (detailed comments)
+5. ✅ Create MenuService.swift with filtering/sorting (detailed comments)
+6. ✅ Create AlgoliaService.swift with geospatial search (detailed comments)
 7. ✅ Create LocationService.swift with CLLocationManager (detailed comments)
-8. ✅ Test each service independently
+8. ⚠️ Test each service independently - Requires Xcode on macOS
 Note: BookingService removed from MVP
 
-### Sprint 4: Authentication Flow (Days 10-11)
-1. ✅ Create LoginView.swift with form validation
-2. ✅ Create SignUpView.swift with validation
-3. ✅ Update Pour_RiceApp.swift to show LoginView or MainTabView based on auth state
-4. ✅ Test complete auth flow (sign up → sign in → sign out)
+### Sprint 4: Authentication Flow (Days 10-11) - **COMPLETED** ✅
+1. ✅ Create LoginView.swift with email/password validation
+2. ✅ Create SignUpView.swift with password confirmation and terms agreement
+3. ✅ Create View+Extensions.swift for services environment and SwiftUI helpers
+4. ✅ Update Pour_RiceApp.swift with @Observable, auth state management, and RootView
+5. ✅ Implement PasswordResetView for forgot password flow
+6. ⚠️ Test complete auth flow (sign up → sign in → sign out) - Requires Xcode on macOS
 
 ### Sprint 5: Home & Search (Days 12-15)
 1. ✅ Create MainTabView.swift (replace ContentView)
