@@ -22,7 +22,7 @@ Created all data models with British English comments:
 2. **Models/Restaurant.swift** - Restaurant model with Location and OpeningHour sub-models
 3. **Models/User.swift** - User profile with CreateUserRequest and UpdateUserRequest
 4. **Models/Review.swift** - Review model with ReviewRequest and validation
-5. **Models/MenuItem.swift** - Menu item with MenuCategory and DietaryTag enums
+5. **Models/Menu.swift** - Menu item with MenuCategory and DietaryTag enums
 
 Created complete network layer:
 
@@ -78,7 +78,7 @@ Pour Rice/
 │       └── Constants.swift (already existed)
 ├── Models/
 │   ├── BilingualText.swift ✅ NEW
-│   ├── MenuItem.swift ✅ NEW
+│   ├── Menu.swift ✅ NEW
 │   ├── Restaurant.swift ✅ NEW
 │   ├── Review.swift ✅ NEW
 │   └── User.swift ✅ NEW

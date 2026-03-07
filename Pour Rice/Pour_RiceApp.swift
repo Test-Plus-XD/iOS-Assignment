@@ -196,29 +196,23 @@ struct RootView: View {
 // MARK: - Main Tab View
 
 /// Main tab-based navigation structure for the app with Liquid Glass effects (iOS 26+)
-/// Demonstrates proper Liquid Glass adoption following Apple's official guidelines
-/// Glass effects are applied exclusively to navigation and control elements
+/// Wires up all real feature screens: Home, Search, and Account.
 ///
 /// FLUTTER EQUIVALENT:
 /// Scaffold(
 ///   bottomNavigationBar: BottomNavigationBar(...),
-///   body: pages[currentIndex],
+///   body: [HomeScreen(), SearchScreen(), AccountScreen()][currentIndex],
 /// )
 ///
 /// LIQUID GLASS IMPLEMENTATION NOTES:
-/// - GlassEffectContainer wraps groups of related glass elements
-/// - .interactive() enables physics-based touch/hover response
-/// - .glassEffectID() provides smooth morphing during state transitions
-/// - Availability checks ensure graceful fallback for iOS 25 and earlier
+/// - TabView automatically receives glass treatment in iOS 26
+/// - NavigationDestination registers type-safe push routes for each stack
+/// - Restaurant taps push RestaurantView; "See Full Menu" pushes MenuView
 struct MainTabView: View {
 
     // MARK: - Environment
 
-    /// Access to app-wide services (injected from Pour_RiceApp)
-    /// Provides centralised dependency injection for authentication, API, and other services
     @Environment(\.services) private var services
-    /// Auth service for sign out functionality
-    /// Used to handle user authentication state and sign-out operations
     @Environment(\.authService) private var authService
 
     // MARK: - Body
@@ -226,197 +220,60 @@ struct MainTabView: View {
     var body: some View {
         // TabView creates a bottom tab bar navigation
         //
-        // FLUTTER EQUIVALENT:
-        // Scaffold with BottomNavigationBar
-        //
-        // Each section in {} becomes a tab
+        // FLUTTER EQUIVALENT: Scaffold with BottomNavigationBar
         //
         // LIQUID GLASS NOTE:
         // In iOS 26, TabView automatically receives glass treatment without explicit modifier
         TabView {
 
             // ================================================================
-            // HOME TAB - First tab showing home screen
+            // HOME TAB — restaurant discovery + featured carousel
             // ================================================================
 
-            // NavigationStack provides push/pop navigation capability
-            // Similar to Navigator in Flutter
             NavigationStack {
-                // VStack arranges children vertically (like Column in Flutter)
-                // spacing parameter adds space between children
-                VStack(spacing: Constants.UI.spacingLarge) {
-
-                    // Image from SF Symbols (iOS's built-in icon set)
-                    // "house.fill" is the icon name
+                HomeView()
+                    // Type-safe push navigation: Restaurant → RestaurantView
                     //
                     // FLUTTER EQUIVALENT:
-                    // Icon(Icons.home)
+                    // MaterialPageRoute(builder: (_) => RestaurantScreen(restaurant))
                     //
-                    // LIQUID GLASS NOTE:
-                    // NO glass effect applied - logos and branding are content, not controls
-                    // Glass should only be applied to navigation/control layer
-                    Image(systemName: "house.fill")
-                        .resizable()          // Makes image resizable (like fit: BoxFit.contain)
-                        .scaledToFit()        // Maintains aspect ratio
-                        .frame(width: 60, height: 60)  // Sets size (like SizedBox)
-                        .foregroundStyle(.accent)       // Colour from Assets.xcassets accent colour
-
-                    // Text widget for displaying text (same as Flutter's Text)
-                    // "home_title" is a localised string key
-                    // iOS will automatically show English or Chinese based on device language
-                    Text("home_title")
-                        .font(.title)          // Predefined font size (like Theme.of(context).textTheme.title)
-                        .fontWeight(.bold)     // Bold text
-
-                    Text("coming_soon")
-                        .foregroundStyle(.secondary)  // Secondary colour (greyed out)
-
-                    // SIGN OUT BUTTON (temporary for testing)
-                    //
-                    // Button has two parts: action {} and label {}
-                    //
-                    // LIQUID GLASS IMPLEMENTATION:
-                    // - GlassEffectContainer groups related glass elements
-                    // - Required when multiple glass effects are near each other for proper blending
-                    // - Enables smooth morphing animations between glass states
-                    GlassEffectContainer {
-                        Button {
-                            // This closure runs when button is tapped
-                            //
-                            // try? means:
-                            // - try to run signOut()
-                            // - if it throws an error, ignore it
-                            // - similar to try-catch without the catch
-                            //
-                            // FLUTTER EQUIVALENT:
-                            // try {
-                            //   authService.signOut();
-                            // } catch (e) {
-                            //   // ignore
-                            // }
-                            try? authService.signOut()
-                        } label: {
-                            // Label combines text and icon
-                            // Similar to ListTile with leading icon in Flutter
-                            Label("sign_out", systemImage: "rectangle.portrait.and.arrow.right")
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                        }
-                        .buttonStyle(.plain)
-                        // Apply glass effect with interactive mode enabled
-                        // .interactive() provides physics-based scale, bounce, and shimmer on touch
-                        // Capsule shape is ideal for pill-shaped buttons
-                        // Falls back to .ultraThinMaterial on iOS 25 and earlier
-                        .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
-                        // Unique identifier enables smooth morphing during state transitions
-                        // System can animate glass shape fluidly when button state changes
-                        .glassEffectID("home-sign-out-button")
+                    // NavigationLink(value: restaurant) in HomeView triggers this destination
+                    .navigationDestination(for: Restaurant.self) { restaurant in
+                        RestaurantView(restaurant: restaurant)
                     }
-                    .padding(.top, Constants.UI.spacingLarge)  // Add space on top
-                }
-                // Navigation title shown at the top of the screen
-                // Like AppBar's title in Flutter
-                .navigationTitle("home_title")
+                    // String destinations — used by RestaurantView to push MenuView
+                    // The value is "restaurantId::restaurantName" encoded as a string
+                    .navigationDestination(for: MenuNavigation.self) { nav in
+                        MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
+                    }
             }
-            // Define what this tab looks like in the tab bar
             .tabItem {
                 Label(String(localized: "home_title"), systemImage: "house.fill")
             }
 
             // ================================================================
-            // SEARCH TAB - Second tab (placeholder)
+            // SEARCH TAB — Algolia-powered restaurant search
             // ================================================================
 
             NavigationStack {
-                VStack(spacing: Constants.UI.spacingLarge) {
-                    // Magnifying glass icon for search
-                    // NO glass effect - it's content/branding, not a control
-                    Image(systemName: "magnifyingglass")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .foregroundStyle(.accent)
-
-                    Text("search_title")
-                        .font(.title)
-                        .fontWeight(.bold)
-
-                    Text("coming_soon")
-                        .foregroundStyle(.secondary)
-                }
-                .navigationTitle("search_title")
+                SearchView()
+                    .navigationDestination(for: Restaurant.self) { restaurant in
+                        RestaurantView(restaurant: restaurant)
+                    }
+                    .navigationDestination(for: MenuNavigation.self) { nav in
+                        MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
+                    }
             }
             .tabItem {
                 Label(String(localized: "search_title"), systemImage: "magnifyingglass")
             }
 
             // ================================================================
-            // ACCOUNT TAB - Third tab showing user profile
+            // ACCOUNT TAB — user profile and sign-out
             // ================================================================
 
             NavigationStack {
-                VStack(spacing: Constants.UI.spacingLarge) {
-                    // Person icon for account/profile
-                    // NO glass effect - it's content/branding, not a control
-                    Image(systemName: "person.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .foregroundStyle(.accent)
-
-                    Text("account_title")
-                        .font(.title)
-                        .fontWeight(.bold)
-
-                    // CONDITIONAL RENDERING - Show user info if logged in
-                    //
-                    // if let unwraps the optional
-                    // If authService.currentUser is not nil, unwrap it into 'user'
-                    //
-                    // FLUTTER EQUIVALENT:
-                    // if (authService.currentUser != null) {
-                    //   final user = authService.currentUser!;
-                    //   // use user
-                    // }
-                    //
-                    // LIQUID GLASS NOTE:
-                    // User information display - NO glass effect
-                    // This is content (user data), not a control or navigation element
-                    // Glass should only be on interactive elements, not information displays
-                    if let user = authService.currentUser {
-                        VStack(spacing: Constants.UI.spacingSmall) {
-                            // Display user's name
-                            Text(user.displayName)
-                                .font(.headline)
-                            // Display user's email
-                            Text(user.email)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        // Standard material background for content (not Liquid Glass)
-                        // Content should use traditional materials, not glass effects
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    // Sign out button with proper glass effect implementation
-                    // Wrapped in container for proper blending if other glass elements are added later
-                    GlassEffectContainer {
-                        Button {
-                            try? authService.signOut()
-                        } label: {
-                            Label("sign_out", systemImage: "rectangle.portrait.and.arrow.right")
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                        }
-                        .buttonStyle(.plain)
-                        // Interactive glass effect for touch response (scale, bounce, shimmer)
-                        .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
-                        // Unique ID for smooth morphing if button transitions to different states
-                        .glassEffectID("account-sign-out-button")
-                    }
-                }
-                .navigationTitle("account_title")
+                AccountView()
             }
             .tabItem {
                 Label(String(localized: "account_title"), systemImage: "person.fill")
@@ -425,6 +282,19 @@ struct MainTabView: View {
         // TabView itself receives glass treatment automatically in iOS 26
         // No need to explicitly apply .glassEffect() - system handles it
     }
+}
+
+// MARK: - Menu Navigation Value
+
+/// Hashable navigation value for pushing MenuView from RestaurantView
+/// Bundles restaurantId + restaurantName so NavigationLink(value:) can carry both
+///
+/// WHY A SEPARATE TYPE:
+/// NavigationLink(value:) requires a Hashable value. We need to pass two strings
+/// (id + name) together. A struct is cleaner than encoding/decoding a single string.
+struct MenuNavigation: Hashable {
+    let restaurantId: String
+    let restaurantName: String
 }
 
 // MARK: - View Extension for Backwards Compatibility

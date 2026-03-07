@@ -283,6 +283,12 @@ struct LoginViewLiquidGlass: View {
     }
 }
 
+// MARK: - Type Alias for Compatibility
+
+/// Aliases the Liquid Glass variant as the canonical LoginView name
+/// Referenced by Pour_RiceApp.swift's RootView for authentication routing
+typealias LoginView = LoginViewLiquidGlass
+
 // MARK: - Password Reset View with Liquid Glass
 
 /// Sheet view for password reset with Liquid Glass effects on interactive controls
@@ -454,39 +460,6 @@ struct PasswordResetViewLiquidGlass: View {
         }
 
         isLoading = false
-    }
-}
-
-// MARK: - Placeholder for SignUpViewLiquidGlass
-
-/// Placeholder for sign-up view with Liquid Glass effects
-/// Full implementation provided in separate file
-struct SignUpViewLiquidGlass: View {
-    var body: some View {
-        Text("Sign Up coming soon...")
-    }
-}
-
-// MARK: - View Extension for Backwards Compatibility
-
-extension View {
-    /// Applies Liquid Glass effect if available on iOS 26+, otherwise falls back to ultraThinMaterial
-    /// Provides graceful degradation for older iOS versions whilst maintaining modern appearance
-    ///
-    /// - Parameters:
-    ///   - glass: Glass configuration (regular, clear, or identity variant)
-    ///   - shape: Shape to apply glass effect to (Capsule, RoundedRectangle, Circle, etc.)
-    /// - Returns: View with glass effect on iOS 26+ or material background on earlier versions
-    @ViewBuilder
-    func glassEffectIfAvailable(
-        _ glass: Glass = .regular,
-        in shape: some Shape = Capsule()
-    ) -> some View {
-        if #available(iOS 26.0, *) {
-            self.glassEffect(glass, in: shape)
-        } else {
-            self.background(.ultraThinMaterial, in: shape)
-        }
     }
 }
 
