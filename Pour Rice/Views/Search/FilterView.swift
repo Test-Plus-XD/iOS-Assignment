@@ -156,6 +156,6 @@ struct FilterView: View {
 // MARK: - Preview
 
 #Preview {
-    let vm = SearchViewModel(algoliaService: AlgoliaService())
+    let vm = SearchViewModel(restaurantService: RestaurantService(apiClient: DefaultAPIClient()))
     FilterView(viewModel: vm)
 }

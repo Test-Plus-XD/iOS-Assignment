@@ -112,7 +112,7 @@ final class RestaurantViewModel {
                 // async let starts this fetch concurrently with others below
                 async let restaurantTask = restaurantService.fetchRestaurant(id: restaurantId)
                 async let reviewsTask = reviewService.fetchReviews(restaurantId: restaurantId, limit: 20)
-                async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId, limit: 6)
+                async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId)
 
                 // Wait for all three in parallel
                 let (fetchedRestaurant, fetchedReviews, fetchedMenu) = try await (
@@ -126,7 +126,7 @@ final class RestaurantViewModel {
             } else {
                 // Restaurant already available — only fetch reviews and menu
                 async let reviewsTask = reviewService.fetchReviews(restaurantId: restaurantId, limit: 20)
-                async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId, limit: 6)
+                async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId)
 
                 let (fetchedReviews, fetchedMenu) = try await (reviewsTask, menuTask)
 

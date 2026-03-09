@@ -32,17 +32,15 @@ final class MenuService {
 
     /// Fetches menu items for a specific restaurant.
     /// Makes network request to backend API and returns parsed menu data.
-    /// - Parameters:
-    ///   - restaurantId: Unique restaurant identifier
-    ///   - limit: Maximum number of items to return (optional)
+    /// - Parameter restaurantId: Unique restaurant identifier
     /// - Returns: Array of menu items with bilingual names and descriptions
     /// - Throws: APIError for network or decoding failures
-    func fetchMenuItems(restaurantId: String, limit: Int? = nil) async throws -> [Menu] {
+    func fetchMenuItems(restaurantId: String) async throws -> [Menu] {
 
         print("🔍 Fetching menu items for restaurant: \(restaurantId)")
 
-        // Build endpoint with query parameters
-        let endpoint = APIEndpoint.fetchMenuItems(restaurantId: restaurantId, limit: limit)
+        // Build endpoint
+        let endpoint = APIEndpoint.fetchMenuItems(restaurantId: restaurantId)
 
         // Execute network request and decode JSON response
         let response = try await apiClient.request(

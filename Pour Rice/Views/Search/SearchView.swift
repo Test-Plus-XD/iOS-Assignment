@@ -51,7 +51,7 @@ struct SearchView: View {
         .task {
             // Initialise ViewModel with services from environment
             if viewModel == nil {
-                viewModel = SearchViewModel(algoliaService: services.algoliaService)
+                viewModel = SearchViewModel(restaurantService: services.restaurantService)
             }
         }
     }

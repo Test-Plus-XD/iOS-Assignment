@@ -36,10 +36,8 @@ enum APIEndpoint {
 
     /// Fetch menu items for a specific restaurant.
     /// Returns all menu items with bilingual names and prices.
-    /// - Parameters:
-    ///   - restaurantId: Unique restaurant identifier
-    ///   - limit: Maximum number of items to return (optional, for pagination)
-    case fetchMenuItems(restaurantId: String, limit: Int?)
+    /// - Parameter restaurantId: Unique restaurant identifier
+    case fetchMenuItems(restaurantId: String)
 
     // MARK: - Review Endpoints
 
@@ -89,10 +87,10 @@ enum APIEndpoint {
             return "\(Constants.API.Endpoints.restaurantDetail)/\(id)"
 
         case .fetchFeaturedRestaurants:
-            // GET /API/Restaurants/featured
-            return "/API/Restaurants/featured"
+            // GET /API/Restaurants (all restaurants; randomly sampled to 10 in RestaurantService)
+            return Constants.API.Endpoints.restaurantDetail
 
-        case .fetchMenuItems(let restaurantId, _):
+        case .fetchMenuItems(let restaurantId):
             // GET /API/Restaurants/:id/menu
             return "\(Constants.API.Endpoints.restaurantDetail)/\(restaurantId)\(Constants.API.Endpoints.restaurantMenu)"
 
@@ -153,11 +151,6 @@ enum APIEndpoint {
                 URLQueryItem(name: "lng", value: String(lng)),
                 URLQueryItem(name: "radius", value: String(radius))
             ]
-
-        case .fetchMenuItems(_, let limit):
-            // Optional limit parameter for pagination (e.g., ?limit=20)
-            guard let limit = limit else { return nil }
-            return [URLQueryItem(name: "limit", value: String(limit))]
 
         case .fetchReviews(let restaurantId, let limit):
             // Example: ?restaurantId=abc123&limit=10

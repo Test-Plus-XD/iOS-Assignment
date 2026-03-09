@@ -58,9 +58,6 @@ class Services {
     /// Menu service
     let menuService: MenuService
 
-    /// Algolia search service
-    let algoliaService: AlgoliaService
-
     /// Location service
     let locationService: LocationService
 
@@ -82,7 +79,6 @@ class Services {
         self.restaurantService = RestaurantService(apiClient: apiClient)
         self.reviewService = ReviewService(apiClient: apiClient)
         self.menuService = MenuService(apiClient: apiClient)
-        self.algoliaService = AlgoliaService()
         self.locationService = LocationService()
 
         print("✅ Services container initialized")

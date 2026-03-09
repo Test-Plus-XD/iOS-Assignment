@@ -57,11 +57,10 @@ Pour Rice/
   │       └── LoadingView.swift          # Spinner and skeleton views
   └── Core/
       ├── Services/
-      │   ├── AlgoliaService.swift       # Search via Vercel proxy (URLSession)
       │   ├── AuthService.swift          # Firebase Auth wrapper
       │   ├── LocationService.swift      # CoreLocation wrapper
       │   ├── MenuService.swift          # Menu API calls
-      │   ├── RestaurantService.swift    # Restaurant API calls
+      │   ├── RestaurantService.swift    # Restaurant API calls + Vercel Algolia search
       │   └── ReviewService.swift       # Review API calls
       ├── Network/
       │   ├── APIClient.swift            # Shared URLSession request executor
@@ -76,7 +75,7 @@ Pour Rice/
 
 ## Key Files
 - `Pour_RiceApp.swift` - Tab bar setup, `NavigationDestination` registration, `Services` injection
-- `Core/Services/AlgoliaService.swift` - Vercel proxy search; decodes `AlgoliaHit` → `Restaurant`
+- `Core/Services/RestaurantService.swift` - Restaurant API calls, caching, and Vercel proxy search; private `AlgoliaHit` → `Restaurant` mapping
 - `Core/Utilities/Constants.swift` - All API base URLs, endpoint paths, header names, and UI constants
 - `Models/Restaurant.swift` - `Decodable` restaurant model; memberwise `init` added via extension
 - `Models/BilingualText.swift` - `BilingualText(en:tc:)` and `BilingualText(uniform:)` constructors
@@ -92,11 +91,11 @@ Pour Rice/
   - Search results have no `openingHours`, `rating`, or `cuisine` — only shown when populated via the detail endpoint
 
 ## Search Architecture
-`SearchViewModel` → `AlgoliaService.search(query:filters:)` → Vercel proxy → Algolia index
+`SearchViewModel` → `RestaurantService.search(query:filters:)` → Vercel proxy → Algolia index
 
 - `SearchFilters` has two fields: `districts: [String]` and `keywords: [String]`
 - Algolia SDK was removed; all search traffic uses `URLSession` through the backend proxy
-- `AlgoliaHit` is a private struct inside `AlgoliaService` — maps `objectID` → `Restaurant.id`
+- `AlgoliaHit` is a private struct inside `RestaurantService` — maps `objectID` → `Restaurant.id`
 
 ## Code & Comments Structure
 
@@ -126,11 +125,12 @@ Pour Rice/
 |------|-------|
 | `Core/Services/AuthService.swift` | 553 |
 | `Views/Restaurant/RestaurantView.swift` | 533 |
-| `Models/Restaurant.swift` | 520 |
+| `Models/Restaurant.swift` | 524 |
 | `Views/Auth/LoginView.swift` | 472 |
 | `Views/Auth/SignUpView.swift` | 427 |
 | `Models/Menu.swift` | 383 |
 | `Views/Home/HomeView.swift` | 376 |
+| `Core/Services/RestaurantService.swift` | 370 |
 | `Pour_RiceApp.swift` | 366 |
 | `Views/Menu/MenuView.swift` | 330 |
 | `Core/Services/LocationService.swift` | 315 |
@@ -138,22 +138,20 @@ Pour Rice/
 | `Views/Common/AsyncImageView.swift` | 259 |
 | `Views/Account/AccountView.swift` | 255 |
 | `Models/BilingualText.swift` | 251 |
-| `Core/Services/AlgoliaService.swift` | 226 |
 | `Core/Network/APIClient.swift` | 222 |
 | `Models/User.swift` | 220 |
 | `Views/Common/EmptyStateView.swift` | 216 |
-| `Core/Extensions/View+Extensions.swift` | 210 |
+| `Core/Extensions/View+Extensions.swift` | 206 |
 | `ViewModels/SearchViewModel.swift` | 206 |
 | `ViewModels/RestaurantViewModel.swift` | 202 |
-| `Core/Network/APIEndpoint.swift` | 197 |
-| `Core/Services/MenuService.swift` | 186 |
+| `Core/Network/APIEndpoint.swift` | 193 |
+| `Core/Services/MenuService.swift` | 185 |
 | `Core/Network/APIError.swift` | 179 |
 | `Views/Common/ErrorView.swift` | 177 |
 | `Core/Extensions/Date+Extensions.swift` | 177 |
 | `ViewModels/HomeViewModel.swift` | 176 |
 | `Core/Utilities/Constants.swift` | 174 |
 | `ViewModels/MenuViewModel.swift` | 169 |
-| `Core/Services/RestaurantService.swift` | 163 |
 | `Views/Search/FilterView.swift` | 161 |
 | `Views/Common/LoadingView.swift` | 135 |
 | `ViewModels/AccountViewModel.swift` | 133 |
@@ -165,4 +163,4 @@ Pour Rice/
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total** | **9,323** |
+| **Total** | **9,299** |

@@ -513,8 +513,12 @@ extension Restaurant {
 // class RestaurantListResponse {
 //   final List<Restaurant> restaurants;
 //   RestaurantListResponse.fromJson(Map<String, dynamic> json)
-//     : restaurants = (json['restaurants'] as List).map((e) => Restaurant.fromJson(e)).toList();
+//     : restaurants = (json['data'] as List).map((e) => Restaurant.fromJson(e)).toList();
 // }
 struct RestaurantListResponse: Codable {
     let restaurants: [Restaurant]  // Array of Restaurant objects from the API
+
+    enum CodingKeys: String, CodingKey {
+        case restaurants = "data"  // Backend returns key "data", mapped to "restaurants"
+    }
 }

@@ -76,8 +76,8 @@ final class SearchViewModel {
 
     // MARK: - Dependencies
 
-    /// Vercel-proxied Algolia search service
-    private let algoliaService: AlgoliaService
+    /// Restaurant service (includes Vercel-proxied Algolia search)
+    private let restaurantService: RestaurantService
 
     /// Task handle for the current search — cancelled on each new keystroke
     ///
@@ -89,8 +89,8 @@ final class SearchViewModel {
 
     // MARK: - Initialisation
 
-    init(algoliaService: AlgoliaService) {
-        self.algoliaService = algoliaService
+    init(restaurantService: RestaurantService) {
+        self.restaurantService = restaurantService
     }
 
     // MARK: - Search
@@ -149,7 +149,7 @@ final class SearchViewModel {
             )
 
             // Perform search via Vercel proxy (fast, indexed, typo-tolerant)
-            let results = try await algoliaService.search(
+            let results = try await restaurantService.search(
                 query: searchQuery,
                 filters: filters
             )
