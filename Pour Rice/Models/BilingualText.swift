@@ -82,7 +82,11 @@ struct BilingualText: Codable, Hashable, Sendable {
         // WHAT IS ?? "en":
         // Nil coalescing operator - if languageCode is nil, use "en" as default
         // Similar to ?? in Dart or ?: in Kotlin
-        let language = Locale.current.language.languageCode?.identifier ?? "en"
+        // Check for an in-app language override stored by the language toggle in AccountView.
+        // @AppStorage("preferredLanguage") in Pour_RiceApp bridges UserDefaults → locale environment,
+        // while this line ensures BilingualText (dynamic API data) also respects the choice.
+        let stored = UserDefaults.standard.string(forKey: "preferredLanguage")
+        let language = stored ?? Locale.current.language.languageCode?.identifier ?? "en"
 
         // Return Traditional Chinese for Chinese locales, otherwise British English
         //

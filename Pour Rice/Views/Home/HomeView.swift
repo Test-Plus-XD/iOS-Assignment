@@ -157,6 +157,8 @@ struct HomeView: View {
                             FeaturedRestaurantCard(restaurant: restaurant)
                         }
                         .buttonStyle(.plain)  // Removes default button styling
+                        .hapticFeedback(style: .light)
+                        .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars, \(restaurant.isOpenNow ? String(localized: "open_now") : String(localized: "closed"))")
                     }
                 }
                 .padding(.horizontal, Constants.UI.spacingMedium)
@@ -195,6 +197,8 @@ struct HomeView: View {
                                 .padding(.vertical, Constants.UI.spacingSmall)
                         }
                         .buttonStyle(.plain)
+                        .hapticFeedback(style: .light)
+                        .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars")
 
                         // Divider between rows (like Divider() in Flutter)
                         Divider()

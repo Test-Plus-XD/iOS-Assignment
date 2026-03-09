@@ -2,13 +2,17 @@
 
 ## 📊 Project Status & Progress
 
-**Last Updated:** 14 February 2026
+**Last Updated:** 9 March 2026
 
 ### ✅ Completed Sprints
 - **Sprint 1: Foundation** - COMPLETED ✅
 - **Sprint 2: Models & Network** - COMPLETED ✅
 - **Sprint 3: Core Services** - COMPLETED ✅
 - **Sprint 4: Authentication Flow** - COMPLETED ✅
+- **Sprint 5: Home & Search** - COMPLETED ✅
+- **Sprint 6: Restaurant Detail & Menu** - COMPLETED ✅
+- **Sprint 7: Account & Polish** - COMPLETED ✅ (language toggle, bilingual string catalog ~161 keys)
+- **Sprint 8: iOS Design Polish** - COMPLETED ✅ (haptic feedback, VoiceOver accessibility labels)
 
 ### 📦 Latest Package Versions (Updated)
 - Firebase iOS SDK: v12.9 (latest) - ✅ INSTALLED

@@ -98,6 +98,8 @@ struct SearchView: View {
                     NavigationLink(value: restaurant) {
                         SearchResultRow(restaurant: restaurant)
                     }
+                    .hapticFeedback(style: .light)
+                    .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars")
                     .listRowInsets(EdgeInsets(
                         top: Constants.UI.spacingSmall,
                         leading: Constants.UI.spacingMedium,

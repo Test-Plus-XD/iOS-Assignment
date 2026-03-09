@@ -177,9 +177,16 @@ struct AccountView: View {
     @ViewBuilder
     private func preferencesSection(vm: AccountViewModel) -> some View {
         Section(header: Text(String(localized: "account_section_preferences"))) {
-            LabeledContent(String(localized: "account_language_label")) {
-                Text(vm.preferredLanguageDisplay)
-                    .foregroundStyle(.secondary)
+            // Language picker — tapping cycles between English and Traditional Chinese.
+            // The selection binding writes to UserDefaults via vm.updateLanguage(), which
+            // triggers @AppStorage in Pour_RiceApp to re-inject the new locale environment
+            // and instantly switches all String(localized:) text across the app.
+            Picker(String(localized: "account_language_label"), selection: Binding(
+                get: { vm.preferredLanguage },
+                set: { newValue in Task { await vm.updateLanguage(newValue) } }
+            )) {
+                Text(String(localized: "language_en")).tag("en")
+                Text(String(localized: "language_tc")).tag("zh-Hant")
             }
         }
     }
@@ -214,6 +221,7 @@ struct AccountView: View {
                 .foregroundStyle(.red)
                 .glassEffectIfAvailable(.regular.interactive(), in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
                 .glassEffectID("account-sign-out-button")
+                .hapticFeedback(style: .heavy)
                 .disabled(vm.isSigningOut)
             }
         }

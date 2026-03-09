@@ -191,9 +191,11 @@ struct RestaurantView: View {
                 Label(restaurant.ratingDisplay, systemImage: "star.fill")
                     .foregroundStyle(.orange)
                     .fontWeight(.medium)
+                    .accessibilityLabel("\(restaurant.ratingDisplay) stars out of 5")
 
                 Text("(\(restaurant.reviewCount))")
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("\(restaurant.reviewCount) reviews")
 
                 Spacer()
 
@@ -229,6 +231,7 @@ struct RestaurantView: View {
                 }
                 .buttonStyle(.bordered)
                 .padding(.top, Constants.UI.spacingSmall)
+                .hapticFeedback(style: .medium)
             }
         }
     }

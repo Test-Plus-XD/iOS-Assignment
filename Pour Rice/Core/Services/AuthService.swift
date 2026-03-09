@@ -444,6 +444,12 @@ final class AuthService {
         // final response = await http.get('/users/$uid');
         // final user = User.fromJson(jsonDecode(response.body));
         currentUser = try await apiClient.request(endpoint, responseType: User.self)
+
+        // Sync language preference to UserDefaults so the language toggle in AccountView
+        // and BilingualText both reflect this user's saved preference on sign-in.
+        if let lang = currentUser?.preferredLanguage {
+            UserDefaults.standard.set(lang, forKey: "preferredLanguage")
+        }
     }
 
     /// Creates a new user profile in the backend database

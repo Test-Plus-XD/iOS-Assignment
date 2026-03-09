@@ -85,6 +85,12 @@ final class AccountViewModel {
         }
     }
 
+    /// Current preferred language code ("en" or "zh-Hant")
+    /// Used to drive the language Picker selection in AccountView
+    var preferredLanguage: String {
+        authService.currentUser?.preferredLanguage ?? "en"
+    }
+
     // MARK: - Initialisation
 
     init(authService: AuthService) {
@@ -92,6 +98,26 @@ final class AccountViewModel {
     }
 
     // MARK: - Actions
+
+    /// Updates the user's preferred language in UserDefaults and persists it to the backend
+    ///
+    /// Writing to UserDefaults triggers the @AppStorage("preferredLanguage") watcher in
+    /// Pour_RiceApp, which re-injects the new locale environment — instantly switching all
+    /// String(localized:) calls. BilingualText.localised also reads UserDefaults directly.
+    ///
+    /// - Parameter code: Language code to switch to ("en" or "zh-Hant")
+    func updateLanguage(_ code: String) async {
+        // Immediately write to UserDefaults so the UI switches without waiting for the API
+        UserDefaults.standard.set(code, forKey: "preferredLanguage")
+
+        // Persist the preference to the backend
+        let request = UpdateUserRequest(displayName: nil, photoURL: nil, preferredLanguage: code)
+        do {
+            try await authService.updateUserProfile(request)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     /// Signs the user out of the app
     func signOut() {

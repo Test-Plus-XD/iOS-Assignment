@@ -172,6 +172,7 @@ struct FilterView: View {
                         Task { await viewModel.applyFilters() }
                     }
                     .fontWeight(.semibold)
+                    .hapticFeedback(style: .medium)
                 }
 
                 // Clear — reset all filters (shown only when filters are active)

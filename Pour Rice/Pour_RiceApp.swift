@@ -85,6 +85,12 @@ struct Pour_RiceApp: App {
     /// Only this file needs direct access. Other views get it via .environment()
     @State private var services = Services()
 
+    /// Persisted language preference ("en" or "zh-Hant") stored in UserDefaults.
+    /// @AppStorage watches UserDefaults — when AccountView's Picker changes this value,
+    /// SwiftUI rebuilds body and re-injects the new locale into the entire view tree,
+    /// causing all String(localized:) calls to instantly switch language without restart.
+    @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
     // MARK: - Scene Configuration
 
     /// The main content of the app
@@ -114,6 +120,13 @@ struct Pour_RiceApp: App {
                 // )
                 //
                 // Now any view can use: @Environment(\.services) to access services
+                //
+                // LANGUAGE TOGGLE:
+                // Re-injects locale whenever @AppStorage("preferredLanguage") changes.
+                // This causes all String(localized:) in the tree to pick up the new language
+                // without an app restart. BilingualText.localised also reads UserDefaults
+                // directly, so dynamic API data (restaurant names etc.) switches too.
+                .environment(\.locale, Locale(identifier: preferredLanguage))
                 .environment(\.services, services)
                 .environment(\.authService, services.authService)
         }
