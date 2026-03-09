@@ -43,6 +43,11 @@ enum Constants {
 
             /// Endpoint for user profile operations
             static let userProfile = "/API/Users"
+
+            /// Vercel-proxied Algolia restaurant search endpoint
+            /// Query parameters: query, districts, keywords, page, hitsPerPage
+            /// Replaces direct Algolia SDK calls — credentials remain server-side
+            static let algoliaSearch = "/API/Algolia/Restaurants"
         }
 
         /// HTTP header names used in API requests
@@ -58,23 +63,18 @@ enum Constants {
         }
     }
 
-    // MARK: - Algolia Configuration
-
-    /// Algolia search service configuration
-    enum Algolia {
-        /// Algolia application ID for search service
-        static let applicationID = "V9HMGL1VIZ"
-
-        /// Algolia search-only API key (safe for client-side use)
-        /// Note: This should be replaced with your actual search key
-        static let searchAPIKey = "YOUR_ALGOLIA_SEARCH_KEY"
-
-        /// Name of the Algolia index containing restaurant data
-        static let indexName = "Restaurants"
-
-        /// Default search radius in metres for location-based queries
-        static let defaultSearchRadius = 5000
-    }
+    // MARK: - Algolia Configuration (Commented Out — No Longer Used)
+    //
+    // Search is now routed through the Vercel proxy endpoint (/API/Algolia/Restaurants)
+    // so direct Algolia SDK calls and client-side credentials are no longer required.
+    //
+    // enum Algolia {
+    //     /// Name of the Algolia Restaurants index
+    //     static let indexName = "Restaurants"
+    //
+    //     /// Default search radius in metres (used in advanced geo-search requests)
+    //     static let defaultSearchRadius = 5000
+    // }
 
     // MARK: - Firebase Configuration
 

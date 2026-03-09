@@ -3,7 +3,7 @@
 //  Pour Rice
 //
 //  ViewModel for the search screen
-//  Manages Algolia search queries, filter state, and debounced search execution
+//  Manages Vercel Algolia search queries, filter state, and debounced search execution
 //
 //  ============================================================================
 //  FOR FLUTTER/ANDROID DEVELOPERS:
@@ -27,8 +27,8 @@ import Observation
 
 // MARK: - Search View Model
 
-/// ViewModel for the SearchView
-/// Manages restaurant search, filtering, and result state
+/// ViewModel for the SearchView.
+/// Manages restaurant search, district/keyword filtering, and result state.
 ///
 /// Implements debounced search: waits 300ms after last keystroke before searching.
 /// This prevents excessive API calls while typing.
@@ -42,7 +42,7 @@ final class SearchViewModel {
     /// Changes to this property automatically trigger a debounced search
     var searchQuery = ""
 
-    /// Search results from Algolia
+    /// Search results from the Vercel Algolia proxy endpoint
     var searchResults: [Restaurant] = []
 
     /// Whether a search is currently in progress
@@ -57,29 +57,26 @@ final class SearchViewModel {
 
     // MARK: - Filter State
     //
-    // Filters narrow down search results by cuisine, price, and rating.
-    // These match the Android app's SearchFilters model.
+    // Filters narrow down search results by Hong Kong district and keyword tag.
+    // These map directly to the Vercel Algolia endpoint's query parameters.
 
     /// Whether the filter sheet is currently presented
     var showingFilters = false
 
-    /// Selected cuisine types to filter by (e.g., ["Italian", "Japanese"])
-    var selectedCuisines: Set<String> = []
+    /// Selected Hong Kong districts to filter by (e.g., ["Central", "Wan Chai"])
+    var selectedDistricts: Set<String> = []
 
-    /// Selected price ranges (e.g., ["$", "$$"])
-    var selectedPriceRanges: Set<String> = []
-
-    /// Minimum rating filter (0.0 = no filter, 4.0 = 4+ stars)
-    var minimumRating: Double = 0
+    /// Selected keyword tags to filter by (e.g., ["Vegan", "Organic"])
+    var selectedKeywords: Set<String> = []
 
     /// Whether any filters are currently active
     var hasActiveFilters: Bool {
-        !selectedCuisines.isEmpty || !selectedPriceRanges.isEmpty || minimumRating > 0
+        !selectedDistricts.isEmpty || !selectedKeywords.isEmpty
     }
 
     // MARK: - Dependencies
 
-    /// Algolia search service for fast full-text restaurant search
+    /// Vercel-proxied Algolia search service
     private let algoliaService: AlgoliaService
 
     /// Task handle for the current search — cancelled on each new keystroke
@@ -98,7 +95,7 @@ final class SearchViewModel {
 
     // MARK: - Search
 
-    /// Performs a debounced search with the current query and filters
+    /// Performs a debounced search with the current query and filters.
     ///
     /// HOW DEBOUNCING WORKS:
     /// 1. User types a character → searchQueryChanged() is called
@@ -128,41 +125,33 @@ final class SearchViewModel {
 
         // Schedule new debounced search
         searchTask = Task {
-            // Wait 300ms before performing the search
-            // If Task is cancelled during this sleep, it exits silently
-            //
-            // WHY try?:
-            // Task.sleep throws CancellationError when cancelled.
-            // try? converts the error to nil and exits the guard.
+            // Wait 300ms before performing the search.
+            // If Task is cancelled during this sleep, it exits silently.
             try? await Task.sleep(for: .milliseconds(Constants.Search.debounceDelay))
 
             // Check if task was cancelled during sleep
-            // If yes, do not proceed with search
             guard !Task.isCancelled else { return }
 
-            // Perform the actual search
             await performSearch()
         }
     }
 
-    /// Executes the Algolia search with current query and filters
+    /// Executes the Vercel Algolia search with current query and filters
     private func performSearch() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            // Build search filters from current filter state
+            // Build search filters from current district/keyword selection
             let filters = SearchFilters(
-                cuisines: selectedCuisines.isEmpty ? nil : Array(selectedCuisines),
-                priceRanges: selectedPriceRanges.isEmpty ? nil : Array(selectedPriceRanges),
-                minRating: minimumRating > 0 ? minimumRating : nil
+                districts: selectedDistricts.isEmpty ? [] : Array(selectedDistricts),
+                keywords: selectedKeywords.isEmpty ? [] : Array(selectedKeywords)
             )
 
-            // Perform Algolia search (fast, indexed, typo-tolerant)
+            // Perform search via Vercel proxy (fast, indexed, typo-tolerant)
             let results = try await algoliaService.search(
                 query: searchQuery,
-                filters: filters,
-                location: nil   // No geo-filter on search screen (user can browse globally)
+                filters: filters
             )
 
             searchResults = results
@@ -184,7 +173,6 @@ final class SearchViewModel {
     /// Applies the current filter selections and re-runs the search
     func applyFilters() async {
         showingFilters = false
-        // Re-run search with updated filters
         if !searchQuery.isEmpty {
             await performSearch()
         }
@@ -192,9 +180,8 @@ final class SearchViewModel {
 
     /// Clears all active filters and re-runs the search
     func clearFilters() async {
-        selectedCuisines = []
-        selectedPriceRanges = []
-        minimumRating = 0
+        selectedDistricts = []
+        selectedKeywords = []
         if !searchQuery.isEmpty {
             await performSearch()
         }
@@ -202,15 +189,18 @@ final class SearchViewModel {
 
     // MARK: - Available Filter Options
     //
-    // These constants define the selectable values in the filter sheet.
-    // Matching the Android app's filter options.
+    // These constants define the selectable values shown in the filter sheet.
 
-    /// Available cuisine types for filtering
-    static let availableCuisines = [
-        "Chinese", "Japanese", "Korean", "Thai", "Vietnamese",
-        "Italian", "American", "Indian", "Mediterranean", "Fusion"
+    /// Available Hong Kong districts for filtering
+    static let availableDistricts = [
+        "Central", "Wan Chai", "Causeway Bay", "Mong Kok",
+        "Tsim Sha Tsui", "Sham Shui Po", "Sha Tin", "Tuen Mun",
+        "Yuen Long", "North"
     ]
 
-    /// Available price ranges for filtering
-    static let availablePriceRanges = ["$", "$$", "$$$", "$$$$"]
+    /// Available keyword tags for filtering (vegetarian cuisine focus)
+    static let availableKeywords = [
+        "Vegan", "Vegetarian", "Organic", "Dim Sum", "Hot Pot",
+        "Noodles", "Rice", "Seafood", "Healthy", "Fusion"
+    ]
 }

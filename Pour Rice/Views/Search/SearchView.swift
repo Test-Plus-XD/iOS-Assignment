@@ -2,7 +2,7 @@
 //  SearchView.swift
 //  Pour Rice
 //
-//  Restaurant search screen with live Algolia-powered search and filter support
+//  Restaurant search screen powered by the Vercel Algolia proxy endpoint
 //  Implements debounced search to avoid excessive API calls while typing
 //
 //  ============================================================================
@@ -18,11 +18,11 @@ import SwiftUI
 
 // MARK: - Search View
 
-/// Full-featured restaurant search screen powered by Algolia
+/// Full-featured restaurant search screen powered by the Vercel Algolia proxy
 ///
 /// Features:
 /// - Live search with 300ms debounce
-/// - Cuisine, price range, and rating filters
+/// - District and keyword filters
 /// - Empty and error states
 /// - Navigation to restaurant detail screens
 struct SearchView: View {
@@ -240,13 +240,16 @@ private struct SearchResultRow: View {
 
                     Spacer()
 
-                    // Open/Closed status
-                    Text(restaurant.isOpenNow
-                         ? String(localized: "open_now")
-                         : String(localized: "closed"))
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(restaurant.isOpenNow ? .green : .secondary)
+                    // Open/Closed status — only shown when opening hours are available
+                    // Search results from Algolia don't include opening hours
+                    if !restaurant.openingHours.isEmpty {
+                        Text(restaurant.isOpenNow
+                             ? String(localized: "open_now")
+                             : String(localized: "closed"))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(restaurant.isOpenNow ? .green : .secondary)
+                    }
                 }
             }
         }

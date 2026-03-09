@@ -438,6 +438,53 @@ struct OpeningHour: Codable, Hashable, Sendable {
     }
 }
 
+// MARK: - Convenience Initialisation (Algolia Search Hits)
+
+extension Restaurant {
+    /// Creates a Restaurant from pre-parsed data.
+    /// Used when mapping Algolia search hits to the model, where only a
+    /// subset of fields is available from the search index.
+    /// Fields not present in Algolia receive sensible empty defaults;
+    /// the full data is loaded by the detail endpoint when the user taps a result.
+    init(
+        id: String,
+        name: BilingualText,
+        description: BilingualText,
+        address: BilingualText,
+        district: BilingualText,
+        cuisine: BilingualText,
+        keywords: [BilingualText],
+        priceRange: String,
+        rating: Double,
+        reviewCount: Int,
+        imageURLs: [String],
+        location: Location,
+        openingHours: [OpeningHour],
+        phoneNumber: String,
+        email: String?,
+        website: String?,
+        seats: Int
+    ) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.address = address
+        self.district = district
+        self.cuisine = cuisine
+        self.keywords = keywords
+        self.priceRange = priceRange
+        self.rating = rating
+        self.reviewCount = reviewCount
+        self.imageURLs = imageURLs
+        self.location = location
+        self.openingHours = openingHours
+        self.phoneNumber = phoneNumber
+        self.email = email
+        self.website = website
+        self.seats = seats
+    }
+}
+
 // MARK: - API Response Wrappers
 //
 // WHY A WRAPPER:

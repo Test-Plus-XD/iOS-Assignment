@@ -1322,87 +1322,36 @@
         }
       }
     },
-    "filter_cuisine_title": {
+    "filter_district_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuisine"
+            "value": "District"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "料理類型"
+            "value": "地區"
           }
         }
       }
     },
-    "filter_price_title": {
+    "filter_keyword_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Price Range"
+            "value": "Keyword"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "價格範圍"
-          }
-        }
-      }
-    },
-    "filter_rating_any": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Any"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "任何"
-          }
-        }
-      }
-    },
-    "filter_rating_minimum": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Minimum rating"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最低評分"
-          }
-        }
-      }
-    },
-    "filter_rating_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Minimum Rating"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最低評分"
+            "value": "關鍵詞"
           }
         }
       }
