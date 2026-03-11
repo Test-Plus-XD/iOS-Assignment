@@ -36,6 +36,7 @@
 
 import SwiftUI        // SwiftUI framework for building user interfaces (like Flutter widgets)
 import FirebaseCore   // Firebase SDK for authentication, database, etc.
+import GoogleSignIn
 
 /// Main application entry point for Pour Rice restaurant discovery app
 /// Manages app lifecycle, Firebase configuration, and authentication state
@@ -147,6 +148,11 @@ struct Pour_RiceApp: App {
                 .environment(\.locale, Locale(identifier: preferredLanguage))
                 .environment(\.services, services)
                 .environment(\.authService, services.authService)
+                .onOpenURL { url in
+                    // iOS 26+ preferred URL handling path (scene-based lifecycle)
+                    // for OAuth callback handoff from Google Sign-In.
+                    _ = GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }
