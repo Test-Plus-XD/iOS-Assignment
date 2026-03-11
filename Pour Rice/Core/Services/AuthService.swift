@@ -289,12 +289,7 @@ final class AuthService {
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
 
-        guard
-            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-            let rootViewController = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
-        else {
-            throw APIError.invalidResponse
-        }
+        let rootViewController = try googleSignInPresentingViewController()
 
         do {
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
@@ -327,6 +322,37 @@ final class AuthService {
             print("❌ Google sign-in failed: \(error.localizedDescription)")
             throw error
         }
+    }
+
+    /// Returns the most appropriate presenting view controller for OAuth UI.
+    /// Prefers foreground-active scenes, then foreground-inactive scenes.
+    private func googleSignInPresentingViewController() throws -> UIViewController {
+        let windowScenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+
+        let prioritizedScenes = windowScenes
+            .sorted { lhs, rhs in
+                func priority(_ state: UIScene.ActivationState) -> Int {
+                    switch state {
+                    case .foregroundActive: return 0
+                    case .foregroundInactive: return 1
+                    default: return 2
+                    }
+                }
+                return priority(lhs.activationState) < priority(rhs.activationState)
+            }
+
+        guard
+            let keyWindow = prioritizedScenes
+                .lazy
+                .compactMap({ scene in scene.windows.first(where: { $0.isKeyWindow }) })
+                .first,
+            let rootViewController = keyWindow.rootViewController
+        else {
+            throw APIError.invalidResponse
+        }
+
+        return rootViewController
     }
 
     // MARK: - Sign Up
