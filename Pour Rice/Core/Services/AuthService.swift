@@ -13,7 +13,10 @@
 //
 
 import Foundation     // Swift's core framework
+import UIKit
 import FirebaseAuth   // Firebase Authentication SDK
+import FirebaseCore
+import GoogleSignIn
 import Observation    // New iOS 17+ framework for reactive state (replaces ObservableObject)
 
 /// Service responsible for all authentication operations
@@ -267,6 +270,56 @@ final class AuthService {
             // The UI will display this error to the user
             self.error = error
             print("❌ Sign in failed: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+
+    /// Signs in a user using Google OAuth and exchanges Google tokens for
+    /// Firebase credentials.
+    func signInWithGoogle() async throws {
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
+
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            throw APIError.invalidResponse
+        }
+
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+
+        guard
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let rootViewController = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else {
+            throw APIError.invalidResponse
+        }
+
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            guard
+                let idToken = result.user.idToken?.tokenString
+            else {
+                throw APIError.invalidResponse
+            }
+
+            let accessToken = result.user.accessToken.tokenString
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
+            let authResult = try await auth.signIn(with: credential)
+
+            do {
+                try await loadUserProfile(uid: authResult.user.uid)
+            } catch {
+                let email = authResult.user.email ?? ""
+                let displayName = authResult.user.displayName ?? "Google User"
+                try await createUserProfile(uid: authResult.user.uid, email: email, displayName: displayName)
+            }
+
+            print("✅ User signed in with Google: \(authResult.user.uid)")
+        } catch {
+            self.error = error
+            print("❌ Google sign-in failed: \(error.localizedDescription)")
             throw error
         }
     }

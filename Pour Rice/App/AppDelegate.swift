@@ -8,6 +8,7 @@
 
 import UIKit
 import FirebaseCore
+import GoogleSignIn
 
 /// Application delegate responsible for Firebase initialization
 /// Configures all Firebase services (Auth, Firestore, Storage) at app launch
@@ -37,6 +38,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         return true
+    }
+
+    /// Handles OAuth callback URLs (Google Sign-In)
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url)
     }
 
     // MARK: - Remote Notifications (Future Enhancement)

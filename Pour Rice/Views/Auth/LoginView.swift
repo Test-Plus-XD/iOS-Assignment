@@ -211,6 +211,21 @@ struct LoginViewLiquidGlass: View {
                         // Unique identifier enables smooth state transition animations
                         .glassEffectID("sign-in-button", in: glassNamespace)
 
+                        Button {
+                            Task {
+                                await signInWithGoogle()
+                            }
+                        } label: {
+                            Label("Continue with Google", systemImage: "globe")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .disabled(isLoading)
+                        .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
+                        .glassEffectID("google-sign-in-button", in: glassNamespace)
+
                         // Secondary sign-up link with glass effect
                         HStack(spacing: 4) {
                             Text("no_account")
@@ -274,6 +289,22 @@ struct LoginViewLiquidGlass: View {
         do {
             try await authService.signIn(email: email, password: password)
 
+        } catch {
+            errorMessage = error.localizedDescription
+
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.error)
+        }
+
+        isLoading = false
+    }
+
+    private func signInWithGoogle() async {
+        errorMessage = nil
+        isLoading = true
+
+        do {
+            try await authService.signInWithGoogle()
         } catch {
             errorMessage = error.localizedDescription
 

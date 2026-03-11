@@ -49,6 +49,11 @@ import FirebaseCore   // Firebase SDK for authentication, database, etc.
 /// Similar to void main() in Dart or public static void main() in Java
 @main
 struct Pour_RiceApp: App {
+    /// Firebase docs for SwiftUI recommend wiring an AppDelegate via
+    /// UIApplicationDelegateAdaptor so SDK lifecycle hooks (including OAuth-related
+    /// callbacks) are available to the app process.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     // App is a protocol (interface) that all SwiftUI apps must conform to
     // It's like extending StatelessWidget or MaterialApp in Flutter
 
@@ -95,7 +100,12 @@ struct Pour_RiceApp: App {
     ///   runApp(MyApp(services: Services()));     // ← step 2
     /// }
     init() {
-        FirebaseApp.configure()
+        // Keep a defensive guard for environments where App.init may run before
+        // UIApplicationDelegate lifecycle callbacks.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+
         self.services = Services()
     }
 
