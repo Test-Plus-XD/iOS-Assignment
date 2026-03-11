@@ -310,7 +310,12 @@ final class AuthService {
 
             do {
                 try await loadUserProfile(uid: authResult.user.uid)
-            } catch {
+            } catch let apiError as APIError {
+                // Only create a backend profile when it truly does not exist yet.
+                guard case .clientError(404) = apiError else {
+                    throw apiError
+                }
+
                 let email = authResult.user.email ?? ""
                 let displayName = authResult.user.displayName ?? "Google User"
                 try await createUserProfile(uid: authResult.user.uid, email: email, displayName: displayName)
