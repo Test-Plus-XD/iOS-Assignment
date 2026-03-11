@@ -13,7 +13,10 @@
 //
 
 import Foundation     // Swift's core framework
+import UIKit
 import FirebaseAuth   // Firebase Authentication SDK
+import FirebaseCore
+import GoogleSignIn
 import Observation    // New iOS 17+ framework for reactive state (replaces ObservableObject)
 
 /// Service responsible for all authentication operations
@@ -269,6 +272,87 @@ final class AuthService {
             print("❌ Sign in failed: \(error.localizedDescription)")
             throw error
         }
+    }
+
+
+    /// Signs in a user using Google OAuth and exchanges Google tokens for
+    /// Firebase credentials.
+    func signInWithGoogle() async throws {
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
+
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            throw APIError.invalidResponse
+        }
+
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+
+        let rootViewController = try googleSignInPresentingViewController()
+
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            guard
+                let idToken = result.user.idToken?.tokenString
+            else {
+                throw APIError.invalidResponse
+            }
+
+            let accessToken = result.user.accessToken.tokenString
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
+            let authResult = try await auth.signIn(with: credential)
+
+            do {
+                try await loadUserProfile(uid: authResult.user.uid)
+            } catch let apiError as APIError {
+                // Only create a backend profile when it truly does not exist yet.
+                guard case .clientError(404) = apiError else {
+                    throw apiError
+                }
+
+                let email = authResult.user.email ?? ""
+                let displayName = authResult.user.displayName ?? "Google User"
+                try await createUserProfile(uid: authResult.user.uid, email: email, displayName: displayName)
+            }
+
+            print("✅ User signed in with Google: \(authResult.user.uid)")
+        } catch {
+            self.error = error
+            print("❌ Google sign-in failed: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    /// Returns the most appropriate presenting view controller for OAuth UI.
+    /// Prefers foreground-active scenes, then foreground-inactive scenes.
+    private func googleSignInPresentingViewController() throws -> UIViewController {
+        let windowScenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+
+        let prioritizedScenes = windowScenes
+            .sorted { lhs, rhs in
+                func priority(_ state: UIScene.ActivationState) -> Int {
+                    switch state {
+                    case .foregroundActive: return 0
+                    case .foregroundInactive: return 1
+                    default: return 2
+                    }
+                }
+                return priority(lhs.activationState) < priority(rhs.activationState)
+            }
+
+        guard
+            let keyWindow = prioritizedScenes
+                .lazy
+                .compactMap({ scene in scene.windows.first(where: { $0.isKeyWindow }) })
+                .first,
+            let rootViewController = keyWindow.rootViewController
+        else {
+            throw APIError.invalidResponse
+        }
+
+        return rootViewController
     }
 
     // MARK: - Sign Up

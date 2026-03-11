@@ -36,6 +36,7 @@
 
 import SwiftUI        // SwiftUI framework for building user interfaces (like Flutter widgets)
 import FirebaseCore   // Firebase SDK for authentication, database, etc.
+import GoogleSignIn
 
 /// Main application entry point for Pour Rice restaurant discovery app
 /// Manages app lifecycle, Firebase configuration, and authentication state
@@ -49,6 +50,11 @@ import FirebaseCore   // Firebase SDK for authentication, database, etc.
 /// Similar to void main() in Dart or public static void main() in Java
 @main
 struct Pour_RiceApp: App {
+    /// Firebase docs for SwiftUI recommend wiring an AppDelegate via
+    /// UIApplicationDelegateAdaptor so SDK lifecycle hooks (including OAuth-related
+    /// callbacks) are available to the app process.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     // App is a protocol (interface) that all SwiftUI apps must conform to
     // It's like extending StatelessWidget or MaterialApp in Flutter
 
@@ -95,7 +101,12 @@ struct Pour_RiceApp: App {
     ///   runApp(MyApp(services: Services()));     // ← step 2
     /// }
     init() {
-        FirebaseApp.configure()
+        // Keep a defensive guard for environments where App.init may run before
+        // UIApplicationDelegate lifecycle callbacks.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+
         self.services = Services()
     }
 
@@ -137,6 +148,11 @@ struct Pour_RiceApp: App {
                 .environment(\.locale, Locale(identifier: preferredLanguage))
                 .environment(\.services, services)
                 .environment(\.authService, services.authService)
+                .onOpenURL { url in
+                    // iOS 26+ preferred URL handling path (scene-based lifecycle)
+                    // for OAuth callback handoff from Google Sign-In.
+                    _ = GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }

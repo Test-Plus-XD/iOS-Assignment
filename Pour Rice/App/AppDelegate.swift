@@ -39,6 +39,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
+
     // MARK: - Remote Notifications (Future Enhancement)
 
     /// Called when the app successfully registers for remote notifications

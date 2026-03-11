@@ -33,7 +33,21 @@ extension EnvironmentValues {
 
     /// Direct access to auth service
     var authService: AuthService {
-        get { self[AuthServiceKey.self]! }
+        get {
+            // Prefer explicit auth service injection when present.
+            if let authService = self[AuthServiceKey.self] {
+                return authService
+            }
+
+            // Fallback: derive auth service from the services container.
+            // This prevents runtime crashes in view trees that inject only
+            // `\.services` but still read `\.authService`.
+            if let services = self[ServicesKey.self] {
+                return services.authService
+            }
+
+            preconditionFailure("Missing authService in environment. Inject either \\.authService or \\.services at the app root.")
+        }
         set { self[AuthServiceKey.self] = newValue }
     }
 }
