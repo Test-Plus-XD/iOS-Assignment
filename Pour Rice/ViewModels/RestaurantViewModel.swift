@@ -60,7 +60,7 @@ final class RestaurantViewModel {
     /// Calculated average rating from loaded reviews
     var averageRating: Double {
         guard !reviews.isEmpty else { return restaurant?.rating ?? 0 }
-        return reviewService.calculateAverageRating(for: reviews)
+        return reviewService.calculateAverageRating(from: reviews)
     }
 
     // MARK: - Dependencies
@@ -161,11 +161,13 @@ final class RestaurantViewModel {
     ///   - rating: Star rating (1-5)
     ///   - comment: Written review text
     /// - Returns: true if submission succeeded
+    @discardableResult
     func submitReview(restaurantId: String, rating: Int, comment: String) async -> Bool {
         let request = ReviewRequest(
             restaurantId: restaurantId,
             rating: rating,
-            comment: comment
+            comment: comment,
+            photoURLs: nil
         )
 
         // Validate the review before submitting
@@ -176,7 +178,7 @@ final class RestaurantViewModel {
 
         do {
             // Submit review via review service
-            try await reviewService.submitReview(request)
+            _ = try await reviewService.submitReview(request)
 
             // After submitting, reload reviews to show the new one
             await loadData(restaurantId: restaurantId)
@@ -200,3 +202,4 @@ final class RestaurantViewModel {
         userHasReviewed = reviews.contains { $0.userId == userId }
     }
 }
+

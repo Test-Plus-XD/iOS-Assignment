@@ -129,8 +129,9 @@ final class RestaurantService {
     func fetchNearbyRestaurants(
         latitude: Double,
         longitude: Double,
-        radius: Double = Constants.Location.defaultRadius
+        radius: Double? = nil
     ) async throws -> [Restaurant] {
+        let radius = radius ?? Constants.Location.defaultRadius
 
         print("🔍 Fetching nearby restaurants (lat: \(latitude), lng: \(longitude), radius: \(radius)m)")
 
@@ -269,13 +270,12 @@ final class RestaurantService {
 
     // MARK: - Browse All
 
-    /// Fetches all restaurants with optional district/keyword filters.
-    /// Performs a search with an empty query to return the full index.
-    /// - Parameter filters: Optional filters to apply
-    /// - Returns: Array of restaurants
-    /// - Throws: Network or decoding errors
-    func browseAll(filters: SearchFilters = SearchFilters()) async throws -> [Restaurant] {
+    func browseAll(filters: SearchFilters) async throws -> [Restaurant] {
         return try await search(query: "", filters: filters)
+    }
+
+    func browseAll() async throws -> [Restaurant] {
+        return try await browseAll(filters: SearchFilters())
     }
 
     // MARK: - Private Search Helpers
@@ -368,3 +368,4 @@ struct SearchFilters: Codable, Hashable {
         keywords = []
     }
 }
+

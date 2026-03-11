@@ -63,6 +63,8 @@ struct LoginViewLiquidGlass: View {
     /// Controls password reset sheet presentation
     /// Shows modal sheet for password reset flow
     @State private var showingPasswordReset = false
+    /// Namespace for Liquid Glass morphing transitions
+    @Namespace private var glassNamespace
 
     // MARK: - Body
 
@@ -81,7 +83,7 @@ struct LoginViewLiquidGlass: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 100, height: 100)
-                            .foregroundStyle(.accent)
+                            .foregroundStyle(.tint)
 
                         Text("app_name")
                             .font(.largeTitle)
@@ -157,7 +159,7 @@ struct LoginViewLiquidGlass: View {
                             // Capsule shape suits pill-style text buttons
                             .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
                             // Unique ID for smooth morphing if button changes state
-                            .glassEffectID("forgot-password-button")
+                            .glassEffectID("forgot-password-button", in: glassNamespace)
                         }
                     }
                     .padding(.horizontal, Constants.UI.spacingLarge)
@@ -207,7 +209,7 @@ struct LoginViewLiquidGlass: View {
                         // Capsule shape is ideal for full-width prominent buttons
                         .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
                         // Unique identifier enables smooth state transition animations
-                        .glassEffectID("sign-in-button")
+                        .glassEffectID("sign-in-button", in: glassNamespace)
 
                         // Secondary sign-up link with glass effect
                         HStack(spacing: 4) {
@@ -225,7 +227,7 @@ struct LoginViewLiquidGlass: View {
                             // Subtle glass effect for secondary action
                             // .clear variant provides minimal glass treatment for hierarchy
                             .glassEffectIfAvailable(.clear, in: Capsule())
-                            .glassEffectID("sign-up-link")
+                            .glassEffectID("sign-up-link", in: glassNamespace)
                         }
                         .font(.subheadline)
                     }
@@ -322,6 +324,8 @@ struct PasswordResetViewLiquidGlass: View {
     /// Error message
     /// Displayed if reset request fails (invalid email, network error, etc.)
     @State private var errorMessage: String?
+    /// Namespace for Liquid Glass morphing transitions
+    @Namespace private var glassNamespace
 
     /// Initialiser that pre-fills email field
     /// - Parameter email: Email address from login screen (may be empty)
@@ -368,7 +372,7 @@ struct PasswordResetViewLiquidGlass: View {
                     .controlSize(.large)
                     // Interactive glass for touch response
                     .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
-                    .glassEffectID("done-button")
+                    .glassEffectID("done-button", in: glassNamespace)
                     .padding(.horizontal)
 
                 } else {
@@ -419,7 +423,7 @@ struct PasswordResetViewLiquidGlass: View {
                     .disabled(resetEmail.isEmpty || isLoading)
                     // Interactive glass effect for touch response
                     .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
-                    .glassEffectID("send-reset-button")
+                    .glassEffectID("send-reset-button", in: glassNamespace)
                     .padding(.horizontal)
                 }
 
@@ -439,7 +443,7 @@ struct PasswordResetViewLiquidGlass: View {
                     }
                     // Subtle glass for toolbar button (navigation element)
                     .glassEffectIfAvailable(.clear, in: Capsule())
-                    .glassEffectID("cancel-button")
+                    .glassEffectID("cancel-button", in: glassNamespace)
                 }
             }
         }

@@ -52,44 +52,52 @@ struct Pour_RiceApp: App {
     // App is a protocol (interface) that all SwiftUI apps must conform to
     // It's like extending StatelessWidget or MaterialApp in Flutter
 
-    // MARK: - App Delegate
-    // (MARK creates a separator in Xcode's code navigator for organisation)
-
-    /// App delegate for Firebase initialisation
-    ///
-    /// WHAT THIS DOES:
-    /// Connects our AppDelegate class (which initialises Firebase) to this SwiftUI app
-    ///
-    /// WHY IT'S NEEDED:
-    /// SwiftUI apps don't automatically use AppDelegate. This line bridges them.
-    /// AppDelegate.swift runs Firebase.configure() before anything else starts.
-    ///
-    /// FLUTTER EQUIVALENT:
-    /// In Flutter, you call Firebase.initializeApp() directly in main()
-    /// Here we delegate that to AppDelegate using @UIApplicationDelegateAdaptor
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-
     // MARK: - Services
 
     /// Centralised services container for dependency injection
     ///
-    /// WHAT IS @State:
-    /// @State tells SwiftUI this value can change and to rebuild the UI when it does
-    /// Similar to setState() in Flutter or observable in MobX
+    /// Services is a reference type (class), so a simple `let` is sufficient —
+    /// SwiftUI @State is only needed for value types that must trigger re-renders.
+    /// The @Observable properties *inside* AuthService already drive view updates.
     ///
-    /// WHAT IS Services():
-    /// A container holding all our app services (auth, API, location, etc.)
-    /// Similar to Provider setup in Flutter or Koin/Hilt in Android
+    /// WHY `let` instead of `@State`:
+    /// Using `@State` with a default value (`= Services()`) would evaluate the
+    /// default expression BEFORE init() runs — before FirebaseApp.configure().
+    /// Using `@State` without a default and assigning via `_services` in init()
+    /// avoids the Firebase crash, but State's wrapped value may not be available
+    /// on the very first body evaluation (SwiftUI timing edge case), causing a
+    /// nil force-unwrap in the environment key getter.
     ///
-    /// WHY private:
-    /// Only this file needs direct access. Other views get it via .environment()
-    @State private var services = Services()
+    /// A `let` assigned in init() has no such timing issue — its value is
+    /// immediately and unconditionally available in body.
+    ///
+    /// See: https://github.com/firebase/firebase-ios-sdk/issues/14436
+    private let services: Services
 
     /// Persisted language preference ("en" or "zh-Hant") stored in UserDefaults.
     /// @AppStorage watches UserDefaults — when AccountView's Picker changes this value,
     /// SwiftUI rebuilds body and re-injects the new locale into the entire view tree,
     /// causing all String(localized:) calls to instantly switch language without restart.
     @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
+    // MARK: - Initialisation
+
+    /// Configures Firebase and creates the services container in the correct order.
+    ///
+    /// CRITICAL ORDER:
+    /// 1. FirebaseApp.configure() — must run FIRST
+    /// 2. Services() — creates AuthService which calls Auth.auth()
+    ///
+    /// FLUTTER EQUIVALENT:
+    /// void main() async {
+    ///   WidgetsFlutterBinding.ensureInitialized();
+    ///   await Firebase.initializeApp();          // ← step 1
+    ///   runApp(MyApp(services: Services()));     // ← step 2
+    /// }
+    init() {
+        FirebaseApp.configure()
+        self.services = Services()
+    }
 
     // MARK: - Scene Configuration
 
@@ -243,53 +251,50 @@ struct MainTabView: View {
             // HOME TAB — restaurant discovery + featured carousel
             // ================================================================
 
-            NavigationStack {
-                HomeView()
-                    // Type-safe push navigation: Restaurant → RestaurantView
-                    //
-                    // FLUTTER EQUIVALENT:
-                    // MaterialPageRoute(builder: (_) => RestaurantScreen(restaurant))
-                    //
-                    // NavigationLink(value: restaurant) in HomeView triggers this destination
-                    .navigationDestination(for: Restaurant.self) { restaurant in
-                        RestaurantView(restaurant: restaurant)
-                    }
-                    // String destinations — used by RestaurantView to push MenuView
-                    // The value is "restaurantId::restaurantName" encoded as a string
-                    .navigationDestination(for: MenuNavigation.self) { nav in
-                        MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
-                    }
-            }
-            .tabItem {
-                Label(String(localized: "home_title"), systemImage: "house.fill")
+            Tab(String(localized: "home_title"), systemImage: "house.fill") {
+                NavigationStack {
+                    HomeView()
+                        // Type-safe push navigation: Restaurant → RestaurantView
+                        //
+                        // FLUTTER EQUIVALENT:
+                        // MaterialPageRoute(builder: (_) => RestaurantScreen(restaurant))
+                        //
+                        // NavigationLink(value: restaurant) in HomeView triggers this destination
+                        .navigationDestination(for: Restaurant.self) { restaurant in
+                            RestaurantView(restaurant: restaurant)
+                        }
+                        // String destinations — used by RestaurantView to push MenuView
+                        // The value is "restaurantId::restaurantName" encoded as a string
+                        .navigationDestination(for: MenuNavigation.self) { nav in
+                            MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
+                        }
+                }
             }
 
             // ================================================================
             // SEARCH TAB — Algolia-powered restaurant search
             // ================================================================
 
-            NavigationStack {
-                SearchView()
-                    .navigationDestination(for: Restaurant.self) { restaurant in
-                        RestaurantView(restaurant: restaurant)
-                    }
-                    .navigationDestination(for: MenuNavigation.self) { nav in
-                        MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
-                    }
-            }
-            .tabItem {
-                Label(String(localized: "search_title"), systemImage: "magnifyingglass")
+            Tab(String(localized: "search_title"), systemImage: "magnifyingglass") {
+                NavigationStack {
+                    SearchView()
+                        .navigationDestination(for: Restaurant.self) { restaurant in
+                            RestaurantView(restaurant: restaurant)
+                        }
+                        .navigationDestination(for: MenuNavigation.self) { nav in
+                            MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
+                        }
+                }
             }
 
             // ================================================================
             // ACCOUNT TAB — user profile and sign-out
             // ================================================================
 
-            NavigationStack {
-                AccountView()
-            }
-            .tabItem {
-                Label(String(localized: "account_title"), systemImage: "person.fill")
+            Tab(String(localized: "account_title"), systemImage: "person.fill") {
+                NavigationStack {
+                    AccountView()
+                }
             }
         }
         // TabView itself receives glass treatment automatically in iOS 26
@@ -333,7 +338,8 @@ extension View {
     ///   - shape: Shape to apply glass effect to (Capsule, RoundedRectangle, Circle, etc.)
     /// - Returns: View with glass effect on iOS 26+ or material background on earlier versions
     @ViewBuilder
-    func glassEffectIfAvailable(
+    @available(*, introduced: 1.0)
+    func glassEffectCompat(
         _ glass: Glass = .regular,
         in shape: some Shape = Capsule()
     ) -> some View {
@@ -360,8 +366,15 @@ extension View {
 /// There's no exact equivalent - similar to Hot Reload but for static preview
 /// Like Android Studio's Layout Preview
 #Preview {
+    // Preview also needs Firebase configured before creating Services.
+    // Guard against double-configure if preview is refreshed.
+    let _ = {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+    }()
+    let previewServices = Services()
     RootView()
-        // Provide mock services for the preview
-        .environment(\.services, Services())
-        .environment(\.authService, Services().authService)
+        .environment(\.services, previewServices)
+        .environment(\.authService, previewServices.authService)
 }

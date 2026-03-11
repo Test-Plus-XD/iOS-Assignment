@@ -67,7 +67,7 @@ struct FilterView: View {
                                 // Checkmark if selected (like a checkbox in Flutter)
                                 if viewModel.selectedDistricts.contains(district) {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(.accent)
+                                        .foregroundStyle(.tint)
                                         .fontWeight(.semibold)
                                 }
                             }
@@ -89,7 +89,7 @@ struct FilterView: View {
                                 Spacer()
                                 if viewModel.selectedKeywords.contains(keyword) {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(.accent)
+                                        .foregroundStyle(.tint)
                                         .fontWeight(.semibold)
                                 }
                             }

@@ -45,6 +45,8 @@ struct AccountView: View {
 
     /// Controls the sign-out confirmation dialog
     @State private var showingSignOutConfirm = false
+    /// Namespace for Liquid Glass morphing transitions
+    @Namespace private var glassNamespace
 
     // MARK: - Body
 
@@ -123,13 +125,13 @@ struct AccountView: View {
                 // Avatar circle with initials (no photo URL support yet)
                 ZStack {
                     Circle()
-                        .fill(.accent.opacity(0.15))
+                        .fill(.tint.opacity(0.15))
                         .frame(width: 64, height: 64)
 
                     Text(initials(for: vm.displayName))
                         .font(.title2)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(.tint)
                 }
 
                 // Name + email
@@ -148,7 +150,7 @@ struct AccountView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(.accent, in: Capsule())
+                        .background(.tint, in: Capsule())
                 }
             }
             .padding(.vertical, Constants.UI.spacingSmall)
@@ -219,8 +221,17 @@ struct AccountView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.red)
-                .glassEffectIfAvailable(.regular.interactive(), in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
-                .glassEffectID("account-sign-out-button")
+                .background(
+                    .ultraThinMaterial,
+                    in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium)
+                        .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+                .contentShape(RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
+                .glassEffectID("account-sign-out-button", in: glassNamespace)
                 .hapticFeedback(style: .heavy)
                 .disabled(vm.isSigningOut)
             }
@@ -253,3 +264,4 @@ struct AccountView: View {
             .environment(\.authService, Services().authService)
     }
 }
+

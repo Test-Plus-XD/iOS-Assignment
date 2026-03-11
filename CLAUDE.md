@@ -22,7 +22,6 @@ Pour Rice/
   ├── App/
   │   └── AppDelegate.swift              # Firebase initialisation
   ├── Pour_RiceApp.swift                 # App entry point, tab navigation, service injection
-  ├── ContentView.swift                  # Placeholder / legacy entry
   ├── Models/
   │   ├── Restaurant.swift               # Core restaurant model (Decodable + memberwise init)
   │   ├── Menu.swift                     # Menu item and category models
@@ -74,11 +73,11 @@ Pour Rice/
 ```
 
 ## Key Files
-- `Pour_RiceApp.swift` - Tab bar setup, `NavigationDestination` registration, `Services` injection
+- `Pour_RiceApp.swift` - Tab bar setup using iOS 26 `Tab` API, `NavigationDestination` registration, `Services` injection
 - `Core/Services/RestaurantService.swift` - Restaurant API calls, caching, and Vercel proxy search; private `AlgoliaHit` → `Restaurant` mapping
 - `Core/Utilities/Constants.swift` - All API base URLs, endpoint paths, header names, and UI constants
 - `Models/Restaurant.swift` - `Decodable` restaurant model; memberwise `init` added via extension
-- `Models/BilingualText.swift` - `BilingualText(en:tc:)` and `BilingualText(uniform:)` constructors
+- `Models/BilingualText.swift` - `BilingualText(en:tc:)` and `BilingualText(uniform:)` constructors; `.localized` (American) and `.localised` (British alias) both available
 - `ViewModels/SearchViewModel.swift` - Debounced search (300ms `Task.sleep`), filter state
 - `Views/Search/FilterView.swift` - District and keyword filter sheet
 
@@ -119,6 +118,17 @@ Pour Rice/
 - Views are passive — no business logic; all state lives in the ViewModel
 - Async operations use `async/await` with structured concurrency (`Task {}`)
 
+### iOS 26 / Liquid Glass Patterns
+- **Tab navigation**: Uses `Tab("title", systemImage:) { content }` API (not legacy `.tabItem {}`)
+- **Liquid Glass**: `.glassEffect(_:in:)` for glass styling; `.glassEffectID(_:in:)` for morphing transitions (requires `@Namespace`)
+- **ShapeStyle**: Use `.tint` for standalone accent-coloured styles; use `Color.accentColor` in ternaries with `.primary` (different `ShapeStyle` types cannot mix in ternary expressions)
+- **AsyncImageView**: `ContentMode` is qualified as `SwiftUI.ContentMode` to avoid ambiguity with UIKit (imported transitively by Kingfisher)
+
+### SPM Dependencies
+- **Kingfisher** — image loading and caching (`AsyncImageView`)
+- **Firebase iOS SDK** — FirebaseCore, FirebaseAuth, FirebaseAnalytics, FirebaseAnalyticsCore, FirebaseInstallations
+- Removed (unused): Alamofire, algoliasearch-client-swift, swift-async-algorithms, FirebaseFirestore, FirebaseInAppMessaging-Beta, FirebaseMessaging, FirebaseStorage
+
 ## Swift File Line Counts
 
 | File | Lines |
@@ -158,9 +168,7 @@ Pour Rice/
 | `Models/Review.swift` | 130 |
 | `Core/Services/ReviewService.swift` | 126 |
 | `App/AppDelegate.swift` | 62 |
-| `ContentView.swift` | 61 |
-| `Item.swift` | 18 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total** | **9,299** |
+| **Total** | **~9,220** |

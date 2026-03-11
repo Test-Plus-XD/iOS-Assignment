@@ -156,7 +156,7 @@ struct MenuView: View {
             Image(systemName: "line.3.horizontal.decrease.circle")
                 // Show filled variant when filters are active (visual indicator)
                 .symbolVariant(vm.hasActiveFilters ? .fill : .none)
-                .foregroundStyle(vm.hasActiveFilters ? .accent : .primary)
+                .foregroundStyle(vm.hasActiveFilters ? Color.accentColor : .primary)
         }
         .accessibilityLabel(String(localized: "accessibility_filter_menu"))
     }
@@ -211,7 +211,7 @@ private struct MenuItemRow: View {
                     Text(item.priceDisplay)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(.tint)
 
                     Spacer()
 
@@ -286,7 +286,7 @@ private struct MenuFilterView: View {
                             // Checkmark when tag is selected
                             if viewModel.selectedDietaryFilters.contains(tag) {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.accent)
+                                    .foregroundStyle(.tint)
                             }
                         }
                         .contentShape(Rectangle())  // Makes entire row tappable

@@ -101,6 +101,9 @@ struct BilingualText: Codable, Hashable, Sendable {
         return language.hasPrefix("zh") ? tc : en
     }
 
+    /// British English alias — matches MenuCategory.localised and DietaryTag.localised
+    var localised: String { localized }
+
     // MARK: - Initialisation
 
     /// Creates a bilingual text instance with both language versions

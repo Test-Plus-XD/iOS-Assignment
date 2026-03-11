@@ -30,6 +30,7 @@
 
 import Foundation
 import Observation   // @Observable macro framework
+internal import _LocationEssentials
 
 // MARK: - Home View Model
 

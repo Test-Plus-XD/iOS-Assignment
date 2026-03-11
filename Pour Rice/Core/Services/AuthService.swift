@@ -129,7 +129,7 @@ final class AuthService {
     /// WHY WE NEED THIS:
     /// We must remove the Firebase listener to prevent memory leaks
     /// If we don't, Firebase will keep calling our listener even after this object is gone
-    deinit {
+    @MainActor deinit {
         // Remove the auth state listener if it exists
         if let handle = authStateHandle {
             auth.removeStateDidChangeListener(handle)
@@ -543,7 +543,7 @@ final class AuthService {
     func sendPasswordReset(email: String) async throws {
         do {
             // Send password reset email via Firebase
-            try await auth.sendPasswordResetEmail(toEmail: email)
+            try await auth.sendPasswordReset(withEmail: email)
             print("✅ Password reset email sent to: \(email)")
         } catch {
             print("❌ Failed to send password reset email: \(error.localizedDescription)")
@@ -551,3 +551,4 @@ final class AuthService {
         }
     }
 }
+

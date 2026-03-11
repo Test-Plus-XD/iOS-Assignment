@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(xargs wc -l)"
+      "Bash(xargs wc -l)",
+      "Bash(xcodebuild:*)"
     ]
   }
 }

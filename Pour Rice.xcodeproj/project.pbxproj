@@ -3,26 +3,15 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CD5900A82F3DE06F000E3C82 /* AsyncAlgorithms in Frameworks */ = {isa = PBXBuildFile; productRef = CD5900A72F3DE06F000E3C82 /* AsyncAlgorithms */; };
-		CD74097F2F3F8BF1000A59BE /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CD74097E2F3F8BF1000A59BE /* Alamofire */; };
 		CD7409852F3F8C06000A59BE /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409842F3F8C06000A59BE /* Kingfisher */; };
-		CD7409872F3F8C1A000A59BE /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409862F3F8C1A000A59BE /* Core */; };
-		CD7409892F3F8C26000A59BE /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409882F3F8C26000A59BE /* Search */; };
-		CD74098B2F3F8C35000A59BE /* Analytics in Frameworks */ = {isa = PBXBuildFile; productRef = CD74098A2F3F8C35000A59BE /* Analytics */; };
-		CD74098D2F3F8C42000A59BE /* QuerySuggestions in Frameworks */ = {isa = PBXBuildFile; productRef = CD74098C2F3F8C42000A59BE /* QuerySuggestions */; };
-		CD74098F2F3F8C56000A59BE /* Monitoring in Frameworks */ = {isa = PBXBuildFile; productRef = CD74098E2F3F8C56000A59BE /* Monitoring */; };
 		CD7409912F3F8C64000A59BE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409902F3F8C64000A59BE /* FirebaseCore */; };
 		CD7409932F3F8C77000A59BE /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409922F3F8C77000A59BE /* FirebaseAnalyticsCore */; };
 		CD7409952F3F8C82000A59BE /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409942F3F8C82000A59BE /* FirebaseAnalytics */; };
 		CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409962F3F8C8C000A59BE /* FirebaseAuth */; };
-		CD7409992F3F8C95000A59BE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409982F3F8C95000A59BE /* FirebaseFirestore */; };
-		CD74099F2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = CD74099E2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta */; };
-		CD7409A12F3F8CCD000A59BE /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A02F3F8CCD000A59BE /* FirebaseMessaging */; };
-		CD7409A32F3F8CD6000A59BE /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A22F3F8CD6000A59BE /* FirebaseStorage */; };
 		CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */; };
 /* End PBXBuildFile section */
 
@@ -46,13 +35,11 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		CD7409832F3F8BF7000A59BE /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolderSpec = 10;
+			dstSubfolder = Frameworks;
 			files = (
 			);
 			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -104,41 +91,24 @@
 /* Begin PBXFrameworksBuildPhase section */
 		CDEC24902F3AE8A20038A578 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
-				CD7409A12F3F8CCD000A59BE /* FirebaseMessaging in Frameworks */,
 				CD7409852F3F8C06000A59BE /* Kingfisher in Frameworks */,
-				CD74098D2F3F8C42000A59BE /* QuerySuggestions in Frameworks */,
 				CD7409952F3F8C82000A59BE /* FirebaseAnalytics in Frameworks */,
-				CD5900A82F3DE06F000E3C82 /* AsyncAlgorithms in Frameworks */,
-				CD74099F2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta in Frameworks */,
-				CD7409892F3F8C26000A59BE /* Search in Frameworks */,
-				CD74098B2F3F8C35000A59BE /* Analytics in Frameworks */,
-				CD7409A32F3F8CD6000A59BE /* FirebaseStorage in Frameworks */,
 				CD7409912F3F8C64000A59BE /* FirebaseCore in Frameworks */,
 				CD7409932F3F8C77000A59BE /* FirebaseAnalyticsCore in Frameworks */,
-				CD7409872F3F8C1A000A59BE /* Core in Frameworks */,
 				CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */,
-				CD74098F2F3F8C56000A59BE /* Monitoring in Frameworks */,
-				CD74097F2F3F8BF1000A59BE /* Alamofire in Frameworks */,
-				CD7409992F3F8C95000A59BE /* FirebaseFirestore in Frameworks */,
 				CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CDEC249F2F3AE8A30038A578 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CDEC24A92F3AE8A30038A578 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -185,29 +155,16 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				CDEC24952F3AE8A20038A578 /* Pour Rice */,
 			);
 			name = "Pour Rice";
 			packageProductDependencies = (
-				CD5900A72F3DE06F000E3C82 /* AsyncAlgorithms */,
-				CD74097E2F3F8BF1000A59BE /* Alamofire */,
 				CD7409842F3F8C06000A59BE /* Kingfisher */,
-				CD7409862F3F8C1A000A59BE /* Core */,
-				CD7409882F3F8C26000A59BE /* Search */,
-				CD74098A2F3F8C35000A59BE /* Analytics */,
-				CD74098C2F3F8C42000A59BE /* QuerySuggestions */,
-				CD74098E2F3F8C56000A59BE /* Monitoring */,
 				CD7409902F3F8C64000A59BE /* FirebaseCore */,
 				CD7409922F3F8C77000A59BE /* FirebaseAnalyticsCore */,
 				CD7409942F3F8C82000A59BE /* FirebaseAnalytics */,
 				CD7409962F3F8C8C000A59BE /* FirebaseAuth */,
-				CD7409982F3F8C95000A59BE /* FirebaseFirestore */,
-				CD74099E2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta */,
-				CD7409A02F3F8CCD000A59BE /* FirebaseMessaging */,
-				CD7409A22F3F8CD6000A59BE /* FirebaseStorage */,
 				CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */,
 			);
 			productName = "Pour Rice";
@@ -231,8 +188,6 @@
 				CDEC24A52F3AE8A30038A578 /* Pour RiceTests */,
 			);
 			name = "Pour RiceTests";
-			packageProductDependencies = (
-			);
 			productName = "Pour RiceTests";
 			productReference = CDEC24A22F3AE8A30038A578 /* Pour RiceTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -254,8 +209,6 @@
 				CDEC24AF2F3AE8A30038A578 /* Pour RiceUITests */,
 			);
 			name = "Pour RiceUITests";
-			packageProductDependencies = (
-			);
 			productName = "Pour RiceUITests";
 			productReference = CDEC24AC2F3AE8A30038A578 /* Pour RiceUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -268,7 +221,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					CDEC24922F3AE8A20038A578 = {
 						CreatedOnToolsVersion = 26.2;
@@ -293,13 +246,10 @@
 			mainGroup = CDEC248A2F3AE8A20038A578;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				CD5900A22F3DD269000E3C82 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				CD5900A42F3DDDC7000E3C82 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */,
-				CD5900A62F3DE06F000E3C82 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = CDEC24942F3AE8A20038A578 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -314,48 +264,36 @@
 /* Begin PBXResourcesBuildPhase section */
 		CDEC24912F3AE8A20038A578 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CDEC24A02F3AE8A30038A578 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CDEC24AA2F3AE8A30038A578 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		CDEC248F2F3AE8A20038A578 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CDEC249E2F3AE8A30038A578 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CDEC24A82F3AE8A30038A578 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -373,7 +311,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		CDEC24B42F3AE8A30038A578 /* Debug */ = {
+		CDEC24B42F3AE8A30038A578 /* Debug configuration for PBXProject "Pour Rice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -432,12 +370,13 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		CDEC24B52F3AE8A30038A578 /* Release */ = {
+		CDEC24B52F3AE8A30038A578 /* Release configuration for PBXProject "Pour Rice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -489,16 +428,18 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
-		CDEC24B72F3AE8A30038A578 /* Debug */ = {
+		CDEC24B72F3AE8A30038A578 /* Debug configuration for PBXNativeTarget "Pour Rice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SN36Y72MA3;
@@ -529,11 +470,12 @@
 			};
 			name = Debug;
 		};
-		CDEC24B82F3AE8A30038A578 /* Release */ = {
+		CDEC24B82F3AE8A30038A578 /* Release configuration for PBXNativeTarget "Pour Rice" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SN36Y72MA3;
@@ -564,7 +506,7 @@
 			};
 			name = Release;
 		};
-		CDEC24BA2F3AE8A30038A578 /* Debug */ = {
+		CDEC24BA2F3AE8A30038A578 /* Debug configuration for PBXNativeTarget "Pour RiceTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -577,16 +519,20 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Pour-Rice.Pour-RiceTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pour Rice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pour Rice";
 			};
 			name = Debug;
 		};
-		CDEC24BB2F3AE8A30038A578 /* Release */ = {
+		CDEC24BB2F3AE8A30038A578 /* Release configuration for PBXNativeTarget "Pour RiceTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -599,16 +545,20 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Pour-Rice.Pour-RiceTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pour Rice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pour Rice";
 			};
 			name = Release;
 		};
-		CDEC24BD2F3AE8A30038A578 /* Debug */ = {
+		CDEC24BD2F3AE8A30038A578 /* Debug configuration for PBXNativeTarget "Pour RiceUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -619,16 +569,20 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Pour-Rice.Pour-RiceUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = "Pour Rice";
 			};
 			name = Debug;
 		};
-		CDEC24BE2F3AE8A30038A578 /* Release */ = {
+		CDEC24BE2F3AE8A30038A578 /* Release configuration for PBXNativeTarget "Pour RiceUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -639,11 +593,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Pour-Rice.Pour-RiceUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = "Pour Rice";
 			};
 			name = Release;
@@ -654,50 +612,38 @@
 		CDEC248E2F3AE8A20038A578 /* Build configuration list for PBXProject "Pour Rice" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CDEC24B42F3AE8A30038A578 /* Debug */,
-				CDEC24B52F3AE8A30038A578 /* Release */,
+				CDEC24B42F3AE8A30038A578 /* Debug configuration for PBXProject "Pour Rice" */,
+				CDEC24B52F3AE8A30038A578 /* Release configuration for PBXProject "Pour Rice" */,
 			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		CDEC24B62F3AE8A30038A578 /* Build configuration list for PBXNativeTarget "Pour Rice" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CDEC24B72F3AE8A30038A578 /* Debug */,
-				CDEC24B82F3AE8A30038A578 /* Release */,
+				CDEC24B72F3AE8A30038A578 /* Debug configuration for PBXNativeTarget "Pour Rice" */,
+				CDEC24B82F3AE8A30038A578 /* Release configuration for PBXNativeTarget "Pour Rice" */,
 			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		CDEC24B92F3AE8A30038A578 /* Build configuration list for PBXNativeTarget "Pour RiceTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CDEC24BA2F3AE8A30038A578 /* Debug */,
-				CDEC24BB2F3AE8A30038A578 /* Release */,
+				CDEC24BA2F3AE8A30038A578 /* Debug configuration for PBXNativeTarget "Pour RiceTests" */,
+				CDEC24BB2F3AE8A30038A578 /* Release configuration for PBXNativeTarget "Pour RiceTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		CDEC24BC2F3AE8A30038A578 /* Build configuration list for PBXNativeTarget "Pour RiceUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CDEC24BD2F3AE8A30038A578 /* Debug */,
-				CDEC24BE2F3AE8A30038A578 /* Release */,
+				CDEC24BD2F3AE8A30038A578 /* Debug configuration for PBXNativeTarget "Pour RiceUITests" */,
+				CDEC24BE2F3AE8A30038A578 /* Release configuration for PBXNativeTarget "Pour RiceUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		CD5900A22F3DD269000E3C82 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Alamofire/Alamofire";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.11.1;
-			};
-		};
 		CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -714,64 +660,13 @@
 				minimumVersion = 8.6.2;
 			};
 		};
-		CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/algolia/algoliasearch-client-swift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 9.38.0;
-			};
-		};
-		CD5900A62F3DE06F000E3C82 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-async-algorithms.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.1.1;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CD5900A72F3DE06F000E3C82 /* AsyncAlgorithms */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A62F3DE06F000E3C82 /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;
-			productName = AsyncAlgorithms;
-		};
-		CD74097E2F3F8BF1000A59BE /* Alamofire */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A22F3DD269000E3C82 /* XCRemoteSwiftPackageReference "Alamofire" */;
-			productName = Alamofire;
-		};
 		CD7409842F3F8C06000A59BE /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CD5900A42F3DDDC7000E3C82 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
-		};
-		CD7409862F3F8C1A000A59BE /* Core */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
-			productName = Core;
-		};
-		CD7409882F3F8C26000A59BE /* Search */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
-			productName = Search;
-		};
-		CD74098A2F3F8C35000A59BE /* Analytics */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
-			productName = Analytics;
-		};
-		CD74098C2F3F8C42000A59BE /* QuerySuggestions */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
-			productName = QuerySuggestions;
-		};
-		CD74098E2F3F8C56000A59BE /* Monitoring */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A52F3DDE04000E3C82 /* XCRemoteSwiftPackageReference "algoliasearch-client-swift" */;
-			productName = Monitoring;
 		};
 		CD7409902F3F8C64000A59BE /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -792,26 +687,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
-		};
-		CD7409982F3F8C95000A59BE /* FirebaseFirestore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseFirestore;
-		};
-		CD74099E2F3F8CBD000A59BE /* FirebaseInAppMessaging-Beta */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = "FirebaseInAppMessaging-Beta";
-		};
-		CD7409A02F3F8CCD000A59BE /* FirebaseMessaging */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseMessaging;
-		};
-		CD7409A22F3F8CD6000A59BE /* FirebaseStorage */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseStorage;
 		};
 		CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */ = {
 			isa = XCSwiftPackageProductDependency;

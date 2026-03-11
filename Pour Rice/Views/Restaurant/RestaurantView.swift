@@ -106,7 +106,7 @@ struct RestaurantView: View {
 
                 // ─── Menu Preview ───────────────────────────────────────────
                 if !vm.menuPreview.isEmpty {
-                    menuPreviewSection(items: vm.menuPreview, restaurant: current)
+                    menuPreviewSection(items: vm.menuPreview, restaurantId: current.id)
                         .padding(.horizontal, Constants.UI.spacingMedium)
 
                     Divider().padding(.vertical, Constants.UI.spacingMedium)
@@ -319,7 +319,7 @@ struct RestaurantView: View {
                 NavigationLink(value: restaurantId) {
                     Text(String(localized: "restaurant_see_full_menu"))
                         .font(.subheadline)
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(.tint)
                 }
             }
 

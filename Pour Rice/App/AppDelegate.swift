@@ -26,12 +26,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
 
-        // Configure Firebase
-        // This must be called before using any Firebase services
-        // Reads configuration from GoogleService-Info.plist in the app bundle
-        FirebaseApp.configure()
-
-        print("✅ Firebase configured successfully")
+        // Guard: Firebase is already configured in Pour_RiceApp.init().
+        // This delegate may still be registered for push-notification callbacks,
+        // so we skip double-configure to avoid a runtime exception.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+            print("✅ Firebase configured in AppDelegate")
+        } else {
+            print("ℹ️ Firebase was already configured")
+        }
 
         return true
     }

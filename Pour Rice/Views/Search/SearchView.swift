@@ -158,7 +158,7 @@ struct SearchView: View {
             // .overlay adds a small badge when filters are active
             Image(systemName: "line.3.horizontal.decrease.circle")
                 .symbolVariant(vm.hasActiveFilters ? .fill : .none)
-                .foregroundStyle(vm.hasActiveFilters ? .accent : .primary)
+                .foregroundStyle(vm.hasActiveFilters ? Color.accentColor : .primary)
         }
         .accessibilityLabel(String(localized: "search_filter_button"))
     }

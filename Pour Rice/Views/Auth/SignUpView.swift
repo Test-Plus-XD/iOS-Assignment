@@ -66,6 +66,8 @@ struct SignUpViewLiquidGlass: View {
     /// Terms and conditions agreement
     /// User must toggle this to true before creating account
     @State private var agreedToTerms = false
+    /// Namespace for Liquid Glass morphing transitions
+    @Namespace private var glassNamespace
     /// Tracks if sign up is in progress
     /// Used to show loading indicator and disable form during network request
     @State private var isLoading = false
@@ -210,7 +212,7 @@ struct SignUpViewLiquidGlass: View {
                         }
                     }
                     .toggleStyle(.switch)
-                    .tint(.accent)
+                    .tint(.accentColor)
                 }
                 .padding(.horizontal, Constants.UI.spacingLarge)
 
@@ -277,7 +279,7 @@ struct SignUpViewLiquidGlass: View {
                     // Capsule shape is ideal for full-width prominent buttons
                     .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
                     // Unique identifier enables smooth state transition animations
-                    .glassEffectID("create-account-button")
+                    .glassEffectID("create-account-button", in: glassNamespace)
 
                     // Secondary sign-in link with glass effect
                     // Navigation element appropriate for glass treatment
@@ -296,7 +298,7 @@ struct SignUpViewLiquidGlass: View {
                         // Subtle glass effect for secondary action
                         // .clear variant provides minimal glass treatment for hierarchy
                         .glassEffectIfAvailable(.clear, in: Capsule())
-                        .glassEffectID("sign-in-link")
+                        .glassEffectID("sign-in-link", in: glassNamespace)
                     }
                     .font(.subheadline)
                 }

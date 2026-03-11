@@ -73,7 +73,7 @@ struct AsyncImageView: View {
     /// FLUTTER EQUIVALENT:
     /// BoxFit.cover → .fill
     /// BoxFit.contain → .fit
-    let contentMode: ContentMode
+    let contentMode: SwiftUI.ContentMode
 
     /// Corner radius for rounded corners (0 = square corners)
     let cornerRadius: CGFloat
@@ -92,7 +92,7 @@ struct AsyncImageView: View {
     ///   - aspectRatio: Fixed aspect ratio (nil = determined by parent frame)
     init(
         url urlString: String?,
-        contentMode: ContentMode = .fill,
+        contentMode: SwiftUI.ContentMode = .fill,
         cornerRadius: CGFloat = 0,
         aspectRatio: CGFloat? = nil
     ) {
@@ -117,12 +117,15 @@ struct AsyncImageView: View {
             // Transition animation when the image finishes loading
             // .fade creates a smooth fade-in effect (0.3 seconds)
             .fade(duration: Constants.UI.animationDurationMedium)
-            // If loading fails, use an alternative processor (identity = no processing)
-            // This ensures the error state is shown properly
-            .onFailureImage(
-                // System SF Symbols image as fallback (rendered at a suitable size)
-                KFCrossPlatformImage(systemName: "photo")
-            )
+            // SwiftUI failure placeholder shown when image loading fails
+            .onFailureView { 
+                Image(systemName: "photo")
+                    .font(.largeTitle)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemFill))
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            }
             // Content mode determines how the image fills its frame
             // Like BoxFit in Flutter
             .aspectRatio(contentMode: contentMode)
@@ -257,3 +260,4 @@ struct MenuItemImage: View {
     MenuItemImage(urlString: nil)
         .padding()
 }
+

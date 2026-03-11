@@ -12,7 +12,10 @@ import SwiftUI
 
 /// Environment key for accessing the services container
 struct ServicesKey: EnvironmentKey {
-    static let defaultValue = Services()
+    // Default is nil; the real Services instance is injected in Pour_RiceApp.body.
+    // A non-nil eager default would call Auth.auth() at static-init time,
+    // before Firebase is configured.
+    static let defaultValue: Services? = nil
 }
 
 /// Environment key for accessing the auth service
@@ -22,8 +25,9 @@ struct AuthServiceKey: EnvironmentKey {
 
 extension EnvironmentValues {
     /// Access to all app services through dependency injection
+    /// Force-unwrap is safe here because Services is always injected in Pour_RiceApp.body
     var services: Services {
-        get { self[ServicesKey.self] }
+        get { self[ServicesKey.self]! }
         set { self[ServicesKey.self] = newValue }
     }
 
