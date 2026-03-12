@@ -69,7 +69,7 @@ final class DefaultAPIClient: APIClient {
         var request = try buildRequest(for: endpoint)
 
         // Inject required headers (API passcode and optional auth token)
-        try await injectHeaders(into: &request)
+        try await injectHeaders(into: &request, requiresAuth: endpoint.requiresAuth)
 
         // Execute the network request
         let (data, response) = try await session.data(for: request)
@@ -119,18 +119,21 @@ final class DefaultAPIClient: APIClient {
 
     /// Injects required headers into the request.
     /// Always adds API passcode header for backend authentication.
-    /// Conditionally adds Firebase ID token for user-authenticated requests.
-    /// - Parameter request: The request to inject headers into (passed as inout for modification)
+    /// Only requests a Firebase ID token when the endpoint requires authentication,
+    /// avoiding spurious "Could not retrieve ID token" warnings on public endpoints.
+    /// - Parameters:
+    ///   - request: The request to inject headers into (passed as inout for modification)
+    ///   - requiresAuth: Whether this endpoint needs a Bearer token
     /// - Throws: APIError.unauthorized if authentication fails for protected endpoints
-    private func injectHeaders(into request: inout URLRequest) async throws {
+    private func injectHeaders(into request: inout URLRequest, requiresAuth: Bool) async throws {
         // Always inject API passcode header (required by backend)
         request.setValue(
             Constants.API.passcode,
             forHTTPHeaderField: Constants.API.Headers.apiPasscode
         )
 
-        // Inject Firebase ID token for authenticated requests if auth service is available
-        if let authService = authService {
+        // Only inject Firebase ID token for endpoints that require authentication
+        if requiresAuth, let authService = authService {
             do {
                 let idToken = try await authService.getIDToken()
                 request.setValue(
@@ -138,8 +141,6 @@ final class DefaultAPIClient: APIClient {
                     forHTTPHeaderField: Constants.API.Headers.authorization
                 )
             } catch {
-                // Only throw if the endpoint requires authentication
-                // For public endpoints (e.g., restaurant listings), continue without the auth header
                 print("Warning: Could not retrieve ID token: \(error.localizedDescription)")
             }
         }

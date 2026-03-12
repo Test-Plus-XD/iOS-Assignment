@@ -3,7 +3,10 @@
     "allow": [
       "Bash(find:*)",
       "Bash(xargs wc -l)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "mcp__Desktop_Commander__read_file",
+      "mcp__Desktop_Commander__edit_block",
+      "mcp__Desktop_Commander__start_process"
     ]
   }
 }

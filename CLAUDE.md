@@ -8,7 +8,7 @@ Fetches restaurant data from a Vercel Express backend (with Algolia search proxy
 - **Language**: Swift 6.0
 - **UI Framework**: SwiftUI
 - **Architecture**: MVVM with `@Observable` and `@Environment`
-- **Authentication**: Firebase Auth (email/password + Google Sign-In)
+- **Authentication**: Firebase Auth (email/password + Google Sign-In) with guest browsing mode
 - **Backend**: Vercel Express API (`https://vercel-express-api-alpha.vercel.app`)
 - **Search**: Algolia via Vercel proxy (`GET /API/Algolia/Restaurants`) — no client-side Algolia SDK
 - **Networking**: `URLSession` with a shared `APIClient`
@@ -20,7 +20,7 @@ Fetches restaurant data from a Vercel Express backend (with Algolia search proxy
 ```
 Pour Rice/
   ├── App/
-  │   └── AppDelegate.swift              # Firebase initialisation
+  │   └── AppDelegate.swift              # Firebase initialisation + Google Sign-In URL callback
   ├── Pour_RiceApp.swift                 # App entry point, tab navigation, service injection
   ├── Models/
   │   ├── Restaurant.swift               # Core restaurant model (Decodable + memberwise init)
@@ -81,6 +81,23 @@ Pour Rice/
 - `ViewModels/SearchViewModel.swift` - Debounced search (300ms `Task.sleep`), filter state
 - `Views/Search/FilterView.swift` - District and keyword filter sheet
 
+## Assets.xcassets
+
+### Accent Colour
+- **`AccentColor`** — jade/sage green (Display P3: R=0.25, G=0.75, B=0.50, α=0.75). Used app-wide via `.tint` or `Color.accentColor`.
+
+### Image Assets (usable via `Image("name")` in SwiftUI)
+| Asset | Type | Used in |
+|-------|------|---------|
+| `AppLogo` | `.imageset` (light + dark variants) | `LoginView`, `SignUpView`, `EmptyStateView.noNearbyRestaurants()` |
+| `Google` | `.imageset` | `LoginView` Google sign-in button icon |
+| `Placeholder` | `.imageset` | `AsyncImageView` — shown when restaurant image URL is nil or fails to load |
+| `sample_1`, `sample_2`, `sample_3` | `.imageset` | Available sample restaurant photos (not yet wired to any view) |
+| `Eclipse` | `.dataset` (animated GIF) | Not yet wired to any view |
+
+### Do NOT use `Image("AppIcon")`
+`AppIcon.appiconset` cannot be loaded via SwiftUI's `Image()`. Use `Image("AppLogo")` instead — it is a regular `.imageset` with the same light/dark artwork.
+
 ## API Integration
 - **Base URL**: `https://vercel-express-api-alpha.vercel.app`
 - **Required header**: `x-api-passcode: PourRice` on all requests
@@ -124,9 +141,25 @@ Pour Rice/
 - **ShapeStyle**: Use `.tint` for standalone accent-coloured styles; use `Color.accentColor` in ternaries with `.primary` (different `ShapeStyle` types cannot mix in ternary expressions)
 - **AsyncImageView**: `ContentMode` is qualified as `SwiftUI.ContentMode` to avoid ambiguity with UIKit (imported transitively by Kingfisher)
 
+### Guest Mode
+- Users can browse without signing in by tapping "Continue as Guest" on `LoginView`
+- `RootView` uses `@State isGuest` — when `true`, shows `MainTabView` without authentication
+- **Accessible pages**: Home, Search, Restaurant detail, Menu (all public endpoints)
+- **Account tab**: Shows a sign-in prompt with a "Sign In" button that sets `isGuest = false`, returning the user to `LoginView`
+- **Language picker**: Available to guests via `@AppStorage` (no backend sync until signed in)
+- `APIClient.injectHeaders` gracefully handles missing auth tokens — catches the error and continues with only the `x-api-passcode` header
+
+### Firebase / Google Sign-In Setup
+- **Initialisation order**: `FirebaseApp.configure()` in `Pour_RiceApp.init()` → then `Services()` → `AuthService` calls `Auth.auth()`
+- **AppDelegate**: Must implement `application(_:open:options:)` for Google Sign-In OAuth URL callback (UIKit-level handler). The SwiftUI `.onOpenURL` in `Pour_RiceApp` also handles this; both are safe to coexist.
+- **URL scheme**: `REVERSED_CLIENT_ID` from `GoogleService-Info.plist` registered as a URL scheme in Xcode build settings (`INFOPLIST_KEY_CFBundleURLTypes`)
+- **Firebase Installations API**: Must be enabled in Google Cloud Console for the project. Without it, device registration fails with 403, causing Google Sign-In to return "An internal error has occurred."
+- **Swizzler warning** (`[GoogleUtilities/AppDelegateSwizzler]`): Cosmetic — does not cause functional failure. Can be silenced by setting `FirebaseAppDelegateProxyEnabled = NO` in Info.plist if desired.
+
 ### SPM Dependencies
 - **Kingfisher** — image loading and caching (`AsyncImageView`)
 - **Firebase iOS SDK** — FirebaseCore, FirebaseAuth, FirebaseAnalytics, FirebaseAnalyticsCore, FirebaseInstallations
+- **GoogleSignIn-iOS** — Google OAuth sign-in (v8.0.0)
 - Removed (unused): Alamofire, algoliasearch-client-swift, swift-async-algorithms, FirebaseFirestore, FirebaseInAppMessaging-Beta, FirebaseMessaging, FirebaseStorage
 
 ## Swift File Line Counts

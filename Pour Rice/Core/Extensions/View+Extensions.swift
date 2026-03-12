@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
 // MARK: - Environment Values for Services
 
@@ -16,18 +17,39 @@ struct ServicesKey: EnvironmentKey {
     // A non-nil eager default would call Auth.auth() at static-init time,
     // before Firebase is configured.
     static let defaultValue: Services? = nil
+
+    /// Lazily created fallback used only during SwiftUI's initial
+    /// body evaluation before the real service is injected.
+    @MainActor static let fallback: Services = {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+        return Services()
+    }()
 }
 
 /// Environment key for accessing the auth service
 struct AuthServiceKey: EnvironmentKey {
     static let defaultValue: AuthService? = nil
+
+    /// Lazily created fallback used only during SwiftUI's initial
+    /// body evaluation before the real service is injected.
+    @MainActor static let fallback: AuthService = {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+        return AuthService(apiClient: DefaultAPIClient())
+    }()
 }
 
 extension EnvironmentValues {
     /// Access to all app services through dependency injection
     /// Force-unwrap is safe here because Services is always injected in Pour_RiceApp.body
     var services: Services {
-        get { self[ServicesKey.self]! }
+        get {
+            if let s = self[ServicesKey.self] { return s }
+            return ServicesKey.fallback
+        }
         set { self[ServicesKey.self] = newValue }
     }
 
@@ -46,7 +68,10 @@ extension EnvironmentValues {
                 return services.authService
             }
 
-            preconditionFailure("Missing authService in environment. Inject either \\.authService or \\.services at the app root.")
+            // Final fallback: return a lazily created AuthService.
+            // This only runs during SwiftUI's initial body evaluation
+            // before the real service is injected from Pour_RiceApp.
+            return AuthServiceKey.fallback
         }
         set { self[AuthServiceKey.self] = newValue }
     }

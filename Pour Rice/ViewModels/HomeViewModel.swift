@@ -93,22 +93,11 @@ final class HomeViewModel {
 
     // MARK: - Data Loading
 
-    /// Loads featured and nearby restaurants in parallel
-    ///
-    /// WHY PARALLEL FETCHING:
-    /// Fetching featured and nearby restaurants simultaneously is faster than
-    /// fetching them sequentially. 'async let' starts both requests at the same time
-    /// and waits for both to complete before proceeding.
+    /// Loads nearby restaurants and derives featured as a random sample.
     ///
     /// FLUTTER EQUIVALENT:
-    /// final results = await Future.wait([
-    ///   restaurantService.fetchFeaturedRestaurants(),
-    ///   restaurantService.fetchNearbyRestaurants(),
-    /// ]);
-    ///
-    /// TIMING:
-    /// With sequential: 2 requests × 300ms = 600ms total
-    /// With parallel:   max(300ms, 300ms) = 300ms total ← twice as fast!
+    /// final nearby = await restaurantService.fetchNearbyRestaurants(lat, lng);
+    /// featuredRestaurants = (nearby..shuffle()).take(5);
     func loadData() async {
         // Don't start another load if already loading
         guard !isLoading else { return }
@@ -122,33 +111,23 @@ final class HomeViewModel {
             let latitude = locationService.currentLocation?.coordinate.latitude ?? 22.3193
             let longitude = locationService.currentLocation?.coordinate.longitude ?? 114.1694
 
-            // PARALLEL FETCHING with async let
-            //
-            // WHAT IS async let:
-            // Starts an async task immediately without waiting for it to complete.
-            // The tasks run concurrently (at the same time).
-            // 'try await' later waits for both to finish.
+            // Fetch nearby restaurants
             //
             // FLUTTER EQUIVALENT:
-            // final featuredFuture = restaurantService.fetchFeatured();
-            // final nearbyFuture = restaurantService.fetchNearby(lat, lng);
-            // final featured = await featuredFuture;
-            // final nearby = await nearbyFuture;
-            async let featuredTask = restaurantService.fetchFeaturedRestaurants()
-            async let nearbyTask = restaurantService.fetchNearbyRestaurants(
+            // final nearby = await restaurantService.fetchNearbyRestaurants(lat, lng);
+            let nearby = try await restaurantService.fetchNearbyRestaurants(
                 latitude: latitude,
                 longitude: longitude,
                 radius: Constants.Location.defaultRadius
             )
 
-            // Wait for both tasks to complete
-            // If either throws an error, we jump to the catch block
-            let (featured, nearby) = try await (featuredTask, nearbyTask)
-
             // Update state with fetched data
             // @Observable automatically notifies views of these changes
-            featuredRestaurants = featured
             nearbyRestaurants = nearby
+
+            // Derive featured restaurants as a random sample from the nearby list
+            // No separate API call needed — matches the Flutter reference app behaviour
+            featuredRestaurants = Array(nearby.shuffled().prefix(5))
 
         } catch {
             // Store the error message for display in the view

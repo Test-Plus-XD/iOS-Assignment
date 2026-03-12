@@ -37,7 +37,7 @@ import SwiftUI
 /// ```swift
 /// if restaurants.isEmpty {
 ///     EmptyStateView(
-///         icon: "fork.knife",
+///         icon: "magnifyingglass",
 ///         title: "No Restaurants Found",
 ///         message: "Try searching in a different area",
 ///         actionTitle: "Clear Filters",
@@ -49,12 +49,16 @@ struct EmptyStateView: View {
 
     // MARK: - Properties
 
-    /// SF Symbols icon name to display
+    /// SF Symbols icon name to display (ignored when assetImage is set)
     /// Browse available icons at https://developer.apple.com/sf-symbols/
     ///
     /// FLUTTER EQUIVALENT:
     /// final IconData icon;
     let icon: String
+
+    /// Asset catalogue image name — when set, renders Image(assetImage) instead of Image(systemName: icon)
+    /// Use this for branding images (e.g., "AppIcon") instead of SF Symbols
+    let assetImage: String?
 
     /// Primary heading text
     let title: String
@@ -72,19 +76,22 @@ struct EmptyStateView: View {
 
     /// Creates an empty state view with customisable content
     /// - Parameters:
-    ///   - icon: SF Symbols icon name (e.g., "magnifyingglass")
+    ///   - icon: SF Symbols icon name (e.g., "magnifyingglass"); ignored when assetImage is provided
+    ///   - assetImage: Asset catalogue image name (e.g., "AppIcon"); takes precedence over icon
     ///   - title: Primary heading text
     ///   - message: Descriptive message explaining the empty state
     ///   - actionTitle: Optional button label (nil hides the button)
     ///   - onAction: Optional action when button is tapped
     init(
-        icon: String,
+        icon: String = "",
+        assetImage: String? = nil,
         title: String,
         message: String,
         actionTitle: String? = nil,
         onAction: (() -> Void)? = nil
     ) {
         self.icon = icon
+        self.assetImage = assetImage
         self.title = title
         self.message = message
         self.actionTitle = actionTitle
@@ -96,12 +103,22 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: Constants.UI.spacingMedium) {
 
-            // Large icon from SF Symbols
-            // .secondary colour adapts to light/dark mode automatically
-            Image(systemName: icon)
-                .font(.system(size: 64))
-                .foregroundStyle(.secondary)
-                .padding(.bottom, Constants.UI.spacingSmall)
+            // Icon — asset image takes precedence over SF Symbol
+            if let assetImage {
+                Image(assetImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .padding(.bottom, Constants.UI.spacingSmall)
+            } else {
+                // Large icon from SF Symbols
+                // .secondary colour adapts to light/dark mode automatically
+                Image(systemName: icon)
+                    .font(.system(size: 64))
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, Constants.UI.spacingSmall)
+            }
 
             // Title in larger, bold text
             Text(title)
@@ -166,7 +183,7 @@ extension EmptyStateView {
     /// Empty state for restaurant list with no results nearby
     static func noNearbyRestaurants() -> EmptyStateView {
         EmptyStateView(
-            icon: "fork.knife",
+            assetImage: "AppLogo",
             title: String(localized: "empty_restaurants_title"),
             message: String(localized: "empty_restaurants_message")
         )

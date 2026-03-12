@@ -178,6 +178,40 @@
         }
       }
     },
+    "account_guest_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to manage your profile, preferences, and reviews"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入以管理你的個人資料、偏好設定和評論"
+          }
+        }
+      }
+    },
+    "account_guest_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In Required"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要登入"
+          }
+        }
+      }
+    },
     "account_title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -416,6 +450,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新輸入密碼"
+          }
+        }
+      }
+    },
+    "Continue with Google" : {
+
+    },
+    "continue_as_guest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue as Guest"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "以訪客身份繼續"
           }
         }
       }

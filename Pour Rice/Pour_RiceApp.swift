@@ -188,6 +188,12 @@ struct RootView: View {
     /// The syntax \.authService uses KeyPath - it's Swift's way of accessing properties
     @Environment(\.authService) private var authService
 
+    // MARK: - State
+
+    /// Guest browsing mode — allows unauthenticated users to browse Home, Search,
+    /// and Restaurant pages. The Account tab prompts them to sign in.
+    @State private var isGuest = false
+
     // MARK: - Body
 
     /// The UI content of this view
@@ -201,20 +207,20 @@ struct RootView: View {
         // It just groups views together without affecting layout
         // Similar to an empty Container() or SizedBox() in Flutter
         Group {
-            // Conditional rendering based on authentication state
+            // Conditional rendering based on authentication or guest state
             //
             // FLUTTER EQUIVALENT:
-            // isAuthenticated ? MainTabView() : LoginView()
-            if authService.isAuthenticated {
-                // User is signed in - show the main app interface
-                MainTabView()
+            // (isAuthenticated || isGuest) ? MainTabView() : LoginView()
+            if authService.isAuthenticated || isGuest {
+                // User is signed in or browsing as guest - show the main app interface
+                MainTabView(isGuest: $isGuest)
                     // .transition() defines the animation when this view appears/disappears
                     // .opacity makes it fade in/out
                     // Like FadeTransition in Flutter
                     .transition(.opacity)
             } else {
                 // User is not signed in - show the login screen
-                LoginView()
+                LoginView(isGuest: $isGuest)
                     .transition(.opacity)
             }
         }
@@ -227,6 +233,7 @@ struct RootView: View {
         //   child: isAuthenticated ? MainTabView() : LoginView(),
         // )
         .animation(.easeInOut, value: authService.isAuthenticated)
+        .animation(.easeInOut, value: isGuest)
     }
 }
 
@@ -251,6 +258,12 @@ struct MainTabView: View {
 
     @Environment(\.services) private var services
     @Environment(\.authService) private var authService
+
+    // MARK: - Guest Mode
+
+    /// Binding to guest browsing state from RootView.
+    /// Passed to AccountView so it can exit guest mode when the user taps "Sign In".
+    @Binding var isGuest: Bool
 
     // MARK: - Body
 
@@ -309,7 +322,7 @@ struct MainTabView: View {
 
             Tab(String(localized: "account_title"), systemImage: "person.fill") {
                 NavigationStack {
-                    AccountView()
+                    AccountView(isGuest: $isGuest)
                 }
             }
         }

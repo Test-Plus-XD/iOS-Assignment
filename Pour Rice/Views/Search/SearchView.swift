@@ -52,6 +52,8 @@ struct SearchView: View {
             // Initialise ViewModel with services from environment
             if viewModel == nil {
                 viewModel = SearchViewModel(restaurantService: services.restaurantService)
+                // Load all Algolia records immediately (empty query = browse all)
+                await viewModel?.loadInitialResults()
             }
         }
     }

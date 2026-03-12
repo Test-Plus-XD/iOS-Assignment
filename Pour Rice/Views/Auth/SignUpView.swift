@@ -84,6 +84,12 @@ struct SignUpViewLiquidGlass: View {
                 // MARK: - Header Section
 
                 VStack(spacing: Constants.UI.spacingSmall) {
+                    Image("AppLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .foregroundStyle(.tint)
+
                     Text("create_account")
                         .font(.largeTitle)
                         .fontWeight(.bold)
@@ -428,3 +434,4 @@ extension View {
             .environment(\.authService, AuthService(apiClient: DefaultAPIClient()))
     }
 }
+

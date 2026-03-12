@@ -22,6 +22,87 @@ final class RestaurantService {
 
     // MARK: - Private Search Response Models
 
+    /// Flat restaurant summary format returned by GET /API/Restaurants and /API/Restaurants/nearby.
+    /// Field names match the Firestore document keys exactly (capitalised).
+    private struct RestaurantSummary: Decodable {
+        let id: String
+        let nameEN: String?
+        let nameTC: String?
+        let addressEN: String?
+        let addressTC: String?
+        let districtEN: String?
+        let districtTC: String?
+        let keywordsEN: [String]?
+        let keywordsTC: [String]?
+        let imageUrl: String?
+        let seats: Int?
+        let latitude: Double?
+        let longitude: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case nameEN = "Name_EN"
+            case nameTC = "Name_TC"
+            case addressEN = "Address_EN"
+            case addressTC = "Address_TC"
+            case districtEN = "District_EN"
+            case districtTC = "District_TC"
+            case keywordsEN = "Keyword_EN"
+            case keywordsTC = "Keyword_TC"
+            case imageUrl = "ImageUrl"
+            case seats = "Seats"
+            case latitude = "Latitude"
+            case longitude = "Longitude"
+        }
+
+        func toRestaurant() -> Restaurant {
+            let nameENStr = nameEN ?? ""
+            let nameTCStr = nameTC ?? nameENStr
+            let districtENStr = districtEN ?? ""
+            let districtTCStr = districtTC ?? districtENStr
+            let addrEN = addressEN ?? ""
+            let addrTC = addressTC ?? addrEN
+
+            let kwEN = keywordsEN ?? []
+            let kwTC = keywordsTC ?? []
+            let keywords: [BilingualText] = kwEN.enumerated().map { idx, en in
+                let tc = idx < kwTC.count ? kwTC[idx] : en
+                return BilingualText(en: en, tc: tc)
+            }
+
+            let imageURLs: [String] = imageUrl.map { [$0] } ?? []
+
+            return Restaurant(
+                id: id,
+                name: BilingualText(en: nameENStr, tc: nameTCStr),
+                description: BilingualText(uniform: ""),
+                address: BilingualText(en: addrEN, tc: addrTC),
+                district: BilingualText(en: districtENStr, tc: districtTCStr),
+                cuisine: BilingualText(uniform: ""),
+                keywords: keywords,
+                priceRange: "",
+                rating: 0.0,
+                reviewCount: 0,
+                imageURLs: imageURLs,
+                location: Location(latitude: latitude ?? 0.0, longitude: longitude ?? 0.0),
+                openingHours: [],
+                phoneNumber: "",
+                email: nil,
+                website: nil,
+                seats: seats ?? 0
+            )
+        }
+    }
+
+    /// Top-level wrapper returned by GET /API/Restaurants and /API/Restaurants/nearby.
+    /// The API returns `{ "count": N, "data": [...] }`.
+    private struct SummaryListResponse: Decodable {
+        let items: [RestaurantSummary]
+        enum CodingKeys: String, CodingKey {
+            case items = "data"
+        }
+    }
+
     /// Top-level JSON wrapper returned by GET /API/Algolia/Restaurants
     private struct AlgoliaSearchResponse: Decodable {
         let hits: [AlgoliaHit]
@@ -143,37 +224,14 @@ final class RestaurantService {
 
         let response = try await apiClient.request(
             endpoint,
-            responseType: RestaurantListResponse.self
+            responseType: SummaryListResponse.self
         )
 
-        print("✅ Fetched \(response.restaurants.count) nearby restaurants")
+        let restaurants = response.items.map { $0.toRestaurant() }
 
-        return response.restaurants
-    }
+        print("✅ Fetched \(restaurants.count) nearby restaurants")
 
-    // MARK: - Fetch Featured Restaurants
-
-    /// Fetches featured restaurants for the home screen
-    /// Returns curated list of recommended restaurants
-    /// - Returns: Array of featured restaurants
-    /// - Throws: APIError for network or decoding failures
-    func fetchFeaturedRestaurants() async throws -> [Restaurant] {
-
-        print("🔍 Fetching featured restaurants (sampling 10 from full list)")
-
-        let endpoint = APIEndpoint.fetchFeaturedRestaurants
-
-        let response = try await apiClient.request(
-            endpoint,
-            responseType: RestaurantListResponse.self
-        )
-
-        // Randomly pick 10 restaurants from the full list as featured
-        let featured = Array(response.restaurants.shuffled().prefix(10))
-
-        print("✅ Sampled \(featured.count) featured restaurants from \(response.restaurants.count) total")
-
-        return featured
+        return restaurants
     }
 
     // MARK: - Fetch Restaurant Detail

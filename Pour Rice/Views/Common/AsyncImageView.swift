@@ -118,12 +118,10 @@ struct AsyncImageView: View {
             // .fade creates a smooth fade-in effect (0.3 seconds)
             .fade(duration: Constants.UI.animationDurationMedium)
             // SwiftUI failure placeholder shown when image loading fails
-            .onFailureView { 
-                Image(systemName: "photo")
-                    .font(.largeTitle)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemFill))
+            .onFailureView {
+                Image("Placeholder")
+                    .resizable()
+                    .scaledToFill()
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             }
             // Content mode determines how the image fills its frame
@@ -148,16 +146,11 @@ struct AsyncImageView: View {
 
     // MARK: - Placeholder View
 
-    /// Grey placeholder shown while the image is loading or when no URL is provided
+    /// Placeholder shown when no URL is provided for a restaurant image
     private var placeholderView: some View {
-        Rectangle()
-            // systemFill adapts automatically to light/dark mode
-            .fill(Color(.systemFill))
-            .overlay {
-                Image(systemName: "photo")
-                    .font(.largeTitle)
-                    .foregroundStyle(.tertiary)  // Very subtle icon colour
-            }
+        Image("Placeholder")
+            .resizable()
+            .scaledToFill()
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 }

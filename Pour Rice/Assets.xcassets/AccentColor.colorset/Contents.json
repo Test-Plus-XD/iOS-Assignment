@@ -1,11 +1,36 @@
 {
   "colors" : [
     {
+      "color" : {
+        "color-space" : "display-p3",
+        "components" : {
+          "alpha" : "0.750",
+          "blue" : "0.500",
+          "green" : "0.750",
+          "red" : "0.250"
+        }
+      },
       "idiom" : "universal"
+    },
+    {
+      "color" : {
+        "color-space" : "display-p3",
+        "components" : {
+          "alpha" : "0.800",
+          "blue" : "0.500",
+          "green" : "0.800",
+          "red" : "0.250"
+        }
+      },
+      "idiom" : "universal",
+      "locale" : "en"
     }
   ],
   "info" : {
     "author" : "xcode",
     "version" : 1
+  },
+  "properties" : {
+    "localizable" : true
   }
 }

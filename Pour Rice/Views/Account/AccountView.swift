@@ -31,13 +31,20 @@ import SwiftUI
 
 // MARK: - Account View
 
-/// Profile and settings screen for the authenticated user
+/// Profile and settings screen for the authenticated user.
+/// When the user is browsing as a guest, shows a sign-in prompt instead of profile data.
 struct AccountView: View {
 
     // MARK: - Environment
 
     @Environment(\.services) private var services
     @Environment(\.authService) private var authService
+
+    // MARK: - Guest Mode
+
+    /// Binding to guest browsing state from RootView (via MainTabView).
+    /// Set to `false` when the user taps "Sign In" to navigate back to LoginView.
+    @Binding var isGuest: Bool
 
     // MARK: - State
 
@@ -48,20 +55,34 @@ struct AccountView: View {
     /// Namespace for Liquid Glass morphing transitions
     @Namespace private var glassNamespace
 
+    /// Persisted language preference — guests can still change language via UserDefaults
+    @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
     // MARK: - Body
 
     var body: some View {
         Group {
-            if let vm = viewModel {
-                content(vm: vm)
+            if authService.isAuthenticated {
+                // Authenticated user — show profile content
+                if let vm = viewModel {
+                    content(vm: vm)
+                } else {
+                    LoadingView()
+                }
             } else {
-                LoadingView()
+                // Guest user — show sign-in prompt
+                guestPromptView
             }
         }
         .navigationTitle(String(localized: "account_title"))
         .navigationBarTitleDisplayMode(.large)
         .task {
-            if viewModel == nil {
+            if authService.isAuthenticated, viewModel == nil {
+                viewModel = AccountViewModel(authService: authService)
+            }
+        }
+        .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
+            if isAuthenticated, viewModel == nil {
                 viewModel = AccountViewModel(authService: authService)
             }
         }
@@ -239,6 +260,60 @@ struct AccountView: View {
         .listRowBackground(Color.clear)
     }
 
+    // MARK: - Guest Prompt View
+
+    /// Shown when the user is browsing as a guest (not authenticated).
+    /// Provides a sign-in call-to-action and a language picker.
+    @ViewBuilder
+    private var guestPromptView: some View {
+        List {
+            // ─── Sign-In Prompt ──────────────────────────────────────
+            Section {
+                VStack(spacing: Constants.UI.spacingMedium) {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .foregroundStyle(.tint)
+
+                    Text("account_guest_title")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+
+                    Text("account_guest_message")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    GlassEffectContainer {
+                        Button {
+                            isGuest = false
+                        } label: {
+                            Text("sign_in")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
+                        .glassEffectID("guest-sign-in-button", in: glassNamespace)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Constants.UI.spacingLarge)
+            }
+
+            // ─── Preferences (available to guests) ────────────────────
+            Section(header: Text(String(localized: "account_section_preferences"))) {
+                Picker(String(localized: "account_language_label"), selection: $preferredLanguage) {
+                    Text(String(localized: "language_en")).tag("en")
+                    Text(String(localized: "language_tc")).tag("zh-Hant")
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+    }
+
     // MARK: - Helpers
 
     /// Returns up to 2 initials from a display name
@@ -259,7 +334,7 @@ struct AccountView: View {
 
 #Preview {
     NavigationStack {
-        AccountView()
+        AccountView(isGuest: .constant(true))
             .environment(\.services, Services())
             .environment(\.authService, Services().authService)
     }

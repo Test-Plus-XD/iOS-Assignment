@@ -40,6 +40,12 @@ struct LoginViewLiquidGlass: View {
     /// Injected via environment for dependency injection and testability
     @Environment(\.authService) private var authService
 
+    // MARK: - Guest Mode
+
+    /// Binding to toggle guest browsing mode from the parent (RootView).
+    /// When set to `true`, the app navigates to MainTabView without authentication.
+    var isGuest: Binding<Bool>?
+
     // MARK: - State Properties
 
     /// User's email address input
@@ -79,15 +85,13 @@ struct LoginViewLiquidGlass: View {
                         // App logo - NO glass effect applied
                         // Logos are branding/content, not interactive controls
                         // Glass should only be applied to navigation and control layer
-                        Image(systemName: "fork.knife.circle.fill")
+                        Image("AppLogo")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 100, height: 100)
                             .foregroundStyle(.tint)
 
-                        Text("app_name")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                        //Text("app_name").font(.largeTitle).fontWeight(.bold)
 
                         Text("login_subtitle")
                             .font(.subheadline)
@@ -185,7 +189,7 @@ struct LoginViewLiquidGlass: View {
                     // Required for smooth morphing animations between glass states
                     GlassEffectContainer(spacing: Constants.UI.spacingMedium) {
                         
-                        // Primary sign-in button with interactive glass
+                        // Primary sign-in button with interactive glass  + accent fill
                         // .interactive() enables physics-based scale, bounce, shimmer on touch
                         Button {
                             Task {
@@ -205,20 +209,27 @@ struct LoginViewLiquidGlass: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                         .disabled(!isFormValid || isLoading)
-                        // Interactive glass effect with physics-based response
-                        // Capsule shape is ideal for full-width prominent buttons
+                        // Glass effect first (provides the Liquid Glass material + physics response)
                         .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
-                        // Unique identifier enables smooth state transition animations
                         .glassEffectID("sign-in-button", in: glassNamespace)
+                        // Tint applied LAST → colours the glass material with your app's accent
+                        .tint(Color.accentColor)
 
                         Button {
                             Task {
                                 await signInWithGoogle()
                             }
                         } label: {
-                            Label("Continue with Google", systemImage: "globe")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
+                            Label {
+                                Text("Continue with Google")
+                                    .fontWeight(.semibold)
+                            } icon: {
+                                Image("Google")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 20, height: 20)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.large)
@@ -245,6 +256,17 @@ struct LoginViewLiquidGlass: View {
                             .glassEffectID("sign-up-link", in: glassNamespace)
                         }
                         .font(.subheadline)
+
+                        // Guest browsing link — lets users explore without signing in
+                        if let isGuest {
+                            Button {
+                                isGuest.wrappedValue = true
+                            } label: {
+                                Text("continue_as_guest")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     .padding(.horizontal, Constants.UI.spacingLarge)
 
@@ -404,6 +426,7 @@ struct PasswordResetViewLiquidGlass: View {
                     // Interactive glass for touch response
                     .glassEffectIfAvailable(.regular.interactive(), in: Capsule())
                     .glassEffectID("done-button", in: glassNamespace)
+                    .tint(Color.accentColor)
                     .padding(.horizontal)
 
                 } else {

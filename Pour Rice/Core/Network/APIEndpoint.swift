@@ -28,10 +28,6 @@ enum APIEndpoint {
     /// - Parameter id: Unique restaurant identifier
     case fetchRestaurant(id: String)
 
-    /// Fetch featured restaurants for the home screen.
-    /// Returns curated list of highlighted or promoted restaurants.
-    case fetchFeaturedRestaurants
-
     // MARK: - Menu Endpoints
 
     /// Fetch menu items for a specific restaurant.
@@ -74,6 +70,17 @@ enum APIEndpoint {
 
     // MARK: - Endpoint Properties
 
+    /// Whether this endpoint requires a Firebase ID token in the Authorization header.
+    /// Public read endpoints skip auth injection to avoid noisy "Could not retrieve ID token" warnings.
+    var requiresAuth: Bool {
+        switch self {
+        case .submitReview, .fetchUserProfile, .createUserProfile, .updateUserProfile:
+            return true
+        default:
+            return false
+        }
+    }
+
     /// Returns the URL path component for each endpoint.
     /// Combines base paths from Constants with dynamic parameters (e.g., IDs).
     var path: String {
@@ -85,10 +92,6 @@ enum APIEndpoint {
         case .fetchRestaurant(let id):
             // GET /API/Restaurants/:id
             return "\(Constants.API.Endpoints.restaurantDetail)/\(id)"
-
-        case .fetchFeaturedRestaurants:
-            // GET /API/Restaurants (all restaurants; randomly sampled to 10 in RestaurantService)
-            return Constants.API.Endpoints.restaurantDetail
 
         case .fetchMenuItems(let restaurantId):
             // GET /API/Restaurants/:id/menu
@@ -131,7 +134,6 @@ enum APIEndpoint {
 
         case .fetchNearbyRestaurants,
              .fetchRestaurant,
-             .fetchFeaturedRestaurants,
              .fetchMenuItems,
              .fetchReviews,
              .fetchUserProfile:

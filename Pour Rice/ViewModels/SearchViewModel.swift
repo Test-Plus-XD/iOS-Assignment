@@ -116,13 +116,6 @@ final class SearchViewModel {
             return
         }
 
-        // If query is empty, clear results without searching
-        if searchQuery.isEmpty {
-            searchResults = []
-            hasSearched = false
-            return
-        }
-
         // Schedule new debounced search
         searchTask = Task {
             // Wait 300ms before performing the search.
@@ -170,21 +163,22 @@ final class SearchViewModel {
 
     // MARK: - Filters
 
+    /// Loads initial Algolia results (empty query = all records) when the Search tab first appears.
+    func loadInitialResults() async {
+        await performSearch()
+    }
+
     /// Applies the current filter selections and re-runs the search
     func applyFilters() async {
         showingFilters = false
-        if !searchQuery.isEmpty {
-            await performSearch()
-        }
+        await performSearch()
     }
 
     /// Clears all active filters and re-runs the search
     func clearFilters() async {
         selectedDistricts = []
         selectedKeywords = []
-        if !searchQuery.isEmpty {
-            await performSearch()
-        }
+        await performSearch()
     }
 
     // MARK: - Available Filter Options
