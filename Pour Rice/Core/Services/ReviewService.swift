@@ -42,7 +42,8 @@ final class ReviewService {
 
         let response = try await apiClient.request(
             endpoint,
-            responseType: ReviewListResponse.self
+            responseType: ReviewListResponse.self,
+            callerService: "ReviewService"
         )
 
         print("✅ Fetched \(response.reviews.count) reviews")
@@ -74,7 +75,11 @@ final class ReviewService {
 
         let endpoint = APIEndpoint.submitReview(request)
 
-        let review = try await apiClient.request(endpoint, responseType: Review.self)
+        let review = try await apiClient.request(
+            endpoint,
+            responseType: Review.self,
+            callerService: "ReviewService"
+        )
 
         print("✅ Review submitted successfully with ID: \(review.id)")
 

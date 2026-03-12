@@ -24,6 +24,7 @@ struct Review: Codable, Identifiable, Hashable, Sendable {
     let userId: String
 
     /// Display name of the reviewer
+    /// Decoded from API field "userDisplayName"
     let userName: String
 
     /// Profile photo URL of the reviewer (optional)
@@ -35,13 +36,20 @@ struct Review: Codable, Identifiable, Hashable, Sendable {
     /// Written comment about the restaurant
     let comment: String
 
-    /// URLs of photos attached to the review
+    /// URLs of photos attached to the review.
+    /// The API returns a single "imageUrl" string; it is wrapped in an array
+    /// here so the rest of the app can iterate over photos uniformly.
     let photoURLs: [String]
 
-    /// Date when the review was created
+    /// The date and time of the dining visit (user-supplied, ISO 8601).
+    /// Optional because older reviews pre-dating this field may omit it.
+    let dateTime: Date?
+
+    /// Date when the review was created in the database
     let createdAt: Date
 
-    /// Date when the review was last updated (optional)
+    /// Date when the review was last updated (optional).
+    /// Decoded from API field "modifiedAt".
     let updatedAt: Date?
 
     // MARK: - Computed Properties
@@ -72,23 +80,58 @@ struct Review: Codable, Identifiable, Hashable, Sendable {
 
     // MARK: - Custom Decoding
 
-    enum CodingKeys: String, CodingKey {
-        case id = "reviewId"
+    /// Maps API field names to Swift property names.
+    ///
+    /// Key corrections vs. the previous version:
+    ///   • "reviewId"        → "id"              (API always returns "id")
+    ///   • "userDisplayName" → userName           (API field name)
+    ///   • "imageUrl"        → photoURLs proxy    (API returns a single String,
+    ///                         not an array — handled in init(from:) below)
+    ///   • "modifiedAt"      → updatedAt          (API field name)
+    ///   • dateTime added    (ISO 8601 visit timestamp required by API)
+    private enum CodingKeys: String, CodingKey {
+        case id                              // API: "id"  (was "reviewId")
         case restaurantId
         case userId
-        case userName
+        case userName        = "userDisplayName"   // API: "userDisplayName"
         case userPhotoURL
         case rating
         case comment
-        case photoURLs
+        case imageUrl                              // mapped to photoURLs array in init
+        case dateTime                              // ISO 8601 visit timestamp
         case createdAt
-        case updatedAt
+        case updatedAt       = "modifiedAt"        // API: "modifiedAt"
+    }
+
+    /// Custom decoder.  Handles the API's single-string imageUrl field by
+    /// wrapping it in an array for photoURLs, and maps renamed API fields.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id           = try  container.decode(String.self, forKey: .id)
+        restaurantId = try  container.decode(String.self, forKey: .restaurantId)
+        userId       = try  container.decode(String.self, forKey: .userId)
+        userName     = try  container.decode(String.self, forKey: .userName)
+        userPhotoURL = try? container.decode(String.self, forKey: .userPhotoURL)
+        rating       = try  container.decode(Int.self,    forKey: .rating)
+        comment      = try  container.decode(String.self, forKey: .comment)
+        dateTime     = try? container.decode(Date.self,   forKey: .dateTime)
+        createdAt    = try  container.decode(Date.self,   forKey: .createdAt)
+        updatedAt    = try? container.decode(Date.self,   forKey: .updatedAt)
+
+        // API returns a single optional imageUrl string; wrap it in [String]
+        // so the rest of the app can iterate over photos uniformly.
+        let singleURL = try? container.decode(String.self, forKey: .imageUrl)
+        photoURLs     = singleURL.map { [$0] } ?? []
     }
 }
 
 // MARK: - Review Request Models
 
-/// Request model for submitting a new review
+/// Request model for submitting a new review.
+///
+/// API endpoint: POST /API/Reviews
+/// Required fields: restaurantId, rating, comment, dateTime (ISO 8601)
 struct ReviewRequest: Codable {
     /// ID of the restaurant being reviewed
     let restaurantId: String
@@ -99,8 +142,38 @@ struct ReviewRequest: Codable {
     /// Written comment about the restaurant
     let comment: String
 
-    /// URLs of photos to attach (optional)
+    /// The date and time of the dining visit (ISO 8601).
+    /// Required by the API — previously omitted, causing 400 Bad Request responses.
+    /// Defaults to the current time so callers that omit it still compile cleanly.
+    let dateTime: Date
+
+    /// URLs of photos to attach (optional).
+    /// Note: the API does not currently process this field on submission.
+    /// Photo uploads should use POST /API/Images/upload separately.
     let photoURLs: [String]?
+
+    // MARK: - Initialisation
+
+    /// Creates a new review request.
+    /// - Parameters:
+    ///   - restaurantId: ID of the restaurant being reviewed
+    ///   - rating: Star rating from 1 to 5
+    ///   - comment: Written comment (minimum 10 characters)
+    ///   - dateTime: Date and time of the dining visit (defaults to now)
+    ///   - photoURLs: Optional photo URLs (not currently processed by the API)
+    init(
+        restaurantId: String,
+        rating: Int,
+        comment: String,
+        dateTime: Date = Date(),
+        photoURLs: [String]? = nil
+    ) {
+        self.restaurantId = restaurantId
+        self.rating       = rating
+        self.comment      = comment
+        self.dateTime     = dateTime
+        self.photoURLs    = photoURLs
+    }
 
     // MARK: - Validation
 
@@ -123,8 +196,17 @@ struct ReviewRequest: Codable {
     }
 }
 
-/// Response wrapper for review list API calls
+/// Response wrapper for review list API calls.
+///
+/// The API returns { "count": N, "data": [...] }; CodingKeys map
+/// "data" → reviews and "count" → totalCount so the property names
+/// remain semantically clear throughout the app.
 struct ReviewListResponse: Codable {
     let reviews: [Review]
     let totalCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case reviews    = "data"    // API key: "data"
+        case totalCount = "count"   // API key: "count"
+    }
 }

@@ -45,7 +45,8 @@ final class MenuService {
         // Execute network request and decode JSON response
         let response = try await apiClient.request(
             endpoint,
-            responseType: MenuItemListResponse.self
+            responseType: MenuItemListResponse.self,
+            callerService: "MenuService"
         )
 
         print("✅ Fetched \(response.menuItems.count) menu items")

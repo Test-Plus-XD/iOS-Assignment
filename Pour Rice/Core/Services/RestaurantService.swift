@@ -195,6 +195,9 @@ final class RestaurantService {
         cache.countLimit = Constants.Cache.restaurantCacheLimit
 
         print("✅ Restaurant service initialised (includes Vercel Algolia proxy)")
+        #if DEBUG
+        APILogger.emitStartupReportIfNeeded()
+        #endif
     }
 
     // MARK: - Fetch Nearby Restaurants
@@ -224,10 +227,19 @@ final class RestaurantService {
 
         let response = try await apiClient.request(
             endpoint,
-            responseType: SummaryListResponse.self
+            responseType: SummaryListResponse.self,
+            callerService: "RestaurantService"
         )
 
         let restaurants = response.items.map { $0.toRestaurant() }
+
+        #if DEBUG
+        APILogger.logDataFlow(
+            label: "SummaryListResponse → [Restaurant]",
+            summary: "mapped \(restaurants.count) items",
+            from: "RestaurantService"
+        )
+        #endif
 
         print("✅ Fetched \(restaurants.count) nearby restaurants")
 
@@ -259,7 +271,19 @@ final class RestaurantService {
 
         // Fetch from API
         let endpoint = APIEndpoint.fetchRestaurant(id: id)
-        let restaurant = try await apiClient.request(endpoint, responseType: Restaurant.self)
+        let restaurant = try await apiClient.request(
+            endpoint,
+            responseType: Restaurant.self,
+            callerService: "RestaurantService"
+        )
+
+        #if DEBUG
+        APILogger.logDataFlow(
+            label: "Restaurant detail",
+            summary: "id=\(restaurant.id) name=\(restaurant.name.en)",
+            from: "RestaurantService"
+        )
+        #endif
 
         // Cache the result
         let cacheEntry = CacheEntry(restaurant: restaurant)
@@ -308,8 +332,20 @@ final class RestaurantService {
         // Build request URL with query parameters
         let request = try buildSearchRequest(query: query, filters: filters)
 
-        // Execute network request
+        // Log the outgoing Algolia search request (DEBUG only)
+        #if DEBUG
+        APILogger.logRequest(request, from: "RestaurantService")
+        #endif
+
+        // Execute network request, capturing elapsed time for logging
+        let searchStart = Date()
         let (data, response) = try await URLSession.shared.data(for: request)
+        let searchDuration = Date().timeIntervalSince(searchStart)
+
+        // Log the raw response (DEBUG only) — logged before status check so errors appear too
+        #if DEBUG
+        APILogger.logResponse(response, data: data, duration: searchDuration, from: "RestaurantService")
+        #endif
 
         // Validate HTTP status
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
@@ -319,7 +355,20 @@ final class RestaurantService {
 
         // Decode Algolia response and map hits to Restaurant objects
         let algoliaResponse = try JSONDecoder().decode(AlgoliaSearchResponse.self, from: data)
+
+        #if DEBUG
+        APILogger.logDecoded(AlgoliaSearchResponse.self, from: "RestaurantService")
+        #endif
+
         let restaurants = algoliaResponse.hits.map { $0.toRestaurant() }
+
+        #if DEBUG
+        APILogger.logDataFlow(
+            label: "AlgoliaSearchResponse → [Restaurant]",
+            summary: "mapped \(restaurants.count) of \(algoliaResponse.nbHits ?? 0) total hits",
+            from: "RestaurantService"
+        )
+        #endif
 
         print("✅ Vercel Algolia returned \(restaurants.count) / \(algoliaResponse.nbHits ?? 0) total results")
 

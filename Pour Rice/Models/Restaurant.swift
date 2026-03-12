@@ -237,87 +237,114 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
     // FLUTTER EQUIVALENT:
     // @JsonKey(name: 'restaurantId') String id;
 
-    /// Maps API response field names to Swift property names
-    // This enum tells Codable how to map JSON keys to struct properties
-    //
-    // FORMAT:
-    // case swiftName = "jsonName"  → JSON has different name
-    // case propertyName            → JSON has same name as Swift property
+    /// Maps API response field names to Swift property names.
+    ///
+    /// The backend returns a FLAT structure with separate _EN / _TC fields for
+    /// bilingual text (e.g. Name_EN, Name_TC) and a single ImageUrl string rather
+    /// than a nested object or an array.  The custom init(from:) below assembles
+    /// these flat keys into the richer Swift types used throughout the app.
+    ///
+    /// Fields absent from the API response (priceRange, rating, reviewCount,
+    /// openingHours, phoneNumber, email, website, description, cuisine) are
+    /// assigned safe defaults inside init(from:).
     enum CodingKeys: String, CodingKey {
-        case id = "restaurantId"       // JSON: "restaurantId" → Swift: "id"
-        case name                      // Same in JSON and Swift
-        case description               // Same in JSON and Swift
-        case address                   // Same in JSON and Swift
-        case district                  // Same in JSON and Swift
-        case cuisine                   // Same in JSON and Swift
-        case keywords                  // Same in JSON and Swift
-        case priceRange                // Same in JSON and Swift
-        case rating                    // Same in JSON and Swift
-        case reviewCount               // Same in JSON and Swift
-        case imageURLs = "imageUrls"   // JSON: "imageUrls" → Swift: "imageURLs"
-        case location                  // Same in JSON and Swift
-        case openingHours              // Same in JSON and Swift
-        case phoneNumber               // Same in JSON and Swift
-        case email                     // Same in JSON and Swift
-        case website                   // Same in JSON and Swift
-        case seats                     // Same in JSON and Swift
+        case id                           // API key: "id"  (was incorrectly "restaurantId")
+
+        // Flat bilingual name fields
+        case nameEN      = "Name_EN"
+        case nameTC      = "Name_TC"
+
+        // Flat bilingual address fields
+        case addressEN   = "Address_EN"
+        case addressTC   = "Address_TC"
+
+        // Flat bilingual district fields
+        case districtEN  = "District_EN"
+        case districtTC  = "District_TC"
+
+        // Flat keyword arrays (paired by index)
+        case keywordEN   = "Keyword_EN"
+        case keywordTC   = "Keyword_TC"
+
+        // Single image URL string (API does NOT return an array)
+        case imageUrl    = "ImageUrl"
+
+        // Location coordinates at the top level
+        case latitude    = "Latitude"
+        case longitude   = "Longitude"
+
+        // Seating capacity
+        case seats       = "Seats"
     }
 
-    /// Custom decoder to handle complex bilingual field structure from API
-    // Manually decodes JSON into struct properties
-    // Necessary because we have custom logic for handling BilingualText
-    //
-    // WHAT IS init(from decoder:):
-    // This is a special initializer required by Codable protocol
-    // Called automatically when decoding JSON
-    //
-    // WHAT IS 'throws':
-    // Can throw errors if decoding fails (like missing required field)
-    // Similar to 'throws' in Kotlin or try-catch in Dart
-    //
-    // Combines _EN and _TC fields into BilingualText objects
+    /// Custom decoder that maps the API's flat field structure to this model.
+    ///
+    /// The API returns bilingual data as separate _EN / _TC top-level keys rather
+    /// than nested objects, and ImageUrl as a single String rather than an array.
+    /// This initialiser assembles those flat pieces into BilingualText values and
+    /// wraps the single URL into imageURLs so the rest of the app is unaffected.
+    ///
+    /// Fields not returned by the API are set to safe empty/zero defaults here.
+    /// They will be populated if the API is extended in a future version.
+    ///
+    // ============= FOR FLUTTER/ANDROID DEVELOPERS: =============
+    // This is equivalent to a custom fromJson factory constructor.
+    // Instead of: name = BilingualText.fromJson(json['name'])
+    // We build:   name = BilingualText(en: json['Name_EN'], tc: json['Name_TC'])
+    // ===========================================================
     init(from decoder: Decoder) throws {
-        // Get the container holding all the JSON key-value pairs
-        // 'try' means this can fail and throw an error
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Decode simple fields
-        // Each 'try container.decode' reads a value from the JSON
-        //
-        // SYNTAX:
-        // try container.decode(Type.self, forKey: .key)
-        // - Type.self: The Swift type to decode to
-        // - forKey: Which JSON field to read from
+        // ── Unique identifier ─────────────────────────────────────────────
         id = try container.decode(String.self, forKey: .id)
-        priceRange = try container.decode(String.self, forKey: .priceRange)
-        rating = try container.decode(Double.self, forKey: .rating)
-        reviewCount = try container.decode(Int.self, forKey: .reviewCount)
-        imageURLs = try container.decode([String].self, forKey: .imageURLs)
-        location = try container.decode(Location.self, forKey: .location)
-        openingHours = try container.decode([OpeningHour].self, forKey: .openingHours)
-        phoneNumber = try container.decode(String.self, forKey: .phoneNumber)
 
-        // Decode optional fields using 'try?'
-        //
-        // WHAT IS try?:
-        // 'try?' returns nil if decoding fails instead of throwing an error
-        // Perfect for optional fields that might not exist in the JSON
-        //
-        // FLUTTER EQUIVALENT:
-        // email = json['email'];  // Handles missing fields gracefully
-        email = try? container.decode(String.self, forKey: .email)
-        website = try? container.decode(String.self, forKey: .website)
-        seats = try container.decode(Int.self, forKey: .seats)
+        // ── Bilingual fields: build BilingualText from flat EN + TC keys ──
+        // 'try?' gracefully handles responses that omit the TC variant (falls
+        // back to the EN string so the UI always has something to display).
+        let nameEN  = (try? container.decode(String.self, forKey: .nameEN))    ?? ""
+        let nameTC  = (try? container.decode(String.self, forKey: .nameTC))    ?? nameEN
+        name        = BilingualText(en: nameEN, tc: nameTC)
 
-        // Decode bilingual fields
-        // These are automatically handled by BilingualText's custom decoder
-        // BilingualText knows how to parse { "EN": "...", "TC": "..." } format
-        name = try container.decode(BilingualText.self, forKey: .name)
-        description = try container.decode(BilingualText.self, forKey: .description)
-        address = try container.decode(BilingualText.self, forKey: .address)
-        district = try container.decode(BilingualText.self, forKey: .district)
-        cuisine = try container.decode(BilingualText.self, forKey: .cuisine)
-        keywords = try container.decode([BilingualText].self, forKey: .keywords)
+        let addrEN  = (try? container.decode(String.self, forKey: .addressEN)) ?? ""
+        let addrTC  = (try? container.decode(String.self, forKey: .addressTC)) ?? addrEN
+        address     = BilingualText(en: addrEN, tc: addrTC)
+
+        let distEN  = (try? container.decode(String.self, forKey: .districtEN)) ?? ""
+        let distTC  = (try? container.decode(String.self, forKey: .districtTC)) ?? distEN
+        district    = BilingualText(en: distEN, tc: distTC)
+
+        // ── Keywords: zip Keyword_EN[i] with Keyword_TC[i] ───────────────
+        let kwEN = (try? container.decode([String].self, forKey: .keywordEN)) ?? []
+        let kwTC = (try? container.decode([String].self, forKey: .keywordTC)) ?? []
+        keywords = kwEN.enumerated().map { idx, en in
+            BilingualText(en: en, tc: idx < kwTC.count ? kwTC[idx] : en)
+        }
+
+        // ── Image: API returns a single URL string; wrap it in an array ──
+        let imageUrlStr = try? container.decode(String.self, forKey: .imageUrl)
+        imageURLs       = imageUrlStr.map { [$0] } ?? []
+
+        // ── Location: flat Latitude / Longitude at the top level ─────────
+        let lat  = (try? container.decode(Double.self, forKey: .latitude))  ?? 0.0
+        let lng  = (try? container.decode(Double.self, forKey: .longitude)) ?? 0.0
+        location = Location(latitude: lat, longitude: lng)
+
+        // ── Seats ─────────────────────────────────────────────────────────
+        seats = (try? container.decode(Int.self, forKey: .seats)) ?? 0
+
+        // ── Fields not returned by the API — safe defaults ────────────────
+        // These are absent from both the list and detail endpoints.
+        // If the API is extended to return them, add the CodingKeys above
+        // and replace the defaults with proper decode calls.
+        description  = BilingualText(uniform: "")
+        cuisine      = BilingualText(uniform: "")
+        priceRange   = ""
+        rating       = 0.0
+        reviewCount  = 0
+        openingHours = []
+        phoneNumber  = ""
+        email        = nil
+        website      = nil
     }
 }
 

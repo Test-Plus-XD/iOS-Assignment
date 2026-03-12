@@ -17,11 +17,13 @@ protocol APIClient: Sendable {
     /// - Parameters:
     ///   - endpoint: The API endpoint to call
     ///   - responseType: The expected response type to decode
+    ///   - callerService: Name of the service initiating the call (used in debug logs)
     /// - Returns: Decoded response object
     /// - Throws: APIError for network or decoding failures
     func request<T: Decodable>(
         _ endpoint: APIEndpoint,
-        responseType: T.Type
+        responseType: T.Type,
+        callerService: String
     ) async throws -> T
 }
 
@@ -59,11 +61,13 @@ final class DefaultAPIClient: APIClient {
     /// - Parameters:
     ///   - endpoint: The API endpoint to call
     ///   - responseType: Expected response type (e.g., RestaurantListResponse.self)
+    ///   - callerService: Name of the service initiating the call (used in debug logs, defaults to "APIClient")
     /// - Returns: Decoded response object
     /// - Throws: APIError for network, authentication, or decoding failures
     func request<T: Decodable>(
         _ endpoint: APIEndpoint,
-        responseType: T.Type
+        responseType: T.Type,
+        callerService: String = "APIClient"
     ) async throws -> T {
         // Build the URL request with method, query params, and body
         var request = try buildRequest(for: endpoint)
@@ -71,14 +75,26 @@ final class DefaultAPIClient: APIClient {
         // Inject required headers (API passcode and optional auth token)
         try await injectHeaders(into: &request, requiresAuth: endpoint.requiresAuth)
 
-        // Execute the network request
+        // Log the outgoing request (DEBUG only)
+        #if DEBUG
+        APILogger.logRequest(request, from: callerService)
+        #endif
+
+        // Execute the network request, capturing elapsed time for logging
+        let requestStart = Date()
         let (data, response) = try await session.data(for: request)
+        let requestDuration = Date().timeIntervalSince(requestStart)
+
+        // Log the raw response before validation so error status codes are also captured (DEBUG only)
+        #if DEBUG
+        APILogger.logResponse(response, data: data, duration: requestDuration, from: callerService)
+        #endif
 
         // Validate HTTP response status code (2xx = success)
         try validateResponse(response)
 
         // Decode JSON response into expected type
-        return try decodeResponse(data: data, responseType: responseType)
+        return try decodeResponse(data: data, responseType: responseType, callerService: callerService)
     }
 
     // MARK: - Private Methods
@@ -180,22 +196,30 @@ final class DefaultAPIClient: APIClient {
     /// - Parameters:
     ///   - data: Raw response data from server
     ///   - responseType: Expected response type (e.g., RestaurantListResponse.self)
+    ///   - callerService: Name of the service initiating the call (used in debug logs)
     /// - Returns: Decoded response object
     /// - Throws: APIError.decodingError if decoding fails
-    private func decodeResponse<T: Decodable>(data: Data, responseType: T.Type) throws -> T {
+    private func decodeResponse<T: Decodable>(
+        data: Data,
+        responseType: T.Type,
+        callerService: String = "APIClient"
+    ) throws -> T {
         let decoder = JSONDecoder()
 
         // Configure date decoding strategy to match backend ISO8601 format
         decoder.dateDecodingStrategy = .iso8601
 
         do {
-            return try decoder.decode(responseType, from: data)
+            let decoded = try decoder.decode(responseType, from: data)
+            #if DEBUG
+            APILogger.logDecoded(responseType, from: callerService)
+            #endif
+            return decoded
         } catch {
-            // Log decoding error for debugging (helpful for development)
-            print("Decoding error: \(error)")
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("Response JSON: \(jsonString)")
-            }
+            // Log decoding error with full context (replaces previous print statements)
+            #if DEBUG
+            APILogger.logDecodeFailure(responseType, error: error, data: data, from: callerService)
+            #endif
             throw APIError.decodingError
         }
     }

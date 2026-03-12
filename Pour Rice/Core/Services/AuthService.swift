@@ -527,7 +527,11 @@ final class AuthService {
         // FLUTTER EQUIVALENT:
         // final response = await http.get('/users/$uid');
         // final user = User.fromJson(jsonDecode(response.body));
-        currentUser = try await apiClient.request(endpoint, responseType: User.self)
+        currentUser = try await apiClient.request(
+            endpoint,
+            responseType: User.self,
+            callerService: "AuthService"
+        )
 
         // Sync language preference to UserDefaults so the language toggle in AccountView
         // and BilingualText both reflect this user's saved preference on sign-in.
@@ -568,7 +572,11 @@ final class AuthService {
         let endpoint = APIEndpoint.createUserProfile(request)
 
         // Store the created user profile
-        currentUser = try await apiClient.request(endpoint, responseType: User.self)
+        currentUser = try await apiClient.request(
+            endpoint,
+            responseType: User.self,
+            callerService: "AuthService"
+        )
     }
 
     /// Updates the current user's profile
@@ -595,7 +603,11 @@ final class AuthService {
         do {
             // Send PUT request to update profile
             let endpoint = APIEndpoint.updateUserProfile(userId: userId, request)
-            currentUser = try await apiClient.request(endpoint, responseType: User.self)
+            currentUser = try await apiClient.request(
+                endpoint,
+                responseType: User.self,
+                callerService: "AuthService"
+            )
 
             print("✅ User profile updated successfully")
 

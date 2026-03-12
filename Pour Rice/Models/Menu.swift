@@ -160,19 +160,58 @@ struct Menu: Codable, Identifiable, Hashable, Sendable {
 
     // MARK: - Custom Decoding
 
-    // Maps JSON field names to Swift property names
-    // Backend API uses "menuItemId" but we prefer just "id" in Swift
-    enum CodingKeys: String, CodingKey {
-        case id = "menuItemId"         // JSON: "menuItemId" → Swift: "id"
-        case restaurantId              // Same in JSON and Swift
-        case name                      // Same in JSON and Swift
-        case description               // Same in JSON and Swift
-        case price                     // Same in JSON and Swift
-        case category                  // Same in JSON and Swift
-        case imageURL = "imageUrl"     // JSON: "imageUrl" → Swift: "imageURL"
-        case dietaryInfo               // Same in JSON and Swift
-        case isAvailable               // Same in JSON and Swift
-        case spiceLevel                // Same in JSON and Swift
+    /// Maps API field names to Swift property names.
+    ///
+    /// The API returns bilingual text as flat _EN / _TC top-level keys and
+    /// uses "image" for the item photo URL rather than "imageUrl".
+    ///
+    /// Fields absent from the API response (restaurantId, category, dietaryInfo,
+    /// isAvailable, spiceLevel) are assigned safe defaults in init(from:).
+    private enum CodingKeys: String, CodingKey {
+        case id                           // API key: "id"  (was "menuItemId")
+
+        // Flat bilingual name fields
+        case nameEN      = "Name_EN"
+        case nameTC      = "Name_TC"
+
+        // Flat bilingual description fields
+        case descEN      = "Description_EN"
+        case descTC      = "Description_TC"
+
+        case price                        // API key: "price" (unchanged)
+        case imageURL    = "image"        // API key: "image"  (was "imageUrl")
+    }
+
+    /// Custom decoder that maps the API's flat bilingual fields into
+    /// BilingualText values and applies safe defaults for fields the API
+    /// does not return (restaurantId, category, dietaryInfo, isAvailable,
+    /// spiceLevel).
+    ///
+    /// restaurantId is absent from the menu item body (it lives in the URL path).
+    /// It defaults to "" here and should be set by the caller if required.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id    = try container.decode(String.self, forKey: .id)
+        price = (try? container.decode(Double.self, forKey: .price)) ?? 0.0
+
+        // Build BilingualText from flat EN / TC keys
+        let nameEN = (try? container.decode(String.self, forKey: .nameEN)) ?? ""
+        let nameTC = (try? container.decode(String.self, forKey: .nameTC)) ?? nameEN
+        name       = BilingualText(en: nameEN, tc: nameTC)
+
+        let descEN  = (try? container.decode(String.self, forKey: .descEN)) ?? ""
+        let descTC  = (try? container.decode(String.self, forKey: .descTC)) ?? descEN
+        description = BilingualText(en: descEN, tc: descTC)
+
+        imageURL = try? container.decode(String.self, forKey: .imageURL)
+
+        // Fields not returned by the API — safe defaults
+        restaurantId = ""          // API omits this from the response body
+        category     = .mainCourse // default; API does not return this field
+        dietaryInfo  = []          // API does not return this field
+        isAvailable  = true        // API does not return this field
+        spiceLevel   = nil         // API does not return this field
     }
 }
 
@@ -371,13 +410,18 @@ enum DietaryTag: String, Codable, CaseIterable {
 // When fetching menu for a restaurant, API returns this structure
 // We extract the menuItems array from it
 //
-// EXAMPLE API RESPONSE:
+// ACTUAL API RESPONSE FORMAT:
 // {
-//   "menuItems": [
-//     { "menuItemId": "1", "name": {...}, "price": 88.0, ... },
-//     { "menuItemId": "2", "name": {...}, "price": 45.5, ... }
+//   "count": 2,
+//   "data": [
+//     { "id": "1", "Name_EN": "Fried Rice", "Name_TC": "炒飯", "price": 88.0, ... },
+//     { "id": "2", "Name_EN": "Spring Rolls", "Name_TC": "春卷", "price": 45.5, ... }
 //   ]
 // }
 struct MenuItemListResponse: Codable {
-    let menuItems: [Menu]  // Array of Menu objects from API
+    let menuItems: [Menu]
+
+    enum CodingKeys: String, CodingKey {
+        case menuItems = "data"    // API key: "data"  (was "menuItems")
+    }
 }
