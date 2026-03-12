@@ -511,3 +511,19 @@ extension Restaurant {
         self.seats = seats
     }
 }
+
+// MARK: - Location Helpers
+
+import CoreLocation
+
+extension Restaurant {
+
+    /// Calculates the straight-line distance in metres from the restaurant to a given location.
+    /// Returns nil when the user's location is unavailable or the restaurant has no valid coordinates.
+    func distance(from userLocation: CLLocation?) -> Double? {
+        guard let userLocation,
+              location.latitude != 0.0 || location.longitude != 0.0 else { return nil }
+        let restaurantLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        return userLocation.distance(from: restaurantLocation)
+    }
+}

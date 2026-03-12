@@ -20,6 +20,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 // MARK: - Home View
 
@@ -154,7 +155,10 @@ struct HomeView: View {
                         //   child: FeaturedRestaurantCard(restaurant: restaurant),
                         // )
                         NavigationLink(value: restaurant) {
-                            FeaturedRestaurantCard(restaurant: restaurant)
+                            FeaturedRestaurantCard(
+                                restaurant: restaurant,
+                                userLocation: services.locationService.currentLocation
+                            )
                         }
                         .buttonStyle(.plain)  // Removes default button styling
                         .hapticFeedback(style: .light)
@@ -192,9 +196,12 @@ struct HomeView: View {
                 LazyVStack(spacing: 0) {
                     ForEach(restaurants) { restaurant in
                         NavigationLink(value: restaurant) {
-                            RestaurantRowView(restaurant: restaurant)
-                                .padding(.horizontal, Constants.UI.spacingMedium)
-                                .padding(.vertical, Constants.UI.spacingSmall)
+                            RestaurantRowView(
+                                restaurant: restaurant,
+                                userLocation: services.locationService.currentLocation
+                            )
+                            .padding(.horizontal, Constants.UI.spacingMedium)
+                            .padding(.vertical, Constants.UI.spacingSmall)
                         }
                         .buttonStyle(.plain)
                         .hapticFeedback(style: .light)
@@ -220,6 +227,7 @@ struct HomeView: View {
 private struct FeaturedRestaurantCard: View {
 
     let restaurant: Restaurant
+    var userLocation: CLLocation?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -229,9 +237,21 @@ private struct FeaturedRestaurantCard: View {
                 RestaurantCardImage(urlString: restaurant.imageURLs.first)
                     .frame(width: 280, height: 160)
 
-                // Rating badge overlaid on the image
+                // Rating badge overlaid on the image (bottom-left)
                 RatingBadge(rating: restaurant.rating)
                     .padding(Constants.UI.spacingSmall)
+
+                // Distance badge on the top-right of the image
+                if let distance = restaurant.distance(from: userLocation) {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            DistanceBadge(meters: distance)
+                        }
+                        Spacer()
+                    }
+                    .padding(Constants.UI.spacingSmall)
+                }
             }
 
             // Restaurant info below the image
@@ -284,17 +304,26 @@ private struct FeaturedRestaurantCard: View {
 private struct RestaurantRowView: View {
 
     let restaurant: Restaurant
+    var userLocation: CLLocation?
 
     var body: some View {
         HStack(spacing: Constants.UI.spacingMedium) {
 
-            // Square thumbnail image
-            AsyncImageView(
-                url: restaurant.imageURLs.first,
-                contentMode: .fill,
-                cornerRadius: Constants.UI.cornerRadiusMedium,
-                aspectRatio: 1
-            )
+            // Square thumbnail image with optional distance badge
+            ZStack(alignment: .topTrailing) {
+                AsyncImageView(
+                    url: restaurant.imageURLs.first,
+                    contentMode: .fill,
+                    cornerRadius: Constants.UI.cornerRadiusMedium,
+                    aspectRatio: 1
+                )
+                .frame(width: 72, height: 72)
+
+                if let distance = restaurant.distance(from: userLocation) {
+                    DistanceBadge(meters: distance)
+                        .padding(4)
+                }
+            }
             .frame(width: 72, height: 72)
 
             // Restaurant info
@@ -361,6 +390,38 @@ private struct RatingBadge: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         // Capsule = pill shape
+        .background(.black.opacity(0.6), in: Capsule())
+    }
+}
+
+// MARK: - Distance Badge
+
+/// Small badge showing the distance from the user to a restaurant.
+/// Displayed on the top-right of restaurant card images when location is available.
+struct DistanceBadge: View {
+
+    let meters: Double
+
+    /// Human-readable distance string (e.g. "350 m" or "1.2 km")
+    private var label: String {
+        if meters < 1000 {
+            return "\(Int(meters.rounded())) m"
+        } else {
+            return String(format: "%.1f km", meters / 1000)
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "location.fill")
+                .font(.system(size: 8))
+            Text(label)
+                .font(.caption2)
+                .fontWeight(.semibold)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
         .background(.black.opacity(0.6), in: Capsule())
     }
 }

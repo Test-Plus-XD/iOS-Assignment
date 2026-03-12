@@ -314,23 +314,26 @@ final class RestaurantService {
 
     /// Searches for restaurants via the Vercel Algolia proxy endpoint.
     ///
-    /// Translates `query` and `filters` into URL query parameters and
-    /// decodes the Algolia `hits` array into Restaurant objects.
+    /// Translates `query`, `filters`, and `page` into URL query parameters,
+    /// fetches a single page of results, and returns a `SearchPage` with
+    /// pagination metadata so callers can implement infinite scroll.
     ///
     /// - Parameters:
     ///   - query: Full-text search string (empty string returns all restaurants)
     ///   - filters: District and keyword filters to narrow results
-    /// - Returns: Array of matching restaurants
+    ///   - page: Zero-based page index to fetch (default: 0)
+    /// - Returns: `SearchPage` containing the restaurants for this page and total page count
     /// - Throws: URLError, DecodingError, or network errors
     func search(
         query: String,
-        filters: SearchFilters
-    ) async throws -> [Restaurant] {
+        filters: SearchFilters,
+        page: Int = 0
+    ) async throws -> SearchPage {
 
-        print("🔍 Vercel search: '\(query)' | districts: \(filters.districts) | keywords: \(filters.keywords)")
+        print("🔍 Vercel search: '\(query)' | page: \(page) | districts: \(filters.districts) | keywords: \(filters.keywords)")
 
         // Build request URL with query parameters
-        let request = try buildSearchRequest(query: query, filters: filters)
+        let request = try buildSearchRequest(query: query, filters: filters, page: page)
 
         // Log the outgoing Algolia search request (DEBUG only)
         #if DEBUG
@@ -361,24 +364,25 @@ final class RestaurantService {
         #endif
 
         let restaurants = algoliaResponse.hits.map { $0.toRestaurant() }
+        let totalPages = algoliaResponse.nbPages ?? 1
 
         #if DEBUG
         APILogger.logDataFlow(
             label: "AlgoliaSearchResponse → [Restaurant]",
-            summary: "mapped \(restaurants.count) of \(algoliaResponse.nbHits ?? 0) total hits",
+            summary: "page \(page)/\(totalPages - 1), mapped \(restaurants.count) of \(algoliaResponse.nbHits ?? 0) total hits",
             from: "RestaurantService"
         )
         #endif
 
-        print("✅ Vercel Algolia returned \(restaurants.count) / \(algoliaResponse.nbHits ?? 0) total results")
+        print("✅ Vercel Algolia returned \(restaurants.count) hits (page \(page) of \(totalPages))")
 
-        return restaurants
+        return SearchPage(restaurants: restaurants, page: page, totalPages: totalPages)
     }
 
     // MARK: - Browse All
 
     func browseAll(filters: SearchFilters) async throws -> [Restaurant] {
-        return try await search(query: "", filters: filters)
+        return try await search(query: "", filters: filters).restaurants
     }
 
     func browseAll() async throws -> [Restaurant] {
@@ -388,7 +392,7 @@ final class RestaurantService {
     // MARK: - Private Search Helpers
 
     /// Builds a URLRequest for the Vercel Algolia search endpoint.
-    private func buildSearchRequest(query: String, filters: SearchFilters) throws -> URLRequest {
+    private func buildSearchRequest(query: String, filters: SearchFilters, page: Int) throws -> URLRequest {
         guard var components = URLComponents(
             string: Constants.API.baseURL + Constants.API.Endpoints.algoliaSearch
         ) else {
@@ -397,8 +401,8 @@ final class RestaurantService {
 
         // Assemble query parameters
         var queryItems: [URLQueryItem] = [
-            URLQueryItem(name: "page", value: "0"),
-            URLQueryItem(name: "hitsPerPage", value: String(Constants.Search.maxResults))
+            URLQueryItem(name: "page", value: String(page)),
+            URLQueryItem(name: "hitsPerPage", value: String(Constants.Search.pageSize))
         ]
 
         if !query.isEmpty {
@@ -427,6 +431,25 @@ final class RestaurantService {
 
         return request
     }
+}
+
+// MARK: - Search Page
+
+/// A single page of restaurant search results with pagination metadata.
+/// Returned by `RestaurantService.search()` to support infinite scroll.
+struct SearchPage {
+
+    /// Restaurants returned in this page
+    let restaurants: [Restaurant]
+
+    /// Zero-based index of this page
+    let page: Int
+
+    /// Total number of pages available for the current query and filters
+    let totalPages: Int
+
+    /// True when there are more pages to fetch after this one
+    var hasNextPage: Bool { page + 1 < totalPages }
 }
 
 // MARK: - Cache Entry

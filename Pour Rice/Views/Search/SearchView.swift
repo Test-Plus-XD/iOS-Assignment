@@ -15,6 +15,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 // MARK: - Search View
 
@@ -98,7 +99,10 @@ struct SearchView: View {
                 // Search results list
                 ForEach(vm.searchResults) { restaurant in
                     NavigationLink(value: restaurant) {
-                        SearchResultRow(restaurant: restaurant)
+                        SearchResultRow(
+                            restaurant: restaurant,
+                            userLocation: services.locationService.currentLocation
+                        )
                     }
                     .hapticFeedback(style: .light)
                     .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars")
@@ -108,6 +112,23 @@ struct SearchView: View {
                         bottom: Constants.UI.spacingSmall,
                         trailing: Constants.UI.spacingMedium
                     ))
+                }
+
+                // Pagination sentinel — triggers next-page fetch when it scrolls into view
+                if vm.hasMorePages {
+                    HStack {
+                        Spacer()
+                        if vm.isFetchingNextPage {
+                            ProgressView()
+                                .padding(.vertical, Constants.UI.spacingMedium)
+                        }
+                        Spacer()
+                    }
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .onAppear {
+                        vm.loadNextPage()
+                    }
                 }
             }
         }
@@ -197,17 +218,26 @@ struct SearchView: View {
 private struct SearchResultRow: View {
 
     let restaurant: Restaurant
+    var userLocation: CLLocation?
 
     var body: some View {
         HStack(spacing: Constants.UI.spacingMedium) {
 
-            // Thumbnail image
-            AsyncImageView(
-                url: restaurant.imageURLs.first,
-                contentMode: .fill,
-                cornerRadius: Constants.UI.cornerRadiusMedium,
-                aspectRatio: 1
-            )
+            // Thumbnail image with optional distance badge on top-right
+            ZStack(alignment: .topTrailing) {
+                AsyncImageView(
+                    url: restaurant.imageURLs.first,
+                    contentMode: .fill,
+                    cornerRadius: Constants.UI.cornerRadiusMedium,
+                    aspectRatio: 1
+                )
+                .frame(width: 64, height: 64)
+
+                if let distance = restaurant.distance(from: userLocation) {
+                    DistanceBadge(meters: distance)
+                        .padding(4)
+                }
+            }
             .frame(width: 64, height: 64)
 
             // Restaurant details

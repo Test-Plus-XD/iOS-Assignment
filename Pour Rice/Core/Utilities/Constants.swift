@@ -121,6 +121,9 @@ enum Constants {
 
         /// Location update accuracy threshold in metres
         static let desiredAccuracy: Double = 100
+
+        /// Maximum number of nearby restaurants shown on the home screen
+        static let nearbyLimit = 10
     }
 
     // MARK: - UI Configuration
@@ -166,8 +169,11 @@ enum Constants {
         /// Debounce delay in milliseconds for search queries
         static let debounceDelay: Int = 300
 
-        /// Maximum number of search results to display
+        /// Maximum number of search results to display (legacy — replaced by pageSize for paginated search)
         static let maxResults = 50
+
+        /// Number of results fetched per page in paginated search
+        static let pageSize = 8
 
         /// Minimum search query length to trigger search
         static let minQueryLength = 2

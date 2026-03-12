@@ -121,9 +121,9 @@ final class HomeViewModel {
                 radius: Constants.Location.defaultRadius
             )
 
-            // Update state with fetched data
+            // Update state with fetched data, capped to the nearest N restaurants
             // @Observable automatically notifies views of these changes
-            nearbyRestaurants = nearby
+            nearbyRestaurants = Array(nearby.prefix(Constants.Location.nearbyLimit))
 
             // Derive featured restaurants as a random sample from the nearby list
             // No separate API call needed — matches the Flutter reference app behaviour

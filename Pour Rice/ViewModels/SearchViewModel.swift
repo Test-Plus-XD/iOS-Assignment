@@ -42,11 +42,14 @@ final class SearchViewModel {
     /// Changes to this property automatically trigger a debounced search
     var searchQuery = ""
 
-    /// Search results from the Vercel Algolia proxy endpoint
+    /// Accumulated search results across all loaded pages
     var searchResults: [Restaurant] = []
 
-    /// Whether a search is currently in progress
+    /// Whether a search is currently in progress (first page)
     var isLoading = false
+
+    /// Whether an additional page is being fetched (for infinite scroll)
+    var isFetchingNextPage = false
 
     /// Error message if search failed
     var errorMessage: String?
@@ -54,6 +57,17 @@ final class SearchViewModel {
     /// Whether the user has performed at least one search
     /// Used to differentiate "initial state" from "empty results"
     var hasSearched = false
+
+    // MARK: - Pagination State
+
+    /// The zero-based index of the last page that was loaded
+    private var currentPage = 0
+
+    /// Total number of pages available for the current query and filters
+    private var totalPages = 1
+
+    /// True when there are more pages available to fetch
+    var hasMorePages: Bool { currentPage + 1 < totalPages }
 
     // MARK: - Filter State
     //
@@ -129,7 +143,8 @@ final class SearchViewModel {
         }
     }
 
-    /// Executes the Vercel Algolia search with current query and filters
+    /// Executes the Vercel Algolia search with current query and filters.
+    /// Always fetches page 0 and resets accumulated results.
     private func performSearch() async {
         isLoading = true
         errorMessage = nil
@@ -141,13 +156,16 @@ final class SearchViewModel {
                 keywords: selectedKeywords.isEmpty ? [] : Array(selectedKeywords)
             )
 
-            // Perform search via Vercel proxy (fast, indexed, typo-tolerant)
-            let results = try await restaurantService.search(
+            // Fetch the first page via Vercel proxy (fast, indexed, typo-tolerant)
+            let result = try await restaurantService.search(
                 query: searchQuery,
-                filters: filters
+                filters: filters,
+                page: 0
             )
 
-            searchResults = results
+            searchResults = result.restaurants
+            currentPage = 0
+            totalPages = result.totalPages
 
         } catch {
             // Only show error if task was not cancelled
@@ -159,6 +177,43 @@ final class SearchViewModel {
 
         isLoading = false
         hasSearched = true
+    }
+
+    /// Fetches the next page of results and appends them to `searchResults`.
+    /// Called when the user scrolls to the bottom of the results list.
+    ///
+    /// No-op if already loading, fetching, or no more pages are available.
+    func loadNextPage() {
+        guard hasMorePages, !isLoading, !isFetchingNextPage else { return }
+
+        isFetchingNextPage = true
+
+        Task {
+            defer { isFetchingNextPage = false }
+
+            do {
+                let filters = SearchFilters(
+                    districts: selectedDistricts.isEmpty ? [] : Array(selectedDistricts),
+                    keywords: selectedKeywords.isEmpty ? [] : Array(selectedKeywords)
+                )
+
+                let nextPage = currentPage + 1
+                let result = try await restaurantService.search(
+                    query: searchQuery,
+                    filters: filters,
+                    page: nextPage
+                )
+
+                searchResults.append(contentsOf: result.restaurants)
+                currentPage = nextPage
+                totalPages = result.totalPages
+
+            } catch {
+                if !Task.isCancelled {
+                    print("❌ Failed to load next page: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     // MARK: - Filters
