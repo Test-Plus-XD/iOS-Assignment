@@ -194,9 +194,14 @@ final class AuthService {
                     do {
                         try await self.loadUserProfile(uid: user.uid)
                     } catch {
-                        // If loading profile fails, log error but don't sign out
+                        // Profile fetch/decode failed — treat as signed-out so the app
+                        // doesn't remain in a half-authenticated state (isAuthenticated = true
+                        // but currentUser = nil).  Firebase session is untouched; the user
+                        // will be asked to sign in again and the listener will re-fire.
                         print("⚠️ Failed to load user profile: \(error.localizedDescription)")
                         self.error = error
+                        self.currentUser = nil
+                        self.isAuthenticated = false
                     }
                 } else {
                     // USER IS SIGNED OUT
@@ -564,7 +569,7 @@ final class AuthService {
             uid: uid,
             email: email,
             displayName: displayName,
-            userType: "customer",  // All new users are customers (not restaurant owners)
+            userType: "Diner",  // All new users are diners (not restaurant owners)
             preferredLanguage: Locale.current.language.languageCode?.identifier ?? "en"
         )
 

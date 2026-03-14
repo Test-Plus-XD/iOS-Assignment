@@ -73,7 +73,9 @@ Pour Rice/
 ```
 
 ## Key Files
-- `Pour_RiceApp.swift` - Tab bar setup using iOS 26 `Tab` API, `NavigationDestination` registration, `Services` injection
+- `Pour_RiceApp.swift` - Tab bar setup using iOS 26 `Tab` API, `NavigationDestination` registration, `Services` injection; uses `private static let sharedServices` to guarantee single Firebase initialization
+- `App/Info.plist` - URL types for Google Sign-In OAuth callbacks; `CFBundleURLTypes` must be array of dictionaries (not single dict)
+- `App/AppDelegate.swift` - Firebase initialization + Google Sign-In URL callback handler
 - `Core/Services/RestaurantService.swift` - Restaurant API calls, caching, and Vercel proxy search; private `AlgoliaHit` → `Restaurant` mapping
 - `Core/Utilities/Constants.swift` - All API base URLs, endpoint paths, header names, and UI constants
 - `Models/Restaurant.swift` - `Decodable` restaurant model; memberwise `init` added via extension
@@ -150,11 +152,22 @@ Pour Rice/
 - `APIClient.injectHeaders` gracefully handles missing auth tokens — catches the error and continues with only the `x-api-passcode` header
 
 ### Firebase / Google Sign-In Setup
-- **Initialisation order**: `FirebaseApp.configure()` in `Pour_RiceApp.init()` → then `Services()` → `AuthService` calls `Auth.auth()`
+- **Initialisation order**: `FirebaseApp.configure()` in `Pour_RiceApp.init()` via static shared Services instance → then `Services()` → `AuthService` calls `Auth.auth()`
+  - Uses `private static let sharedServices: Services` to ensure Firebase is configured **exactly once** even when SwiftUI re-creates the `@main` App struct
+  - `init()` simply assigns `self.services = Self.sharedServices` (no double initialization)
 - **AppDelegate**: Must implement `application(_:open:options:)` for Google Sign-In OAuth URL callback (UIKit-level handler). The SwiftUI `.onOpenURL` in `Pour_RiceApp` also handles this; both are safe to coexist.
-- **URL scheme**: `REVERSED_CLIENT_ID` from `GoogleService-Info.plist` registered as a URL scheme in Xcode build settings (`INFOPLIST_KEY_CFBundleURLTypes`)
+- **URL scheme (`CFBundleURLTypes`)**:
+  - `REVERSED_CLIENT_ID` from `GoogleService-Info.plist` registered as a URL scheme via physical `Info.plist` file
+  - **Critical**: `CFBundleURLTypes` must be an **array of dictionaries** in Info.plist (not a single dictionary). Xcode's `INFOPLIST_KEY_CFBundleURLTypes` build setting cannot properly express this structure; use a physical `Info.plist` with proper array syntax
+  - Physical `Info.plist` is in the project root; `INFOPLIST_FILE = "Pour Rice/Info.plist"` in build settings tells Xcode to use it
+  - With `PBXFileSystemSynchronizedRootGroup`, `Info.plist` is excluded from Copy Bundle Resources via `PBXFileSystemSynchronizedBuildFileExceptionSet` — the build system still reads it via `INFOPLIST_FILE`
 - **Firebase Installations API**: Must be enabled in Google Cloud Console for the project. Without it, device registration fails with 403, causing Google Sign-In to return "An internal error has occurred."
-- **Swizzler warning** (`[GoogleUtilities/AppDelegateSwizzler]`): Cosmetic — does not cause functional failure. Can be silenced by setting `FirebaseAppDelegateProxyEnabled = NO` in Info.plist if desired.
+  - If 403 `API_KEY_SERVICE_BLOCKED` persists despite API enablement, check:
+    - API key has no restrictive API restrictions (set to "Don't restrict key")
+    - API key has no restrictive application restrictions (set to "None")
+    - Firebase Installations API is explicitly enabled (not just other APIs)
+    - If issues persist, try deleting and recreating the API key and re-downloading `GoogleService-Info.plist` from Firebase Console
+- **Swizzler warning** (`[GoogleUtilities/AppDelegateSwizzler]`): Cosmetic — does not cause functional failure. Silenced by setting `FirebaseAppDelegateProxyEnabled = NO` in `Info.plist`.
 
 ### SPM Dependencies
 - **Kingfisher** — image loading and caching (`AsyncImageView`)

@@ -9,7 +9,7 @@
 	<key>ANDROID_CLIENT_ID</key>
 	<string>937491674619-q3anj222m1rve2jdp5s4qm6rsfgo97de.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyAun6GtoyZqdkzO55Cbc5DHIO-xL2oYlRI</string>
+	<string>AIzaSyButlKdDpD6u6XAmkCiafU8Litar5FLK1Q</string>
 	<key>GCM_SENDER_ID</key>
 	<string>937491674619</string>
 	<key>PLIST_VERSION</key>
@@ -30,6 +30,8 @@
 	<true/>
 	<key>IS_SIGNIN_ENABLED</key>
 	<true/>
+	<key>CFBundleURLSchemes</key>
+	<string>com.googleusercontent.apps.937491674619-tjm24ih1qlgss7eosl1vb1mn7t3fqe61</string>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:937491674619:ios:80444953295239cd3a475e</string>
 </dict>

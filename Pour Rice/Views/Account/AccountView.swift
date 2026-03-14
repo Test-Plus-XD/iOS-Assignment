@@ -120,19 +120,6 @@ struct AccountView: View {
                 Text(error)
             }
         }
-        // Confirmation dialog before signing out
-        .confirmationDialog(
-            String(localized: "account_sign_out_confirm_title"),
-            isPresented: $showingSignOutConfirm,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "sign_out"), role: .destructive) {
-                vm.signOut()
-            }
-            Button(String(localized: "cancel"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "account_sign_out_confirm_message"))
-        }
     }
 
     // MARK: - Profile Header Section
@@ -255,6 +242,18 @@ struct AccountView: View {
                 .glassEffectID("account-sign-out-button", in: glassNamespace)
                 .hapticFeedback(style: .heavy)
                 .disabled(vm.isSigningOut)
+                .confirmationDialog(
+                    String(localized: "account_sign_out_confirm_title"),
+                    isPresented: $showingSignOutConfirm,
+                    titleVisibility: .visible
+                ) {
+                    Button(String(localized: "sign_out"), role: .destructive) {
+                        vm.signOut()
+                    }
+                    Button(String(localized: "cancel"), role: .cancel) { }
+                } message: {
+                    Text(String(localized: "account_sign_out_confirm_message"))
+                }
             }
         }
         .listRowBackground(Color.clear)

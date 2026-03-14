@@ -88,15 +88,15 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     /// - Codable: Automatically handles JSON encoding/decoding
     ///
     /// FLUTTER EQUIVALENT:
-    /// enum UserType { customer, owner }
+    /// enum UserType { diner, restaurant }
     enum UserType: String, Codable {
-        /// Regular customer user
-        /// When encoded to JSON, this becomes the string "customer"
-        case customer
+        /// Regular diner/customer user
+        /// When encoded to JSON, this becomes the string "Diner"
+        case diner = "Diner"
 
         /// Restaurant owner with management access
-        /// When encoded to JSON, this becomes the string "owner"
-        case owner
+        /// When encoded to JSON, this becomes the string "Restaurant"
+        case restaurant = "Restaurant"
     }
 
     // MARK: - Custom Decoding
@@ -113,13 +113,69 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     /// For properties not listed here (like email), Swift uses the property name directly
     enum CodingKeys: String, CodingKey {
         case id = "uid"              // JSON has "uid", Swift uses "id"
-        case email                   // No mapping needed, same name in JSON and Swift
-        case displayName             // No mapping needed
-        case userType                // No mapping needed
-        case photoURL                // No mapping needed
-        case preferredLanguage       // No mapping needed
-        case createdAt               // No mapping needed
-        case updatedAt               // No mapping needed
+        case email
+        case displayName
+        case userType = "type"       // JSON has "type", Swift uses "userType"
+        case photoURL
+        case preferences             // Nested object: { language, theme, notifications }
+        case createdAt
+        case updatedAt = "modifiedAt" // JSON has "modifiedAt", Swift uses "updatedAt"
+    }
+
+    /// Keys for the nested `preferences` object in the API response
+    private enum PreferencesCodingKeys: String, CodingKey {
+        case language                // "EN" | "TC"
+    }
+
+    // MARK: - Custom Decodable
+
+    /// Custom decoder to handle the nested `preferences.language` field and
+    /// the `modifiedAt` → `updatedAt` key rename.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+
+        id               = try c.decode(String.self,   forKey: .id)
+        email            = try c.decode(String.self,   forKey: .email)
+        displayName      = try c.decodeIfPresent(String.self, forKey: .displayName) ?? ""
+        userType         = try c.decode(UserType.self, forKey: .userType)
+        photoURL         = try c.decodeIfPresent(String.self, forKey: .photoURL)
+        createdAt        = (try? c.decode(Date.self,   forKey: .createdAt)) ?? Date()
+        updatedAt        = (try? c.decode(Date.self,   forKey: .updatedAt)) ?? Date()
+
+        // preferredLanguage lives inside the nested "preferences" object.
+        // Map API codes ("EN" → "en", "TC" → "zh-Hant").
+        let prefs = try c.nestedContainer(keyedBy: PreferencesCodingKeys.self, forKey: .preferences)
+        let lang  = try prefs.decode(String.self, forKey: .language)
+        preferredLanguage = lang == "TC" ? "zh-Hant" : "en"
+    }
+
+    // MARK: - Custom Encodable
+
+    /// Custom encoder to mirror decoding behavior, handling
+    /// nested `preferences.language` and key renames.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+
+        try c.encode(id, forKey: .id)                 // maps to "uid"
+        try c.encode(email, forKey: .email)
+        try c.encode(displayName, forKey: .displayName)
+        try c.encode(userType, forKey: .userType)     // maps to "type"
+        try c.encodeIfPresent(photoURL, forKey: .photoURL)
+        try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(updatedAt, forKey: .updatedAt)   // maps to "modifiedAt"
+
+        // Encode nested preferences with language mapping ("en" -> "EN", "zh-Hant" -> "TC")
+        var prefs = c.nestedContainer(keyedBy: PreferencesCodingKeys.self, forKey: .preferences)
+        let langCode: String
+        switch preferredLanguage {
+        case "zh-Hant":
+            langCode = "TC"
+        case "en":
+            fallthrough
+        default:
+            langCode = "EN"
+        }
+        try prefs.encode(langCode, forKey: .language)
     }
 
     // MARK: - Initialisation
@@ -141,14 +197,14 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     ///   - id: Unique user identifier (from Firebase Auth)
     ///   - email: User's email address
     ///   - displayName: Display name shown in the app
-    ///   - userType: Account type (defaults to .customer)
+    ///   - userType: Account type (defaults to .diner)
     ///   - photoURL: Profile photo URL (defaults to nil/null)
     ///   - preferredLanguage: Language code (defaults to "en" for British English)
     init(
         id: String,
         email: String,
         displayName: String,
-        userType: UserType = .customer,        // Default value if not provided
+        userType: UserType = .diner,             // Default value if not provided
         photoURL: String? = nil,                // Default to nil if not provided
         preferredLanguage: String = "en"        // Default to English
     ) {
@@ -190,8 +246,16 @@ struct CreateUserRequest: Codable {
     let uid: String                    // Firebase Auth user ID
     let email: String                  // User's email address
     let displayName: String            // User's chosen display name
-    let userType: String               // Account type as string ("customer" or "owner")
+    let userType: String               // Account type as string ("Diner" or "Restaurant")
     let preferredLanguage: String      // Language preference ("en" or "zh-Hant")
+
+    enum CodingKeys: String, CodingKey {
+        case uid
+        case email
+        case displayName
+        case userType = "type"         // API expects "type" not "userType"
+        case preferredLanguage
+    }
 }
 
 /// Request model for updating user profile
@@ -218,3 +282,4 @@ struct UpdateUserRequest: Codable {
     let photoURL: String?             // New photo URL (nil = don't update)
     let preferredLanguage: String?    // New language preference (nil = don't update)
 }
+

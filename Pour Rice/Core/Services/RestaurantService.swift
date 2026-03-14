@@ -207,7 +207,7 @@ final class RestaurantService {
     /// - Parameters:
     ///   - latitude: Latitude coordinate
     ///   - longitude: Longitude coordinate
-    ///   - radius: Search radius in metres (default: 5000m)
+    ///   - radius: Search radius in metres (default: 2500m)
     /// - Returns: Array of nearby restaurants
     /// - Throws: APIError for network or decoding failures
     func fetchNearbyRestaurants(
@@ -498,4 +498,3 @@ struct SearchFilters: Codable, Hashable {
         keywords = []
     }
 }
-

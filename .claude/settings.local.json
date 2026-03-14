@@ -6,7 +6,9 @@
       "Bash(xcodebuild:*)",
       "mcp__Desktop_Commander__read_file",
       "mcp__Desktop_Commander__edit_block",
-      "mcp__Desktop_Commander__start_process"
+      "mcp__Desktop_Commander__start_process",
+      "WebFetch(domain:firebase.google.com)",
+      "mcp__Desktop_Commander__get_file_info"
     ]
   }
 }

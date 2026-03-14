@@ -68,9 +68,9 @@ final class AccountViewModel {
     /// User account type display string
     var accountTypeDisplay: String {
         switch authService.currentUser?.userType {
-        case .owner:
+        case .restaurant:
             return String(localized: "account_type_owner")
-        case .customer, .none:
+        case .diner, .none:
             return String(localized: "account_type_customer")
         }
     }

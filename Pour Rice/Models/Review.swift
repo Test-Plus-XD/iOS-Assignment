@@ -124,6 +124,30 @@ struct Review: Codable, Identifiable, Hashable, Sendable {
         let singleURL = try? container.decode(String.self, forKey: .imageUrl)
         photoURLs     = singleURL.map { [$0] } ?? []
     }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(restaurantId, forKey: .restaurantId)
+        try container.encode(userId, forKey: .userId)
+        try container.encode(userName, forKey: .userName)
+        if let userPhotoURL {
+            try container.encode(userPhotoURL, forKey: .userPhotoURL)
+        }
+        try container.encode(rating, forKey: .rating)
+        try container.encode(comment, forKey: .comment)
+        if let dateTime {
+            try container.encode(dateTime, forKey: .dateTime)
+        }
+        try container.encode(createdAt, forKey: .createdAt)
+        if let updatedAt {
+            try container.encode(updatedAt, forKey: .updatedAt)
+        }
+        if let firstImage = photoURLs.first {
+            try container.encode(firstImage, forKey: .imageUrl)
+        }
+    }
 }
 
 // MARK: - Review Request Models

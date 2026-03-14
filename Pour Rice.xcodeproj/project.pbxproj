@@ -51,10 +51,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CDC3D53A2F61E2370056757A /* Exceptions for "Pour Rice" folder in "Pour Rice" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CDEC24922F3AE8A20038A578 /* Pour Rice */;
+		};
 		CDC3D5382F61E2370056757A /* Exceptions for "Pour Rice" folder in "Pour RiceTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"App/GoogleService-Info.plist",
+				Info.plist,
 			);
 			target = CDEC24A12F3AE8A30038A578 /* Pour RiceTests */;
 		};
@@ -62,6 +70,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"App/GoogleService-Info.plist",
+				Info.plist,
 			);
 			target = CDEC24AB2F3AE8A30038A578 /* Pour RiceUITests */;
 		};
@@ -71,6 +80,7 @@
 		CDEC24952F3AE8A20038A578 /* Pour Rice */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				CDC3D53A2F61E2370056757A /* Exceptions for "Pour Rice" folder in "Pour Rice" target */,
 				CDC3D5382F61E2370056757A /* Exceptions for "Pour Rice" folder in "Pour RiceTests" target */,
 				CDC3D5392F61E2370056757A /* Exceptions for "Pour Rice" folder in "Pour RiceUITests" target */,
 			);
@@ -449,7 +459,7 @@
 				DEVELOPMENT_TEAM = SN36Y72MA3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLSchemes =     (\n        \"com.googleusercontent.apps.937491674619-tjm24ih1qlgss7eosl1vb1mn7t3fqe61\"\n    );\n}";
+				INFOPLIST_FILE = "Pour Rice/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -491,7 +501,7 @@
 				DEVELOPMENT_TEAM = SN36Y72MA3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleTypeRole = Editor;\n    CFBundleURLSchemes =     (\n        \"com.googleusercontent.apps.937491674619-tjm24ih1qlgss7eosl1vb1mn7t3fqe61\"\n    );\n}";
+				INFOPLIST_FILE = "Pour Rice/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

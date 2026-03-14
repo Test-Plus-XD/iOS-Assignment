@@ -213,6 +213,19 @@ struct Menu: Codable, Identifiable, Hashable, Sendable {
         isAvailable  = true        // API does not return this field
         spiceLevel   = nil         // API does not return this field
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name.en, forKey: .nameEN)
+        try container.encode(name.tc, forKey: .nameTC)
+        try container.encode(description.en, forKey: .descEN)
+        try container.encode(description.tc, forKey: .descTC)
+        try container.encode(price, forKey: .price)
+        if let imageURL {
+            try container.encode(imageURL, forKey: .imageURL)
+        }
+    }
 }
 
 // MARK: - Menu Category
@@ -425,3 +438,4 @@ struct MenuItemListResponse: Codable {
         case menuItems = "data"    // API key: "data"  (was "menuItems")
     }
 }
+

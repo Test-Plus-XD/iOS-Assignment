@@ -73,7 +73,7 @@ enum Constants {
     //     static let indexName = "Restaurants"
     //
     //     /// Default search radius in metres (used in advanced geo-search requests)
-    //     static let defaultSearchRadius = 5000
+    //     static let defaultSearchRadius = 2500
     // }
 
     // MARK: - Firebase Configuration
@@ -111,7 +111,7 @@ enum Constants {
     /// Location service configuration
     enum Location {
         /// Default search radius in metres for nearby restaurant queries
-        static let defaultRadius: Double = 5000
+        static let defaultRadius: Double = 2500
 
         /// Maximum search radius in metres
         static let maxRadius: Double = 10000

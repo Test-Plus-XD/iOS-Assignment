@@ -66,19 +66,22 @@ struct Pour_RiceApp: App {
     /// SwiftUI @State is only needed for value types that must trigger re-renders.
     /// The @Observable properties *inside* AuthService already drive view updates.
     ///
-    /// WHY `let` instead of `@State`:
-    /// Using `@State` with a default value (`= Services()`) would evaluate the
-    /// default expression BEFORE init() runs — before FirebaseApp.configure().
-    /// Using `@State` without a default and assigning via `_services` in init()
-    /// avoids the Firebase crash, but State's wrapped value may not be available
-    /// on the very first body evaluation (SwiftUI timing edge case), causing a
-    /// nil force-unwrap in the environment key getter.
-    ///
-    /// A `let` assigned in init() has no such timing issue — its value is
-    /// immediately and unconditionally available in body.
+    /// WHY a static shared instance:
+    /// SwiftUI may re-create the @main App struct multiple times during the app
+    /// lifecycle. A static ensures Firebase is configured exactly once and the
+    /// same Services instance is reused across recreations.
     ///
     /// See: https://github.com/firebase/firebase-ios-sdk/issues/14436
     private let services: Services
+
+    /// Shared services instance — guarantees single Firebase configuration and
+    /// single Services creation even when SwiftUI re-invokes App.init().
+    private static let sharedServices: Services = {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+        return Services()
+    }()
 
     /// Persisted language preference ("en" or "zh-Hant") stored in UserDefaults.
     /// @AppStorage watches UserDefaults — when AccountView's Picker changes this value,
@@ -101,13 +104,7 @@ struct Pour_RiceApp: App {
     ///   runApp(MyApp(services: Services()));     // ← step 2
     /// }
     init() {
-        // Keep a defensive guard for environments where App.init may run before
-        // UIApplicationDelegate lifecycle callbacks.
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
-
-        self.services = Services()
+        self.services = Self.sharedServices
     }
 
     // MARK: - Scene Configuration

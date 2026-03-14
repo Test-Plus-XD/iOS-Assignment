@@ -346,6 +346,35 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
         email        = nil
         website      = nil
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(id, forKey: .id)
+
+        try container.encode(name.en, forKey: .nameEN)
+        try container.encode(name.tc, forKey: .nameTC)
+
+        try container.encode(address.en, forKey: .addressEN)
+        try container.encode(address.tc, forKey: .addressTC)
+
+        try container.encode(district.en, forKey: .districtEN)
+        try container.encode(district.tc, forKey: .districtTC)
+
+        let kwEN = keywords.map { $0.en }
+        let kwTC = keywords.map { $0.tc }
+        try container.encode(kwEN, forKey: .keywordEN)
+        try container.encode(kwTC, forKey: .keywordTC)
+
+        if let firstImage = imageURLs.first {
+            try container.encode(firstImage, forKey: .imageUrl)
+        }
+
+        try container.encode(location.latitude, forKey: .latitude)
+        try container.encode(location.longitude, forKey: .longitude)
+
+        try container.encode(seats, forKey: .seats)
+    }
 }
 
 // MARK: - Location
@@ -527,3 +556,4 @@ extension Restaurant {
         return userLocation.distance(from: restaurantLocation)
     }
 }
+
