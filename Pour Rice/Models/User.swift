@@ -63,6 +63,16 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     /// String? photoURL;
     var photoURL: String?
 
+    /// Phone number (optional)
+    var phoneNumber: String?
+
+    /// User biography (optional)
+    var bio: String?
+
+    /// ID of the restaurant owned by this user (Restaurant type only)
+    /// Set when the user claims a restaurant via POST /API/Restaurants/:id/claim
+    var restaurantId: String?
+
     /// User's preferred language code (en or zh-Hant)
     /// Used to display restaurant content in the correct language
     var preferredLanguage: String
@@ -117,6 +127,9 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         case displayName
         case userType = "type"       // JSON has "type", Swift uses "userType"
         case photoURL
+        case phoneNumber
+        case bio
+        case restaurantId
         case preferences             // Nested object: { language, theme, notifications }
         case createdAt
         case updatedAt = "modifiedAt" // JSON has "modifiedAt", Swift uses "updatedAt"
@@ -139,6 +152,9 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         displayName      = try c.decodeIfPresent(String.self, forKey: .displayName) ?? ""
         userType         = try c.decode(UserType.self, forKey: .userType)
         photoURL         = try c.decodeIfPresent(String.self, forKey: .photoURL)
+        phoneNumber      = try c.decodeIfPresent(String.self, forKey: .phoneNumber)
+        bio              = try c.decodeIfPresent(String.self, forKey: .bio)
+        restaurantId     = try c.decodeIfPresent(String.self, forKey: .restaurantId)
         createdAt        = (try? c.decode(Date.self,   forKey: .createdAt)) ?? Date()
         updatedAt        = (try? c.decode(Date.self,   forKey: .updatedAt)) ?? Date()
 
@@ -161,6 +177,9 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         try c.encode(displayName, forKey: .displayName)
         try c.encode(userType, forKey: .userType)     // maps to "type"
         try c.encodeIfPresent(photoURL, forKey: .photoURL)
+        try c.encodeIfPresent(phoneNumber, forKey: .phoneNumber)
+        try c.encodeIfPresent(bio, forKey: .bio)
+        try c.encodeIfPresent(restaurantId, forKey: .restaurantId)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(updatedAt, forKey: .updatedAt)   // maps to "modifiedAt"
 
@@ -204,21 +223,22 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         id: String,
         email: String,
         displayName: String,
-        userType: UserType = .diner,             // Default value if not provided
-        photoURL: String? = nil,                // Default to nil if not provided
-        preferredLanguage: String = "en"        // Default to English
+        userType: UserType = .diner,
+        photoURL: String? = nil,
+        phoneNumber: String? = nil,
+        bio: String? = nil,
+        restaurantId: String? = nil,
+        preferredLanguage: String = "en"
     ) {
-        // Assign the provided values to the instance properties
-        // 'self.' refers to the instance being created (like 'this.' in Dart/Kotlin)
         self.id = id
         self.email = email
         self.displayName = displayName
         self.userType = userType
         self.photoURL = photoURL
+        self.phoneNumber = phoneNumber
+        self.bio = bio
+        self.restaurantId = restaurantId
         self.preferredLanguage = preferredLanguage
-
-        // Automatically set timestamps to current time
-        // Date() creates a new Date object with the current date/time
         self.createdAt = Date()
         self.updatedAt = Date()
     }

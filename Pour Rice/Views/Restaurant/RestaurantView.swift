@@ -36,6 +36,7 @@ struct RestaurantView: View {
     // MARK: - Environment
 
     @Environment(\.services) private var services
+    @Environment(\.authService) private var authService
 
     // MARK: - Input
 
@@ -45,6 +46,7 @@ struct RestaurantView: View {
     // MARK: - State
 
     @State private var viewModel: RestaurantViewModel?
+    @State private var showingCreateBooking = false
 
     // MARK: - Body
 
@@ -116,6 +118,12 @@ struct RestaurantView: View {
                 reviewsSection(vm: vm, restaurantId: current.id)
                     .padding(.horizontal, Constants.UI.spacingMedium)
 
+                Divider().padding(.vertical, Constants.UI.spacingMedium)
+
+                // ─── Action Buttons (Book / Chat / AI) ──────────────────────
+                actionsSection(restaurant: current)
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+
                 // Bottom padding
                 Color.clear.frame(height: Constants.UI.spacingExtraLarge)
             }
@@ -134,6 +142,62 @@ struct RestaurantView: View {
             set: { vm.showingReviewSheet = $0 }
         )) {
             ReviewSubmissionView(restaurantId: restaurant.id, viewModel: vm)
+        }
+        // Create booking sheet
+        .sheet(isPresented: $showingCreateBooking) {
+            CreateBookingView(
+                restaurantId: restaurant.id,
+                restaurantName: restaurant.name.localised
+            )
+        }
+    }
+
+    // MARK: - Action Buttons
+
+    /// "Book a Table", "Chat with Restaurant", "Ask AI" action row
+    @ViewBuilder
+    private func actionsSection(restaurant: Restaurant) -> some View {
+        let isAuthenticated = authService.isAuthenticated
+        let isDiner = isAuthenticated && authService.currentUser?.userType != .restaurant
+
+        VStack(spacing: 10) {
+            // Book a Table — diner only
+            if isDiner {
+                Button {
+                    showingCreateBooking = true
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                } label: {
+                    Label(String(localized: "restaurant_action_book"), systemImage: "calendar.badge.plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+
+            HStack(spacing: 10) {
+                // Chat with Restaurant — authenticated only
+                if isAuthenticated {
+                    // Creates/opens room with pattern: restaurant-{id}
+                    let chatRoom = ChatRoom.placeholder(
+                        roomId: "restaurant-\(restaurant.id)",
+                        name: restaurant.name.localised
+                    )
+                    NavigationLink(value: chatRoom) {
+                        Label(String(localized: "restaurant_action_chat"), systemImage: "bubble.left.and.text.bubble.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+
+                // Ask AI — always accessible (including guests)
+                NavigationLink(value: GeminiNavigation(restaurant: restaurant)) {
+                    Label(String(localized: "restaurant_action_ai"), systemImage: "sparkles")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
         }
     }
 

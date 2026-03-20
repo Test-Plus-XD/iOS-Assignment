@@ -14,17 +14,18 @@ import Foundation
 protocol APIClient: Sendable {
     /// Executes an API request and decodes the response.
     /// Generic method supporting any Decodable response type.
-    /// - Parameters:
-    ///   - endpoint: The API endpoint to call
-    ///   - responseType: The expected response type to decode
-    ///   - callerService: Name of the service initiating the call (used in debug logs)
-    /// - Returns: Decoded response object
-    /// - Throws: APIError for network or decoding failures
     func request<T: Decodable>(
         _ endpoint: APIEndpoint,
         responseType: T.Type,
         callerService: String
     ) async throws -> T
+
+    /// Executes an API request that returns no body (e.g. 204 No Content).
+    /// Used for PUT/DELETE operations that only need status code validation.
+    func requestVoid(
+        _ endpoint: APIEndpoint,
+        callerService: String
+    ) async throws
 }
 
 /// Default implementation of APIClient using URLSession.
@@ -95,6 +96,33 @@ final class DefaultAPIClient: APIClient {
 
         // Decode JSON response into expected type
         return try decodeResponse(data: data, responseType: responseType, callerService: callerService)
+    }
+
+    // MARK: - Void Request
+
+    /// Executes an API request that returns no response body.
+    /// Validates the HTTP status code but does not attempt JSON decoding.
+    /// Used for PUT (204 No Content) and DELETE operations.
+    func requestVoid(
+        _ endpoint: APIEndpoint,
+        callerService: String = "APIClient"
+    ) async throws {
+        var request = try buildRequest(for: endpoint)
+        try await injectHeaders(into: &request, requiresAuth: endpoint.requiresAuth)
+
+        #if DEBUG
+        APILogger.logRequest(request, from: callerService)
+        #endif
+
+        let requestStart = Date()
+        let (data, response) = try await session.data(for: request)
+        let requestDuration = Date().timeIntervalSince(requestStart)
+
+        #if DEBUG
+        APILogger.logResponse(response, data: data, duration: requestDuration, from: callerService)
+        #endif
+
+        try validateResponse(response)
     }
 
     // MARK: - Private Methods

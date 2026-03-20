@@ -48,6 +48,49 @@ enum Constants {
             /// Query parameters: query, districts, keywords, page, hitsPerPage
             /// Replaces direct Algolia SDK calls — credentials remain server-side
             static let algoliaSearch = "/API/Algolia/Restaurants"
+
+            // MARK: Booking Endpoints
+
+            /// Endpoint for diner booking operations
+            static let bookings = "/API/Bookings"
+
+            /// Endpoint for restaurant-side booking list (append /:restaurantId)
+            static let restaurantBookings = "/API/Bookings/restaurant"
+
+            // MARK: Restaurant Management Endpoints
+
+            /// Suffix appended to restaurantDetail + /:id for claiming ownership
+            static let claimRestaurant = "/claim"
+
+            /// Suffix appended to restaurantDetail + /:id for image upload
+            static let restaurantImage = "/image"
+
+            // MARK: Menu CRUD Endpoints
+
+            /// Endpoint for menu item CRUD operations
+            static let menuItems = "/API/Menu/Items"
+
+            // MARK: Chat Endpoints
+
+            /// Endpoint for fetching a user's chat records (append /:uid)
+            static let chatRecords = "/API/Chat/Records"
+
+            /// Endpoint for chat room operations (append /:roomId)
+            static let chatRooms = "/API/Chat/Rooms"
+
+            /// Suffix appended to chatRooms + /:roomId for messages
+            static let chatMessages = "/Messages"
+
+            // MARK: Gemini AI Endpoints
+
+            /// Endpoint for multi-turn Gemini chat
+            static let geminiChat = "/API/Gemini/chat"
+
+            /// Endpoint for one-shot Gemini text generation
+            static let geminiGenerate = "/API/Gemini/generate"
+
+            /// Endpoint for AI-generated restaurant descriptions
+            static let geminiRestaurantDescription = "/API/Gemini/restaurant-description"
         }
 
         /// HTTP header names used in API requests
@@ -160,6 +203,20 @@ enum Constants {
 
         /// Cache expiration time in seconds (1 hour)
         static let cacheExpirationInterval: TimeInterval = 3600
+    }
+
+    // MARK: - Chat Configuration
+
+    /// Real-time chat and Socket.IO settings
+    enum Chat {
+        /// Socket.IO server URL (Railway backend)
+        static let socketURL = "https://railway-socket-production.up.railway.app"
+
+        /// Number of messages to fetch per page
+        static let messagePageSize = 50
+
+        /// Debounce interval for typing indicators (nanoseconds)
+        static let typingDebounceNs: UInt64 = 500_000_000
     }
 
     // MARK: - Search Configuration

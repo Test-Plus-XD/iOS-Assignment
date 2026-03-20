@@ -89,8 +89,8 @@ struct HomeView: View {
     @ViewBuilder
     private func content(vm: HomeViewModel) -> some View {
         if vm.isLoading && !vm.hasLoadedOnce {
-            // Initial load — show full-screen loading
-            LoadingView(message: String(localized: "home_loading"))
+            // Initial load — show shimmer skeleton instead of spinner
+            HomeSkeletonView()
 
         } else if let error = vm.errorMessage, vm.featuredRestaurants.isEmpty, vm.nearbyRestaurants.isEmpty {
             // Error state with retry button
@@ -186,7 +186,14 @@ struct HomeView: View {
                 .padding(.top, Constants.UI.spacingMedium)
 
             if isLoading {
-                InlineLoadingView(label: String(localized: "home_loading_nearby"))
+                VStack(spacing: 0) {
+                    ForEach(0..<4, id: \.self) { _ in
+                        SkeletonRestaurantRow()
+                            .padding(.horizontal, Constants.UI.spacingMedium)
+                            .padding(.vertical, Constants.UI.spacingSmall)
+                        Divider().padding(.leading, Constants.UI.spacingMedium)
+                    }
+                }
             } else if restaurants.isEmpty {
                 EmptyStateView.noNearbyRestaurants()
                     .frame(height: 200)
@@ -230,68 +237,72 @@ private struct FeaturedRestaurantCard: View {
     var userLocation: CLLocation?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        // Full-bleed image card with text overlaid at the bottom
+        ZStack(alignment: .bottom) {
+            RestaurantCardImage(urlString: restaurant.imageURLs.first)
+                .frame(width: 280, height: 200)
 
-            // Restaurant image (hero-style with gradient overlay)
-            ZStack(alignment: .bottomLeading) {
-                RestaurantCardImage(urlString: restaurant.imageURLs.first)
-                    .frame(width: 280, height: 160)
+            // Bottom gradient for text readability
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.35),
+                    .init(color: .black.opacity(0.75), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
 
-                // Rating badge overlaid on the image (bottom-left)
-                RatingBadge(rating: restaurant.rating)
-                    .padding(Constants.UI.spacingSmall)
-
-                // Distance badge on the top-right of the image
-                if let distance = restaurant.distance(from: userLocation) {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            DistanceBadge(meters: distance)
-                        }
-                        Spacer()
-                    }
-                    .padding(Constants.UI.spacingSmall)
-                }
-            }
-
-            // Restaurant info below the image
-            VStack(alignment: .leading, spacing: 4) {
-
-                // Restaurant name (bilingual — shows current language automatically)
+            // Text info overlaid at the bottom
+            VStack(alignment: .leading, spacing: 3) {
                 Text(restaurant.name.localised)
                     .font(.headline)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
-                // Cuisine type
-                Text(restaurant.cuisine.localised)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-
-                // Price range + open/closed status
                 HStack {
+                    Text(restaurant.cuisine.localised)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.85))
+
+                    Text("·")
+                        .foregroundStyle(.white.opacity(0.6))
+
                     Text(restaurant.priceRangeDisplay)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white.opacity(0.85))
 
                     Spacer()
 
-                    // Open/Closed indicator
                     Text(restaurant.isOpenNow
                          ? String(localized: "open_now")
                          : String(localized: "closed"))
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(restaurant.isOpenNow ? .green : .red)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(restaurant.isOpenNow ? .green : .white.opacity(0.6))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.white.opacity(0.15), in: Capsule())
                 }
             }
-            .padding(Constants.UI.spacingSmall)
+            .padding(.horizontal, Constants.UI.spacingSmall)
+            .padding(.bottom, Constants.UI.spacingSmall)
+
+            // Badges pinned to top corners
+            VStack {
+                HStack {
+                    RatingBadge(rating: restaurant.rating)
+                    Spacer()
+                    if let distance = restaurant.distance(from: userLocation) {
+                        DistanceBadge(meters: distance)
+                    }
+                }
+                .padding(Constants.UI.spacingSmall)
+                Spacer()
+            }
         }
-        .frame(width: 280)
-        // White card background with rounded corners and shadow
-        .background(Color(.systemBackground))
+        .frame(width: 280, height: 200)
         .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusLarge))
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 4)
     }
 }
 
@@ -423,6 +434,90 @@ struct DistanceBadge: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
         .background(.black.opacity(0.6), in: Capsule())
+    }
+}
+
+// MARK: - Skeleton Loading Views
+
+/// Full-page shimmer skeleton shown during the initial data load.
+private struct HomeSkeletonView: View {
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+
+                // Featured skeleton header
+                Text(String(localized: "home_featured_title"))
+                    .font(.title2).fontWeight(.bold)
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+                    .padding(.top, Constants.UI.spacingMedium)
+                    .redacted(reason: .placeholder)
+
+                // Featured skeleton cards
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Constants.UI.spacingMedium) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            SkeletonFeaturedCard()
+                        }
+                    }
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+                    .padding(.bottom, Constants.UI.spacingMedium)
+                }
+
+                // Nearby skeleton header
+                Text(String(localized: "home_nearby_title"))
+                    .font(.title2).fontWeight(.bold)
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+                    .padding(.top, Constants.UI.spacingMedium)
+                    .redacted(reason: .placeholder)
+
+                // Nearby skeleton rows
+                VStack(spacing: 0) {
+                    ForEach(0..<5, id: \.self) { _ in
+                        SkeletonRestaurantRow()
+                            .padding(.horizontal, Constants.UI.spacingMedium)
+                            .padding(.vertical, Constants.UI.spacingSmall)
+                        Divider().padding(.leading, Constants.UI.spacingMedium)
+                    }
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Shimmer placeholder for a featured restaurant card
+private struct SkeletonFeaturedCard: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusLarge)
+            .fill(Color(.systemFill))
+            .frame(width: 280, height: 200)
+            .shimmerEffect()
+    }
+}
+
+/// Shimmer placeholder for a nearby restaurant row
+struct SkeletonRestaurantRow: View {
+    var body: some View {
+        HStack(spacing: Constants.UI.spacingMedium) {
+            RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium)
+                .fill(Color(.systemFill))
+                .frame(width: 72, height: 72)
+
+            VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(.systemFill))
+                    .frame(width: 140, height: 14)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(.systemFill))
+                    .frame(width: 100, height: 12)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(.systemFill))
+                    .frame(width: 80, height: 10)
+            }
+
+            Spacer()
+        }
+        .shimmerEffect()
     }
 }
 

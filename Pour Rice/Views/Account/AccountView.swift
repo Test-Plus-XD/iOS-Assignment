@@ -103,6 +103,9 @@ struct AccountView: View {
             // ─── Preferences ─────────────────────────────────────────
             preferencesSection(vm: vm)
 
+            // ─── Tools & Extras ───────────────────────────────────────
+            toolsSection
+
             // ─── Sign Out ─────────────────────────────────────────────
             signOutSection(vm: vm)
         }
@@ -197,6 +200,18 @@ struct AccountView: View {
             )) {
                 Text(String(localized: "language_en")).tag("en")
                 Text(String(localized: "language_tc")).tag("zh-Hant")
+            }
+        }
+    }
+
+    // MARK: - Tools Section
+
+    @ViewBuilder
+    private var toolsSection: some View {
+        Section(header: Text(String(localized: "account_section_tools"))) {
+            NavigationLink(value: GeminiNavigation(restaurant: nil)) {
+                Label(String(localized: "account_ai_assistant"), systemImage: "sparkles")
+                    .foregroundStyle(.primary)
             }
         }
     }
@@ -307,6 +322,14 @@ struct AccountView: View {
                 Picker(String(localized: "account_language_label"), selection: $preferredLanguage) {
                     Text(String(localized: "language_en")).tag("en")
                     Text(String(localized: "language_tc")).tag("zh-Hant")
+                }
+            }
+
+            // ─── Tools (available to guests) ─────────────────────────
+            Section(header: Text(String(localized: "account_section_tools"))) {
+                NavigationLink(value: GeminiNavigation(restaurant: nil)) {
+                    Label(String(localized: "account_ai_assistant"), systemImage: "sparkles")
+                        .foregroundStyle(.primary)
                 }
             }
         }

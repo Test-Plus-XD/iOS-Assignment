@@ -237,18 +237,16 @@ struct RootView: View {
 // MARK: - Main Tab View
 
 /// Main tab-based navigation structure for the app with Liquid Glass effects (iOS 26+)
-/// Wires up all real feature screens: Home, Search, and Account.
+/// Adapts tabs based on the user's account type:
+///   - Guest:            Home | Search | Account
+///   - Diner:            Home | Search | Bookings | Chat | Account
+///   - Restaurant Owner: Home | Search | Store    | Chat | Account
 ///
-/// FLUTTER EQUIVALENT:
-/// Scaffold(
-///   bottomNavigationBar: BottomNavigationBar(...),
-///   body: [HomeScreen(), SearchScreen(), AccountScreen()][currentIndex],
-/// )
+/// Gemini AI is accessible from RestaurantView and AccountView (no dedicated tab).
 ///
 /// LIQUID GLASS IMPLEMENTATION NOTES:
 /// - TabView automatically receives glass treatment in iOS 26
 /// - NavigationDestination registers type-safe push routes for each stack
-/// - Restaurant taps push RestaurantView; "See Full Menu" pushes MenuView
 struct MainTabView: View {
 
     // MARK: - Environment
@@ -262,15 +260,21 @@ struct MainTabView: View {
     /// Passed to AccountView so it can exit guest mode when the user taps "Sign In".
     @Binding var isGuest: Bool
 
+    // MARK: - Computed
+
+    /// Convenience: true when the signed-in user is a restaurant owner
+    private var isRestaurantOwner: Bool {
+        authService.currentUser?.userType == .restaurant
+    }
+
+    /// Convenience: true when the signed-in user is a diner
+    private var isDiner: Bool {
+        !isGuest && authService.isAuthenticated && !isRestaurantOwner
+    }
+
     // MARK: - Body
 
     var body: some View {
-        // TabView creates a bottom tab bar navigation
-        //
-        // FLUTTER EQUIVALENT: Scaffold with BottomNavigationBar
-        //
-        // LIQUID GLASS NOTE:
-        // In iOS 26, TabView automatically receives glass treatment without explicit modifier
         TabView {
 
             // ================================================================
@@ -280,19 +284,17 @@ struct MainTabView: View {
             Tab(String(localized: "home_title"), systemImage: "house.fill") {
                 NavigationStack {
                     HomeView()
-                        // Type-safe push navigation: Restaurant → RestaurantView
-                        //
-                        // FLUTTER EQUIVALENT:
-                        // MaterialPageRoute(builder: (_) => RestaurantScreen(restaurant))
-                        //
-                        // NavigationLink(value: restaurant) in HomeView triggers this destination
                         .navigationDestination(for: Restaurant.self) { restaurant in
                             RestaurantView(restaurant: restaurant)
                         }
-                        // String destinations — used by RestaurantView to push MenuView
-                        // The value is "restaurantId::restaurantName" encoded as a string
                         .navigationDestination(for: MenuNavigation.self) { nav in
                             MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
+                        }
+                        .navigationDestination(for: GeminiNavigation.self) { nav in
+                            GeminiChatView(restaurant: nav.restaurant)
+                        }
+                        .navigationDestination(for: ChatRoom.self) { room in
+                            ChatRoomView(room: room)
                         }
                 }
             }
@@ -310,21 +312,97 @@ struct MainTabView: View {
                         .navigationDestination(for: MenuNavigation.self) { nav in
                             MenuView(restaurantId: nav.restaurantId, restaurantName: nav.restaurantName)
                         }
+                        .navigationDestination(for: GeminiNavigation.self) { nav in
+                            GeminiChatView(restaurant: nav.restaurant)
+                        }
+                        .navigationDestination(for: ChatRoom.self) { room in
+                            ChatRoomView(room: room)
+                        }
                 }
             }
 
             // ================================================================
-            // ACCOUNT TAB — user profile and sign-out
+            // BOOKINGS TAB — diner reservations (authenticated diners only)
+            // ================================================================
+
+            if isDiner {
+                Tab(String(localized: "bookings_title"), systemImage: "calendar") {
+                    NavigationStack {
+                        BookingsView()
+                    }
+                }
+            }
+
+            // ================================================================
+            // STORE TAB — restaurant owner dashboard (restaurant owners only)
+            // ================================================================
+
+            if !isGuest && isRestaurantOwner {
+                Tab(String(localized: "store_title"), systemImage: "storefront.fill") {
+                    NavigationStack {
+                        StoreView()
+                            .navigationDestination(for: StoreDestination.self) { destination in
+                                switch destination {
+                                case .manageMenu:
+                                    StoreMenuManageView()
+                                case .bookings:
+                                    StoreBookingsView()
+                                case .reviews:
+                                    // Reviews is a read-only page accessible via restaurantId
+                                    Text(String(localized: "store_reviews_placeholder"))
+                                        .navigationTitle(String(localized: "store_view_reviews"))
+                                case .editInfo:
+                                    StoreInfoEditView()
+                                }
+                            }
+                    }
+                }
+            }
+
+            // ================================================================
+            // CHAT TAB — real-time messaging (authenticated users only)
+            // ================================================================
+
+            if !isGuest && authService.isAuthenticated {
+                Tab(String(localized: "chat_title"), systemImage: "bubble.left.and.bubble.right.fill") {
+                    NavigationStack {
+                        ChatListView()
+                            .navigationDestination(for: ChatRoom.self) { room in
+                                ChatRoomView(room: room)
+                            }
+                    }
+                }
+            }
+
+            // ================================================================
+            // ACCOUNT TAB — user profile, preferences, and sign-out
             // ================================================================
 
             Tab(String(localized: "account_title"), systemImage: "person.fill") {
                 NavigationStack {
                     AccountView(isGuest: $isGuest)
+                        .navigationDestination(for: GeminiNavigation.self) { nav in
+                            GeminiChatView(restaurant: nav.restaurant)
+                        }
                 }
             }
         }
-        // TabView itself receives glass treatment automatically in iOS 26
-        // No need to explicitly apply .glassEffect() - system handles it
+    }
+}
+
+// MARK: - Gemini Navigation Value
+
+/// Hashable navigation value for pushing GeminiChatView with optional restaurant context
+struct GeminiNavigation: Hashable {
+    /// Optional restaurant to provide context to the AI assistant
+    let restaurant: Restaurant?
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(restaurant?.id)
+    }
+
+    static func == (lhs: GeminiNavigation, rhs: GeminiNavigation) -> Bool {
+        lhs.restaurant?.id == rhs.restaurant?.id
     }
 }
 
@@ -364,7 +442,6 @@ extension View {
     ///   - shape: Shape to apply glass effect to (Capsule, RoundedRectangle, Circle, etc.)
     /// - Returns: View with glass effect on iOS 26+ or material background on earlier versions
     @ViewBuilder
-    @available(*, introduced: 1.0)
     func glassEffectCompat(
         _ glass: Glass = .regular,
         in shape: some Shape = Capsule()

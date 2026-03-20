@@ -8,7 +8,17 @@
       "mcp__Desktop_Commander__edit_block",
       "mcp__Desktop_Commander__start_process",
       "WebFetch(domain:firebase.google.com)",
-      "mcp__Desktop_Commander__get_file_info"
+      "mcp__Desktop_Commander__get_file_info",
+      "Bash(~/.local/bin/uvx --from notebooklm-mcp-cli notebooklm-mcp --help)",
+      "Bash(uvx --from notebooklm-mcp-cli notebooklm-mcp --help)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/test-plus/.cargo/bin/**)",
+      "Bash(wc -l \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Core/Services\"/*.swift)",
+      "Bash(grep -c '\"\"bookings_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
+      "Bash(grep -c '\"\"chat_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
+      "Bash(grep -c '\"\"store_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
+      "Bash(grep -c '\"\"gemini_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
+      "Bash(xcrun simctl:*)"
     ]
   }
 }

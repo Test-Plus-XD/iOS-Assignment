@@ -104,27 +104,47 @@ class Services {
     /// Location service
     let locationService: LocationService
 
+    /// Booking service
+    let bookingService: BookingService
+
+    /// Chat REST service
+    let chatService: ChatService
+
+    /// Socket.IO real-time service
+    let socketService: SocketService
+
+    /// Gemini AI service
+    let geminiService: GeminiService
+
+    /// Store/restaurant management service
+    let storeService: StoreService
+
     // MARK: - Initialisation
 
     /// Creates a new services container with all dependencies
     init() {
-        // Initialize API client first (without auth service initially)
+        // Initialise API client first (without auth service initially)
         let tempClient = DefaultAPIClient()
 
-        // Initialize auth service with temporary client
+        // Initialise auth service with temporary client
         let auth = AuthService(apiClient: tempClient)
 
         // Now create the real API client with auth service
         self.apiClient = DefaultAPIClient(authService: auth)
         self.authService = auth
 
-        // Initialize other services with API client
+        // Initialise other services with API client
         self.restaurantService = RestaurantService(apiClient: apiClient)
         self.reviewService = ReviewService(apiClient: apiClient)
         self.menuService = MenuService(apiClient: apiClient)
         self.locationService = LocationService()
+        self.bookingService = BookingService(apiClient: apiClient)
+        self.chatService = ChatService(apiClient: apiClient)
+        self.socketService = SocketService()
+        self.geminiService = GeminiService(apiClient: apiClient)
+        self.storeService = StoreService(apiClient: apiClient)
 
-        print("✅ Services container initialized")
+        print("✅ Services container initialised")
     }
 }
 
@@ -245,5 +265,59 @@ extension View {
         } else {
             self
         }
+    }
+}
+
+// MARK: - Shimmer Effect
+
+private struct ShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                GeometryReader { geometry in
+                    let width = geometry.size.width
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.5), location: 0.4),
+                            .init(color: .white.opacity(0.7), location: 0.5),
+                            .init(color: .white.opacity(0.5), location: 0.6),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: width * 2)
+                    .offset(x: width * phase)
+                    .blendMode(.plusLighter)
+                }
+            }
+            .clipped()
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 1.2)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+extension View {
+    /// Applies an animated shimmer gradient overlay — use on skeleton loading placeholders.
+    func shimmerEffect() -> some View {
+        modifier(ShimmerModifier())
+    }
+}
+
+// MARK: - Notification Haptic
+
+extension View {
+    /// Fires a UINotificationFeedbackGenerator on the given feedback type.
+    func notificationHaptic(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        UINotificationFeedbackGenerator().notificationOccurred(type)
     }
 }

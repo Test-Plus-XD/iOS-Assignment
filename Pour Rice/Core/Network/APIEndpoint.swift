@@ -16,138 +16,258 @@ enum APIEndpoint {
     // MARK: - Restaurant Endpoints
 
     /// Fetch restaurants near a geographical location.
-    /// Uses geospatial search to find restaurants within the specified radius.
-    /// - Parameters:
-    ///   - lat: Latitude coordinate (e.g., 51.5074 for London)
-    ///   - lng: Longitude coordinate (e.g., -0.1278 for London)
-    ///   - radius: Search radius in metres (e.g., 5000 for 5km)
     case fetchNearbyRestaurants(lat: Double, lng: Double, radius: Double)
 
     /// Fetch detailed information for a specific restaurant.
-    /// Returns full restaurant data including hours, contact info, and menu.
-    /// - Parameter id: Unique restaurant identifier
     case fetchRestaurant(id: String)
+
+    /// Claim ownership of a restaurant (POST /API/Restaurants/:id/claim).
+    case claimRestaurant(id: String)
+
+    /// Update restaurant details (PUT /API/Restaurants/:id).
+    case updateRestaurant(id: String, UpdateRestaurantRequest)
 
     // MARK: - Menu Endpoints
 
     /// Fetch menu items for a specific restaurant.
-    /// Returns all menu items with bilingual names and prices.
-    /// - Parameter restaurantId: Unique restaurant identifier
     case fetchMenuItems(restaurantId: String)
+
+    /// Create a new menu item (POST /API/Menu/Items).
+    case createMenuItem(CreateMenuItemRequest)
+
+    /// Update an existing menu item (PUT /API/Menu/Items/:id).
+    case updateMenuItem(id: String, UpdateMenuItemRequest)
+
+    /// Delete a menu item (DELETE /API/Menu/Items/:id).
+    case deleteMenuItem(id: String)
 
     // MARK: - Review Endpoints
 
     /// Fetch reviews for a specific restaurant.
-    /// Returns user-submitted ratings and comments.
-    /// - Parameters:
-    ///   - restaurantId: Unique restaurant identifier
-    ///   - limit: Maximum number of reviews to return (optional, for pagination)
     case fetchReviews(restaurantId: String, limit: Int?)
 
     /// Submit a new review for a restaurant.
-    /// Requires authentication (Firebase ID token).
-    /// - Parameter request: Review data including rating (1-5) and comment
     case submitReview(ReviewRequest)
 
     // MARK: - User Endpoints
 
     /// Fetch user profile by user ID.
-    /// Returns user's display name, preferences, and review history.
-    /// - Parameter userId: Unique user identifier (Firebase UID)
     case fetchUserProfile(userId: String)
 
     /// Create a new user profile.
-    /// Called after successful Firebase authentication signup.
-    /// - Parameter request: User profile data (display name, preferences, etc.)
     case createUserProfile(CreateUserRequest)
 
     /// Update existing user profile.
-    /// Allows users to modify display name, dietary preferences, etc.
-    /// - Parameters:
-    ///   - userId: Unique user identifier (Firebase UID)
-    ///   - request: Updated profile data
     case updateUserProfile(userId: String, UpdateUserRequest)
+
+    // MARK: - Booking Endpoints
+
+    /// Fetch all bookings for the authenticated diner (GET /API/Bookings).
+    case fetchBookings
+
+    /// Fetch a single booking by ID (GET /API/Bookings/:id).
+    case fetchBooking(id: String)
+
+    /// Fetch all bookings for a restaurant (GET /API/Bookings/restaurant/:restaurantId).
+    case fetchRestaurantBookings(restaurantId: String)
+
+    /// Create a new booking (POST /API/Bookings).
+    case createBooking(CreateBookingRequest)
+
+    /// Update booking status or details (PUT /API/Bookings/:id).
+    case updateBooking(id: String, UpdateBookingRequest)
+
+    /// Delete a booking (DELETE /API/Bookings/:id). Only if 30+ days old.
+    case deleteBooking(id: String)
+
+    // MARK: - Chat Endpoints
+
+    /// Fetch all chat records for a user (GET /API/Chat/Records/:uid).
+    case fetchChatRecords(uid: String)
+
+    /// Fetch a single chat room (GET /API/Chat/Rooms/:roomId).
+    case fetchChatRoom(roomId: String)
+
+    /// Create a new chat room (POST /API/Chat/Rooms).
+    case createChatRoom(CreateRoomRequest)
+
+    /// Fetch messages in a chat room (GET /API/Chat/Rooms/:roomId/Messages).
+    case fetchChatMessages(roomId: String, limit: Int?)
+
+    /// Send a message to a chat room (POST /API/Chat/Rooms/:roomId/Messages).
+    case sendChatMessage(roomId: String, SendMessageRequest)
+
+    /// Edit a chat message (PUT /API/Chat/Rooms/:roomId/Messages/:messageId).
+    case editChatMessage(roomId: String, messageId: String, EditMessageRequest)
+
+    /// Soft-delete a chat message (DELETE /API/Chat/Rooms/:roomId/Messages/:messageId).
+    case deleteChatMessage(roomId: String, messageId: String, DeleteMessageRequest)
+
+    // MARK: - Gemini AI Endpoints
+
+    /// Multi-turn Gemini chat (POST /API/Gemini/chat). No auth required.
+    case geminiChat(GeminiChatRequest)
+
+    /// One-shot Gemini text generation (POST /API/Gemini/generate).
+    case geminiGenerate(GeminiGenerateRequest)
+
+    /// Generate AI restaurant description (POST /API/Gemini/restaurant-description). No auth required.
+    case geminiRestaurantDescription(GeminiRestaurantDescriptionRequest)
 
     // MARK: - Endpoint Properties
 
     /// Whether this endpoint requires a Firebase ID token in the Authorization header.
-    /// Public read endpoints skip auth injection to avoid noisy "Could not retrieve ID token" warnings.
     var requiresAuth: Bool {
         switch self {
-        case .submitReview, .fetchUserProfile, .createUserProfile, .updateUserProfile:
+        // Auth-required endpoints
+        case .submitReview, .fetchUserProfile, .createUserProfile, .updateUserProfile,
+             .fetchBookings, .fetchBooking, .fetchRestaurantBookings,
+             .createBooking, .updateBooking, .deleteBooking,
+             .claimRestaurant, .updateRestaurant,
+             .createMenuItem, .updateMenuItem, .deleteMenuItem,
+             .geminiGenerate:
             return true
-        default:
+
+        // Public/no-auth endpoints
+        case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems, .fetchReviews,
+             .fetchChatRecords, .fetchChatRoom, .createChatRoom,
+             .fetchChatMessages, .sendChatMessage, .editChatMessage, .deleteChatMessage,
+             .geminiChat, .geminiRestaurantDescription:
             return false
         }
     }
 
     /// Returns the URL path component for each endpoint.
-    /// Combines base paths from Constants with dynamic parameters (e.g., IDs).
     var path: String {
         switch self {
+        // Restaurant
         case .fetchNearbyRestaurants:
-            // GET /API/Restaurants/nearby
             return Constants.API.Endpoints.nearbyRestaurants
 
         case .fetchRestaurant(let id):
-            // GET /API/Restaurants/:id
             return "\(Constants.API.Endpoints.restaurantDetail)/\(id)"
 
+        case .claimRestaurant(let id):
+            return "\(Constants.API.Endpoints.restaurantDetail)/\(id)\(Constants.API.Endpoints.claimRestaurant)"
+
+        case .updateRestaurant(let id, _):
+            return "\(Constants.API.Endpoints.restaurantDetail)/\(id)"
+
+        // Menu
         case .fetchMenuItems(let restaurantId):
-            // GET /API/Restaurants/:id/menu
             return "\(Constants.API.Endpoints.restaurantDetail)/\(restaurantId)\(Constants.API.Endpoints.restaurantMenu)"
 
+        case .createMenuItem:
+            return Constants.API.Endpoints.menuItems
+
+        case .updateMenuItem(let id, _):
+            return "\(Constants.API.Endpoints.menuItems)/\(id)"
+
+        case .deleteMenuItem(let id):
+            return "\(Constants.API.Endpoints.menuItems)/\(id)"
+
+        // Reviews
         case .fetchReviews:
-            // GET /API/Reviews?restaurantId=:id
             return Constants.API.Endpoints.reviews
 
         case .submitReview:
-            // POST /API/Reviews
             return Constants.API.Endpoints.reviews
 
+        // Users
         case .fetchUserProfile(let userId):
-            // GET /API/Users/:userId
             return "\(Constants.API.Endpoints.userProfile)/\(userId)"
 
         case .createUserProfile:
-            // POST /API/Users
             return Constants.API.Endpoints.userProfile
 
         case .updateUserProfile(let userId, _):
-            // PUT /API/Users/:userId
             return "\(Constants.API.Endpoints.userProfile)/\(userId)"
+
+        // Bookings
+        case .fetchBookings:
+            return Constants.API.Endpoints.bookings
+
+        case .fetchBooking(let id):
+            return "\(Constants.API.Endpoints.bookings)/\(id)"
+
+        case .fetchRestaurantBookings(let restaurantId):
+            return "\(Constants.API.Endpoints.restaurantBookings)/\(restaurantId)"
+
+        case .createBooking:
+            return Constants.API.Endpoints.bookings
+
+        case .updateBooking(let id, _):
+            return "\(Constants.API.Endpoints.bookings)/\(id)"
+
+        case .deleteBooking(let id):
+            return "\(Constants.API.Endpoints.bookings)/\(id)"
+
+        // Chat
+        case .fetchChatRecords(let uid):
+            return "\(Constants.API.Endpoints.chatRecords)/\(uid)"
+
+        case .fetchChatRoom(let roomId):
+            return "\(Constants.API.Endpoints.chatRooms)/\(roomId)"
+
+        case .createChatRoom:
+            return Constants.API.Endpoints.chatRooms
+
+        case .fetchChatMessages(let roomId, _):
+            return "\(Constants.API.Endpoints.chatRooms)/\(roomId)\(Constants.API.Endpoints.chatMessages)"
+
+        case .sendChatMessage(let roomId, _):
+            return "\(Constants.API.Endpoints.chatRooms)/\(roomId)\(Constants.API.Endpoints.chatMessages)"
+
+        case .editChatMessage(let roomId, let messageId, _):
+            return "\(Constants.API.Endpoints.chatRooms)/\(roomId)\(Constants.API.Endpoints.chatMessages)/\(messageId)"
+
+        case .deleteChatMessage(let roomId, let messageId, _):
+            return "\(Constants.API.Endpoints.chatRooms)/\(roomId)\(Constants.API.Endpoints.chatMessages)/\(messageId)"
+
+        // Gemini
+        case .geminiChat:
+            return Constants.API.Endpoints.geminiChat
+
+        case .geminiGenerate:
+            return Constants.API.Endpoints.geminiGenerate
+
+        case .geminiRestaurantDescription:
+            return Constants.API.Endpoints.geminiRestaurantDescription
         }
     }
 
     /// Returns the HTTP method for each endpoint.
-    /// Follows REST conventions: GET for retrieval, POST for creation, PUT for updates.
     var method: HTTPMethod {
         switch self {
-        case .submitReview,
-             .createUserProfile:
-            // POST for creating new resources
+        // POST — creating new resources
+        case .submitReview, .createUserProfile, .createBooking,
+             .claimRestaurant, .createMenuItem,
+             .createChatRoom, .sendChatMessage,
+             .geminiChat, .geminiGenerate, .geminiRestaurantDescription:
             return .post
 
-        case .updateUserProfile:
-            // PUT for full resource replacement
+        // PUT — updating existing resources
+        case .updateUserProfile, .updateBooking, .updateRestaurant,
+             .updateMenuItem, .editChatMessage:
             return .put
 
-        case .fetchNearbyRestaurants,
-             .fetchRestaurant,
-             .fetchMenuItems,
-             .fetchReviews,
-             .fetchUserProfile:
-            // GET for safe, read-only operations
+        // DELETE — removing resources
+        case .deleteBooking, .deleteMenuItem, .deleteChatMessage:
+            return .delete
+
+        // GET — safe, read-only operations
+        case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems,
+             .fetchReviews, .fetchUserProfile,
+             .fetchBookings, .fetchBooking, .fetchRestaurantBookings,
+             .fetchChatRecords, .fetchChatRoom, .fetchChatMessages:
             return .get
         }
     }
 
     /// Returns query parameters for GET requests.
-    /// Converts endpoint parameters into URL query items (e.g., ?lat=51.5&lng=-0.1).
     var queryItems: [URLQueryItem]? {
         switch self {
         case .fetchNearbyRestaurants(let lat, let lng, let radius):
-            // Example: ?lat=51.5074&lng=-0.1278&radius=5000
             return [
                 URLQueryItem(name: "lat", value: String(lat)),
                 URLQueryItem(name: "lng", value: String(lng)),
@@ -155,38 +275,163 @@ enum APIEndpoint {
             ]
 
         case .fetchReviews(let restaurantId, let limit):
-            // Example: ?restaurantId=abc123&limit=10
             var items = [URLQueryItem(name: "restaurantId", value: restaurantId)]
             if let limit = limit {
                 items.append(URLQueryItem(name: "limit", value: String(limit)))
             }
             return items
 
+        case .fetchChatMessages(_, let limit):
+            guard let limit = limit else { return nil }
+            return [URLQueryItem(name: "limit", value: String(limit))]
+
         default:
-            // GET requests without query parameters
             return nil
         }
     }
 
-    /// Returns the request body for POST/PUT requests.
-    /// Automatically encodes request objects to JSON in APIClient.
+    /// Returns the request body for POST/PUT/DELETE requests.
     var body: Encodable? {
         switch self {
+        // Reviews
         case .submitReview(let request):
-            // Review data (rating, comment, restaurantId, etc.)
             return request
 
+        // Users
         case .createUserProfile(let request):
-            // User profile data (displayName, preferences, etc.)
+            return request
+        case .updateUserProfile(_, let request):
             return request
 
-        case .updateUserProfile(_, let request):
-            // Updated user profile data
+        // Bookings
+        case .createBooking(let request):
+            return request
+        case .updateBooking(_, let request):
+            return request
+
+        // Restaurant management
+        case .updateRestaurant(_, let request):
+            return request
+        case .createMenuItem(let request):
+            return request
+        case .updateMenuItem(_, let request):
+            return request
+
+        // Chat
+        case .createChatRoom(let request):
+            return request
+        case .sendChatMessage(_, let request):
+            return request
+        case .editChatMessage(_, _, let request):
+            return request
+        case .deleteChatMessage(_, _, let request):
+            return request
+
+        // Gemini
+        case .geminiChat(let request):
+            return request
+        case .geminiGenerate(let request):
+            return request
+        case .geminiRestaurantDescription(let request):
             return request
 
         default:
-            // GET requests don't have request bodies
             return nil
         }
     }
+}
+
+// MARK: - Restaurant Management Request Models
+
+/// Request body for PUT /API/Restaurants/:id
+struct UpdateRestaurantRequest: Codable, Sendable {
+    var nameEN: String?
+    var nameTC: String?
+    var addressEN: String?
+    var addressTC: String?
+    var districtEN: String?
+    var districtTC: String?
+    var keywordEN: [String]?
+    var keywordTC: [String]?
+    var seats: Int?
+    var contacts: [String]?
+    var imageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case nameEN = "Name_EN"
+        case nameTC = "Name_TC"
+        case addressEN = "Address_EN"
+        case addressTC = "Address_TC"
+        case districtEN = "District_EN"
+        case districtTC = "District_TC"
+        case keywordEN = "Keyword_EN"
+        case keywordTC = "Keyword_TC"
+        case seats = "Seats"
+        case contacts = "Contacts"
+        case imageUrl = "ImageUrl"
+    }
+}
+
+// MARK: - Menu CRUD Request Models
+
+/// Request body for POST /API/Menu/Items
+struct CreateMenuItemRequest: Codable, Sendable {
+    let restaurantId: String
+    let nameEN: String
+    let nameTC: String
+    let descriptionEN: String?
+    let descriptionTC: String?
+    let price: Double?
+    let image: String?
+
+    enum CodingKeys: String, CodingKey {
+        case restaurantId
+        case nameEN = "Name_EN"
+        case nameTC = "Name_TC"
+        case descriptionEN = "Description_EN"
+        case descriptionTC = "Description_TC"
+        case price = "Price"
+        case image = "Image"
+    }
+}
+
+/// Request body for PUT /API/Menu/Items/:id
+struct UpdateMenuItemRequest: Codable, Sendable {
+    var nameEN: String?
+    var nameTC: String?
+    var descriptionEN: String?
+    var descriptionTC: String?
+    var price: Double?
+    var image: String?
+
+    enum CodingKeys: String, CodingKey {
+        case nameEN = "Name_EN"
+        case nameTC = "Name_TC"
+        case descriptionEN = "Description_EN"
+        case descriptionTC = "Description_TC"
+        case price = "Price"
+        case image = "Image"
+    }
+}
+
+// MARK: - Chat Edit/Delete Request Models
+
+/// Request body for PUT /API/Chat/Rooms/:roomId/Messages/:messageId
+struct EditMessageRequest: Codable, Sendable {
+    let message: String
+    let userId: String
+}
+
+/// Request body for DELETE /API/Chat/Rooms/:roomId/Messages/:messageId
+struct DeleteMessageRequest: Codable, Sendable {
+    let userId: String
+}
+
+// MARK: - Claim Restaurant Response
+
+/// Response from POST /API/Restaurants/:id/claim
+struct ClaimRestaurantResponse: Codable, Sendable {
+    let message: String?
+    let restaurantId: String?
+    let userId: String?
 }
