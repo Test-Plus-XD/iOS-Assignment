@@ -76,8 +76,12 @@ final class SocketService {
             return
         }
 
+        var request = URLRequest(url: url)
+        // Set Origin header required by Socket.IO CORS validation
+        request.setValue(Constants.Chat.socketURL, forHTTPHeaderField: "Origin")
+
         let session = URLSession(configuration: .default)
-        webSocketTask = session.webSocketTask(with: url)
+        webSocketTask = session.webSocketTask(with: request)
         webSocketTask?.resume()
 
         // Start receiving messages

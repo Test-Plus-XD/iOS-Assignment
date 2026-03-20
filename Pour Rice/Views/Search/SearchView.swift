@@ -221,33 +221,48 @@ private struct SearchResultRow: View {
     var userLocation: CLLocation?
 
     var body: some View {
-        HStack(spacing: Constants.UI.spacingMedium) {
+        HStack(spacing: 14) {
 
-            // Thumbnail image with optional distance badge on top-right
-            ZStack(alignment: .topTrailing) {
+            // Rounded thumbnail with open/closed overlay
+            ZStack(alignment: .bottomLeading) {
                 AsyncImageView(
                     url: restaurant.imageURLs.first,
                     contentMode: .fill,
-                    cornerRadius: Constants.UI.cornerRadiusMedium,
+                    cornerRadius: Constants.UI.cornerRadiusLarge,
                     aspectRatio: 1
                 )
-                .frame(width: 64, height: 64)
+                .frame(width: 80, height: 80)
 
-                if let distance = restaurant.distance(from: userLocation) {
-                    DistanceBadge(meters: distance)
-                        .padding(4)
+                // Open/Closed pill — only when opening hours are available
+                if !restaurant.openingHours.isEmpty {
+                    Text(restaurant.isOpenNow
+                         ? String(localized: "open_now")
+                         : String(localized: "closed"))
+                        .font(.system(size: 9, weight: .bold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            restaurant.isOpenNow
+                                ? Color.accentColor.opacity(0.9)
+                                : Color.secondary.opacity(0.7),
+                            in: Capsule()
+                        )
+                        .padding(5)
                 }
             }
-            .frame(width: 64, height: 64)
+            .frame(width: 80, height: 80)
 
             // Restaurant details
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
 
                 Text(restaurant.name.localised)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                HStack {
+                HStack(spacing: 4) {
                     Text(restaurant.cuisine.localised)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -259,32 +274,51 @@ private struct SearchResultRow: View {
                 }
                 .lineLimit(1)
 
-                HStack(spacing: 6) {
-                    // Rating
-                    Label(restaurant.ratingDisplay, systemImage: "star.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                HStack(spacing: 10) {
+                    // Rating with accent background
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                        Text(restaurant.ratingDisplay)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.85), in: Capsule())
 
-                    // Price range
                     Text(restaurant.priceRangeDisplay)
                         .font(.caption)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
 
                     Spacer()
 
-                    // Open/Closed status — only shown when opening hours are available
-                    // Search results from Algolia don't include opening hours
-                    if !restaurant.openingHours.isEmpty {
-                        Text(restaurant.isOpenNow
-                             ? String(localized: "open_now")
-                             : String(localized: "closed"))
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(restaurant.isOpenNow ? .green : .secondary)
+                    // Distance
+                    if let distance = restaurant.distance(from: userLocation) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 9))
+                            DistanceBadge.label(meters: distance)
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundStyle(Color.accentColor)
                     }
                 }
             }
         }
+        .padding(Constants.UI.spacingSmall)
+        .background(
+            RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusLarge)
+                .fill(Color(.secondarySystemBackground))
+                .shadow(color: Color.accentColor.opacity(0.08), radius: 8, x: 0, y: 3)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusLarge)
+                .strokeBorder(Color.accentColor.opacity(0.1), lineWidth: 1)
+        )
     }
 }
 

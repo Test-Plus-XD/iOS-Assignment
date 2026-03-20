@@ -42,7 +42,8 @@ final class DefaultAPIClient: APIClient {
 
     /// Auth service for retrieving Firebase ID tokens.
     /// Optional - nil for unauthenticated requests (e.g., public restaurant listings).
-    private let authService: AuthService?
+    /// Settable after init to resolve circular dependency with AuthService.
+    var authService: AuthService?
 
     // MARK: - Initialisation
 
@@ -177,16 +178,15 @@ final class DefaultAPIClient: APIClient {
         )
 
         // Only inject Firebase ID token for endpoints that require authentication
-        if requiresAuth, let authService = authService {
-            do {
-                let idToken = try await authService.getIDToken()
-                request.setValue(
-                    "Bearer \(idToken)",
-                    forHTTPHeaderField: Constants.API.Headers.authorization
-                )
-            } catch {
-                print("Warning: Could not retrieve ID token: \(error.localizedDescription)")
+        if requiresAuth {
+            guard let authService = authService else {
+                throw APIError.unauthorized
             }
+            let idToken = try await authService.getIDToken()
+            request.setValue(
+                "Bearer \(idToken)",
+                forHTTPHeaderField: Constants.API.Headers.authorization
+            )
         }
     }
 

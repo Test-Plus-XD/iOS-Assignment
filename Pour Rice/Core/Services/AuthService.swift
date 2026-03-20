@@ -606,13 +606,15 @@ final class AuthService {
         defer { isLoading = false }
 
         do {
-            // Send PUT request to update profile
+            // Send PUT request to update profile (API returns 204 No Content)
             let endpoint = APIEndpoint.updateUserProfile(userId: userId, request)
-            currentUser = try await apiClient.request(
+            try await apiClient.requestVoid(
                 endpoint,
-                responseType: User.self,
                 callerService: "AuthService"
             )
+
+            // Reload the profile to pick up the server-side changes
+            try await loadUserProfile(uid: userId)
 
             print("✅ User profile updated successfully")
 

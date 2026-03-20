@@ -198,27 +198,21 @@ struct HomeView: View {
                 EmptyStateView.noNearbyRestaurants()
                     .frame(height: 200)
             } else {
-                // List of nearby restaurants
-                // LazyVStack only renders visible rows (better performance)
-                LazyVStack(spacing: 0) {
+                // List of nearby restaurants — card-style with accent tint
+                LazyVStack(spacing: 10) {
                     ForEach(restaurants) { restaurant in
                         NavigationLink(value: restaurant) {
                             RestaurantRowView(
                                 restaurant: restaurant,
                                 userLocation: services.locationService.currentLocation
                             )
-                            .padding(.horizontal, Constants.UI.spacingMedium)
-                            .padding(.vertical, Constants.UI.spacingSmall)
                         }
                         .buttonStyle(.plain)
                         .hapticFeedback(style: .light)
                         .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars")
-
-                        // Divider between rows (like Divider() in Flutter)
-                        Divider()
-                            .padding(.leading, Constants.UI.spacingMedium)
                     }
                 }
+                .padding(.horizontal, Constants.UI.spacingMedium)
             }
         }
         .padding(.bottom, Constants.UI.spacingLarge)
@@ -311,6 +305,7 @@ private struct FeaturedRestaurantCard: View {
 /// Compact horizontal row view for restaurant lists
 ///
 /// Shows thumbnail image, name, cuisine, rating, and distance.
+/// Styled with organic accent-coloured card with soft shadow.
 /// Used in the nearby restaurants section.
 private struct RestaurantRowView: View {
 
@@ -318,30 +313,43 @@ private struct RestaurantRowView: View {
     var userLocation: CLLocation?
 
     var body: some View {
-        HStack(spacing: Constants.UI.spacingMedium) {
+        HStack(spacing: 14) {
 
-            // Square thumbnail image with optional distance badge
-            ZStack(alignment: .topTrailing) {
+            // Rounded thumbnail with overlay badges
+            ZStack(alignment: .bottomLeading) {
                 AsyncImageView(
                     url: restaurant.imageURLs.first,
                     contentMode: .fill,
-                    cornerRadius: Constants.UI.cornerRadiusMedium,
+                    cornerRadius: Constants.UI.cornerRadiusLarge,
                     aspectRatio: 1
                 )
-                .frame(width: 72, height: 72)
+                .frame(width: 88, height: 88)
 
-                if let distance = restaurant.distance(from: userLocation) {
-                    DistanceBadge(meters: distance)
-                        .padding(4)
-                }
+                // Open/Closed pill overlaid on image
+                Text(restaurant.isOpenNow
+                     ? String(localized: "open_now")
+                     : String(localized: "closed"))
+                    .font(.system(size: 9, weight: .bold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(
+                        restaurant.isOpenNow
+                            ? Color.accentColor.opacity(0.9)
+                            : Color.secondary.opacity(0.7),
+                        in: Capsule()
+                    )
+                    .padding(6)
             }
-            .frame(width: 72, height: 72)
+            .frame(width: 88, height: 88)
 
             // Restaurant info
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
 
                 Text(restaurant.name.localised)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Text(restaurant.cuisine.localised)
@@ -349,36 +357,57 @@ private struct RestaurantRowView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                HStack {
-                    // Star + rating
-                    Label(restaurant.ratingDisplay, systemImage: "star.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-
-                    Text("·")
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    // Star + rating with accent background
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                        Text(restaurant.ratingDisplay)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.85), in: Capsule())
 
                     Text(restaurant.priceRangeDisplay)
                         .font(.caption)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
 
                     Spacer()
 
-                    // Open/Closed
-                    Text(restaurant.isOpenNow
-                         ? String(localized: "open_now")
-                         : String(localized: "closed"))
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(restaurant.isOpenNow ? .green : .secondary)
+                    // Distance badge
+                    if let distance = restaurant.distance(from: userLocation) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 9))
+                            DistanceBadge.label(meters: distance)
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundStyle(Color.accentColor)
+                    }
                 }
             }
 
-            // Disclosure chevron (standard iOS navigation indicator)
+            // Disclosure chevron
             Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.accentColor.opacity(0.5))
         }
+        .padding(Constants.UI.spacingSmall)
+        .background(
+            RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusLarge)
+                .fill(Color(.secondarySystemBackground))
+                .shadow(color: Color.accentColor.opacity(0.08), radius: 8, x: 0, y: 3)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusLarge)
+                .strokeBorder(Color.accentColor.opacity(0.1), lineWidth: 1)
+        )
     }
 }
 
@@ -415,6 +444,16 @@ struct DistanceBadge: View {
 
     /// Human-readable distance string (e.g. "350 m" or "1.2 km")
     private var label: String {
+        Self.formattedDistance(meters: meters)
+    }
+
+    /// Returns a formatted distance Text view for use outside the badge
+    static func label(meters: Double) -> Text {
+        Text(formattedDistance(meters: meters))
+    }
+
+    /// Shared formatting logic
+    static func formattedDistance(meters: Double) -> String {
         if meters < 1000 {
             return "\(Int(meters.rounded())) m"
         } else {

@@ -309,21 +309,7 @@ struct CreateRoomResponse: Codable, Sendable {
     let message: String?
 }
 
-/// Response for message list
+/// Response for message list — API returns { "roomId": "...", "count": N, "messages": [...] }
 struct ChatMessagesResponse: Codable, Sendable {
     let messages: [ChatMessage]
-
-    enum CodingKeys: String, CodingKey {
-        case messages = "data"
-    }
-
-    init(from decoder: Decoder) throws {
-        // Try "data" wrapper first, fall back to top-level array
-        if let c = try? decoder.container(keyedBy: CodingKeys.self),
-           let msgs = try? c.decode([ChatMessage].self, forKey: .messages) {
-            messages = msgs
-        } else {
-            messages = try [ChatMessage](from: decoder)
-        }
-    }
 }

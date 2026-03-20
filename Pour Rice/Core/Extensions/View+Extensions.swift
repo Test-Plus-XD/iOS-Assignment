@@ -123,26 +123,26 @@ class Services {
 
     /// Creates a new services container with all dependencies
     init() {
-        // Initialise API client first (without auth service initially)
-        let tempClient = DefaultAPIClient()
+        // Create a single API client, then wire up auth after AuthService exists.
+        // This resolves the circular dependency: APIClient needs AuthService for
+        // token injection, AuthService needs APIClient for network requests.
+        let client = DefaultAPIClient()
+        let auth = AuthService(apiClient: client)
+        client.authService = auth
 
-        // Initialise auth service with temporary client
-        let auth = AuthService(apiClient: tempClient)
-
-        // Now create the real API client with auth service
-        self.apiClient = DefaultAPIClient(authService: auth)
+        self.apiClient = client
         self.authService = auth
 
-        // Initialise other services with API client
-        self.restaurantService = RestaurantService(apiClient: apiClient)
-        self.reviewService = ReviewService(apiClient: apiClient)
-        self.menuService = MenuService(apiClient: apiClient)
+        // Initialise other services with the same API client
+        self.restaurantService = RestaurantService(apiClient: client)
+        self.reviewService = ReviewService(apiClient: client)
+        self.menuService = MenuService(apiClient: client)
         self.locationService = LocationService()
-        self.bookingService = BookingService(apiClient: apiClient)
-        self.chatService = ChatService(apiClient: apiClient)
+        self.bookingService = BookingService(apiClient: client)
+        self.chatService = ChatService(apiClient: client)
         self.socketService = SocketService()
-        self.geminiService = GeminiService(apiClient: apiClient)
-        self.storeService = StoreService(apiClient: apiClient)
+        self.geminiService = GeminiService(apiClient: client)
+        self.storeService = StoreService(apiClient: client)
 
         print("✅ Services container initialised")
     }

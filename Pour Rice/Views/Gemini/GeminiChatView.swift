@@ -126,8 +126,18 @@ struct GeminiChatView: View {
             }
 
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
-                // Try to render markdown, fall back to plain text
-                if message.role == .model, let attributed = try? AttributedString(markdown: message.content) {
+                // Try to render markdown, fall back to plain text.
+                // Pre-process: convert single newlines to Markdown hard breaks (trailing double-space)
+                // so that line breaks and emojis from the AI response are preserved.
+                if message.role == .model,
+                   let attributed = try? AttributedString(
+                       markdown: message.content
+                           .components(separatedBy: "\n")
+                           .joined(separator: "  \n"),
+                       options: AttributedString.MarkdownParsingOptions(
+                           interpretedSyntax: .inlineOnlyPreservingWhitespace
+                       )
+                   ) {
                     Text(attributed)
                         .font(.body)
                         .textSelection(.enabled)
