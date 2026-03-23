@@ -28,7 +28,6 @@ struct StoreInfoEditView: View {
     @State private var seats = ""
     @State private var contacts = ""
     @State private var isSaving = false
-    @State private var showSaved = false
 
     // Photo picker
     @State private var selectedPhoto: PhotosPickerItem?
@@ -102,11 +101,10 @@ struct StoreInfoEditView: View {
                 Task { await uploadPhoto(newValue) }
             }
         }
-        .overlay {
-            if showSaved {
-                savedOverlay
-            }
-        }
+        .toast(message: viewModel.toastMessage, style: viewModel.toastStyle, isPresented: Binding(
+            get: { viewModel.showToast },
+            set: { viewModel.showToast = $0 }
+        ))
     }
 
     // MARK: - Load Existing Data
@@ -145,14 +143,6 @@ struct StoreInfoEditView: View {
 
         await viewModel.updateRestaurantInfo(request: request)
         isSaving = false
-
-        withAnimation {
-            showSaved = true
-        }
-        try? await Task.sleep(nanoseconds: 1_500_000_000)
-        withAnimation {
-            showSaved = false
-        }
     }
 
     // MARK: - Upload Photo
@@ -165,18 +155,4 @@ struct StoreInfoEditView: View {
         isUploadingImage = false
     }
 
-    // MARK: - Saved Overlay
-
-    private var savedOverlay: some View {
-        VStack {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.green)
-            Text("store_edit_saved")
-                .font(.headline)
-        }
-        .padding(24)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .transition(.scale.combined(with: .opacity))
-    }
 }

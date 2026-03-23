@@ -71,6 +71,10 @@ struct ChatRoomView: View {
         .onDisappear {
             viewModel.stop()
         }
+        .toast(message: viewModel.toastMessage, style: viewModel.toastStyle, isPresented: Binding(
+            get: { viewModel.showToast },
+            set: { viewModel.showToast = $0 }
+        ))
     }
 
     // MARK: - Messages ScrollView

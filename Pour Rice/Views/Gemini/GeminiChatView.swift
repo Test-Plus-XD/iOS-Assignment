@@ -57,6 +57,10 @@ struct GeminiChatView: View {
         .task {
             viewModel.initialise(service: services.geminiService, restaurant: restaurant)
         }
+        .toast(message: viewModel.toastMessage, style: viewModel.toastStyle, isPresented: Binding(
+            get: { viewModel.showToast },
+            set: { viewModel.showToast = $0 }
+        ))
     }
 
     // MARK: - Messages

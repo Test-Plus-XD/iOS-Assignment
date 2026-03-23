@@ -30,6 +30,15 @@ final class StoreViewModel {
     /// Current error
     var error: Error?
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .success
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     // MARK: - Dependencies
 
     private var storeService: StoreService?
@@ -118,8 +127,10 @@ final class StoreViewModel {
         do {
             try await service.acceptBooking(id: id)
             await refreshBookings()
+            showToast(String(localized: "toast_store_booking_accepted", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -129,8 +140,10 @@ final class StoreViewModel {
         do {
             try await service.declineBooking(id: id, reason: reason)
             await refreshBookings()
+            showToast(String(localized: "toast_store_booking_declined", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -140,8 +153,10 @@ final class StoreViewModel {
         do {
             try await service.completeBooking(id: id)
             await refreshBookings()
+            showToast(String(localized: "toast_store_booking_completed", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -153,8 +168,10 @@ final class StoreViewModel {
         do {
             try await service.createMenuItem(request)
             await refreshMenu()
+            showToast(String(localized: "toast_store_menu_added", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -164,8 +181,10 @@ final class StoreViewModel {
         do {
             try await service.deleteMenuItem(id: id)
             menuItems.removeAll { $0.id == id }
+            showToast(String(localized: "toast_store_menu_deleted", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -178,8 +197,10 @@ final class StoreViewModel {
             try await service.updateRestaurant(id: restaurant.id, request: request)
             // Refresh to get updated data
             self.restaurant = try await service.fetchRestaurant(id: restaurant.id)
+            showToast(String(localized: "toast_store_info_updated", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -191,6 +212,7 @@ final class StoreViewModel {
             return url
         } catch {
             self.error = error
+            showToast(String(localized: "toast_store_image_failed", bundle: L10n.bundle), .error)
             return nil
         }
     }
@@ -213,5 +235,11 @@ final class StoreViewModel {
         } catch {
             self.error = error
         }
+    }
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }

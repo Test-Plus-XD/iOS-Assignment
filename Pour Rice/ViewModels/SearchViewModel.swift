@@ -58,6 +58,15 @@ final class SearchViewModel {
     /// Used to differentiate "initial state" from "empty results"
     var hasSearched = false
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .success
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     // MARK: - Pagination State
 
     /// The zero-based index of the last page that was loaded
@@ -171,6 +180,7 @@ final class SearchViewModel {
             // Only show error if task was not cancelled
             if !Task.isCancelled {
                 errorMessage = error.localizedDescription
+                showToast(String(localized: "toast_search_failed", bundle: L10n.bundle), .error)
                 print("❌ Search failed: \(error.localizedDescription)")
             }
         }
@@ -252,4 +262,12 @@ final class SearchViewModel {
         "Vegan", "Vegetarian", "Organic", "Dim Sum", "Hot Pot",
         "Noodles", "Rice", "Seafood", "Healthy", "Fusion"
     ]
+
+    // MARK: - Private Helpers
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
+    }
 }

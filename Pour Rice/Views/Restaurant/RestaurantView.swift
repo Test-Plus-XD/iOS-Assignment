@@ -73,6 +73,10 @@ struct RestaurantView: View {
                 await vm.loadData(restaurantId: restaurant.id)
             }
         }
+        .toast(message: viewModel?.toastMessage ?? "", style: viewModel?.toastStyle ?? .success, isPresented: Binding(
+            get: { viewModel?.showToast ?? false },
+            set: { viewModel?.showToast = $0 }
+        ))
     }
 
     // MARK: - Main Content

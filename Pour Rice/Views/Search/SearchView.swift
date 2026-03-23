@@ -60,6 +60,10 @@ struct SearchView: View {
                 await viewModel?.loadInitialResults()
             }
         }
+        .toast(message: viewModel?.toastMessage ?? "", style: viewModel?.toastStyle ?? .success, isPresented: Binding(
+            get: { viewModel?.showToast ?? false },
+            set: { viewModel?.showToast = $0 }
+        ))
     }
 
     // MARK: - Search Content

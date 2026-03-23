@@ -24,6 +24,9 @@ struct ClaimRestaurantView: View {
     @State private var isClaiming = false
     @State private var claimError: Error?
     @State private var claimSuccess = false
+    @State private var toastMessage = ""
+    @State private var toastStyle: ToastStyle = .success
+    @State private var showToast = false
 
     // MARK: - Body
 
@@ -97,26 +100,8 @@ struct ClaimRestaurantView: View {
 
             Spacer()
         }
-        .overlay {
-            if claimSuccess {
-                VStack(spacing: 12) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.green)
-                    Text("store_claim_success")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text("store_claim_success_description")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(32)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
-                .transition(.scale.combined(with: .opacity))
-            }
-        }
         .errorAlert(error: $claimError)
+        .toast(message: toastMessage, style: toastStyle, isPresented: $showToast)
     }
 
     // MARK: - Search
@@ -146,11 +131,15 @@ struct ClaimRestaurantView: View {
         do {
             _ = try await services.storeService.claimRestaurant(id: restaurant.id)
 
-            withAnimation(.spring) {
-                claimSuccess = true
-            }
+            claimSuccess = true
+            toastMessage = String(localized: "toast_store_claimed", bundle: L10n.bundle)
+            toastStyle = .success
+            showToast = true
         } catch {
             claimError = error
+            toastMessage = String(localized: "toast_store_claim_failed", bundle: L10n.bundle)
+            toastStyle = .error
+            showToast = true
         }
 
         isClaiming = false

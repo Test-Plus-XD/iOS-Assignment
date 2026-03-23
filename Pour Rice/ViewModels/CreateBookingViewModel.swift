@@ -41,6 +41,15 @@ final class CreateBookingViewModel {
     /// Current error, if any
     var error: Error?
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .success
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     // MARK: - Validation
 
     /// The earliest selectable date (tomorrow)
@@ -73,11 +82,21 @@ final class CreateBookingViewModel {
 
             _ = try await service.createBooking(request)
             didCreate = true
+            showToast(String(localized: "toast_booking_created", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_booking_create_failed", bundle: L10n.bundle), .error)
             print("❌ CreateBookingVM: Failed to create booking: \(error.localizedDescription)")
         }
 
         isSubmitting = false
+    }
+
+    // MARK: - Private Helpers
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }

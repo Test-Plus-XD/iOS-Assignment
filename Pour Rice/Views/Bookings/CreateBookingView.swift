@@ -111,6 +111,10 @@ struct CreateBookingView: View {
                 }
             }
             .errorAlert(error: $viewModel.error)
+            .toast(message: viewModel.toastMessage, style: viewModel.toastStyle, isPresented: Binding(
+                get: { viewModel.showToast },
+                set: { viewModel.showToast = $0 }
+            ))
         }
     }
 }
