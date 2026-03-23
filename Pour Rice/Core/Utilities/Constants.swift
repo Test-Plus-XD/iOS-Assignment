@@ -219,6 +219,34 @@ enum Constants {
         static let typingDebounceNs: UInt64 = 500_000_000
     }
 
+    // MARK: - Deep Link Configuration
+
+    /// Deep link URL scheme used for QR code navigation between the iOS app and Android app.
+    ///
+    /// Both iOS and Android apps share the same URL format so QR codes generated
+    /// on one platform are scannable on the other.
+    ///
+    /// Full URL format: pourrice://menu/{restaurantId}
+    ///
+    /// ============= FOR FLUTTER/ANDROID DEVELOPERS: =============
+    /// Android uses the same scheme string in the QR URL but does NOT register
+    /// OS-level intent filters (no <intent-filter> in AndroidManifest.xml).
+    /// iOS MUST register the scheme in Info.plist CFBundleURLTypes for the OS
+    /// to route external URLs (e.g. from Safari or another app) to Pour Rice.
+    /// Without the Info.plist entry, only in-app scanning works — the device
+    /// would not know to open Pour Rice when another app fires pourrice://.
+    /// =============================================================
+    enum DeepLink {
+        /// Custom URL scheme registered in Info.plist CFBundleURLTypes.
+        /// Must match the scheme component of every QR-encoded URL.
+        static let scheme = "pourrice"
+
+        /// URL host component that identifies a menu deep link.
+        /// The path segment after the host carries the restaurantId:
+        ///   pourrice://menu/{restaurantId}
+        static let menuHost = "menu"
+    }
+
     // MARK: - Search Configuration
 
     /// Search and filtering configuration

@@ -39,6 +39,14 @@ struct SearchView: View {
     /// Tracks language changes to force BilingualText re-evaluation
     @AppStorage("preferredLanguage") private var preferredLanguage = "en"
 
+    /// Controls whether the QR scanner full-screen cover is presented.
+    /// Declared here (not in searchContent) because @State cannot be added inside
+    /// a @ViewBuilder function — it must live on the View struct itself.
+    ///
+    /// The scanner is available to all user types (guests, diners, owners)
+    /// because scanning a QR code just opens a public menu page.
+    @State private var showingQRScanner = false
+
     // MARK: - Body
 
     var body: some View {
@@ -64,6 +72,20 @@ struct SearchView: View {
             get: { viewModel?.showToast ?? false },
             set: { viewModel?.showToast = $0 }
         ))
+        // QR scanner full-screen cover.
+        //
+        // fullScreenCover (not .sheet) is used because:
+        //  1. The camera viewfinder must fill the entire screen (no card-style modal)
+        //  2. It matches the Android app's full-screen camera UX
+        //
+        // NavigationStack wrapper is REQUIRED so QRScannerView's .navigationDestination
+        // can push MenuView after a successful scan. Without it, the push has no stack
+        // to push onto and will be silently ignored by SwiftUI.
+        .fullScreenCover(isPresented: $showingQRScanner) {
+            NavigationStack {
+                QRScannerView()
+            }
+        }
     }
 
     // MARK: - Search Content
@@ -162,10 +184,32 @@ struct SearchView: View {
         .onChange(of: vm.searchQuery) { _, _ in
             vm.searchQueryChanged()
         }
-        // Toolbar item for filter button
+        // Toolbar items — filter (right) and QR scanner (right, second button)
+        //
+        // iOS renders multiple .topBarTrailing ToolbarItems left-to-right in declaration order,
+        // so the scanner button appears to the LEFT of the filter button (further from the edge).
+        // This matches common iOS patterns (e.g. iOS Camera app's options toolbar).
         .toolbar {
+            // Filter button — already existed; opens the district/keyword filter sheet
             ToolbarItem(placement: .topBarTrailing) {
                 filterButton(vm: vm)
+            }
+
+            // QR scanner button — opens full-screen camera to scan a restaurant's QR code.
+            // camera.viewfinder is a natural icon choice: it communicates both
+            // "camera" (scanning) and "frame/target" (aiming at a QR code).
+            //
+            // ANDROID EQUIVALENT:
+            //   The QR scanner entry point in the Android app is in the navigation drawer:
+            //   ListTile(leading: Icon(Icons.qr_code_scanner), ...)
+            //   iOS has no drawer, so the toolbar is the closest equivalent.
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingQRScanner = true
+                } label: {
+                    Image(systemName: "camera.viewfinder")
+                }
+                .accessibilityLabel(Text("qr_scanner_open"))
             }
         }
         // Filter sheet presented when showingFilters is true
