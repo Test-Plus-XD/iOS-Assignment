@@ -265,13 +265,13 @@ enum LocationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return String(localized: "error_location_permission_denied")
+            return String(localized: "error_location_permission_denied", bundle: L10n.bundle)
 
         case .servicesDisabled:
-            return String(localized: "error_location_services_disabled")
+            return String(localized: "error_location_services_disabled", bundle: L10n.bundle)
 
         case .locationUnavailable:
-            return String(localized: "error_location_unavailable")
+            return String(localized: "error_location_unavailable", bundle: L10n.bundle)
         }
     }
 
@@ -280,13 +280,13 @@ enum LocationError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .permissionDenied:
-            return String(localized: "error_recovery_location_permission")
+            return String(localized: "error_recovery_location_permission", bundle: L10n.bundle)
 
         case .servicesDisabled:
-            return String(localized: "error_recovery_location_services")
+            return String(localized: "error_recovery_location_services", bundle: L10n.bundle)
 
         case .locationUnavailable:
-            return String(localized: "error_recovery_location_unavailable")
+            return String(localized: "error_recovery_location_unavailable", bundle: L10n.bundle)
         }
     }
 }

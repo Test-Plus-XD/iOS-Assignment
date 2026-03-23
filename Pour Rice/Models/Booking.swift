@@ -75,11 +75,11 @@ struct Booking: Codable, Identifiable, Hashable, Sendable {
         /// Localised display label
         var label: String {
             switch self {
-            case .pending:   return String(localized: "booking_status_pending")
-            case .accepted:  return String(localized: "booking_status_accepted")
-            case .declined:  return String(localized: "booking_status_declined")
-            case .completed: return String(localized: "booking_status_completed")
-            case .cancelled: return String(localized: "booking_status_cancelled")
+            case .pending:   return String(localized: "booking_status_pending", bundle: L10n.bundle)
+            case .accepted:  return String(localized: "booking_status_accepted", bundle: L10n.bundle)
+            case .declined:  return String(localized: "booking_status_declined", bundle: L10n.bundle)
+            case .completed: return String(localized: "booking_status_completed", bundle: L10n.bundle)
+            case .cancelled: return String(localized: "booking_status_cancelled", bundle: L10n.bundle)
             }
         }
     }

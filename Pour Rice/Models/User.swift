@@ -77,6 +77,12 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     /// Used to display restaurant content in the correct language
     var preferredLanguage: String
 
+    /// User's preferred theme ("light", "dark", or "system")
+    var preferredTheme: String
+
+    /// Whether push notifications are enabled
+    var notificationsEnabled: Bool
+
     /// Date when the account was created
     /// Automatically set to current time during initialization
     let createdAt: Date
@@ -138,6 +144,8 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     /// Keys for the nested `preferences` object in the API response
     private enum PreferencesCodingKeys: String, CodingKey {
         case language                // "EN" | "TC"
+        case theme                   // "light" | "dark" | "system"
+        case notifications           // Bool
     }
 
     // MARK: - Custom Decodable
@@ -158,11 +166,13 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         createdAt        = (try? c.decode(Date.self,   forKey: .createdAt)) ?? Date()
         updatedAt        = (try? c.decode(Date.self,   forKey: .updatedAt)) ?? Date()
 
-        // preferredLanguage lives inside the nested "preferences" object.
-        // Map API codes ("EN" → "en", "TC" → "zh-Hant").
+        // Preferences live inside the nested "preferences" object.
         let prefs = try c.nestedContainer(keyedBy: PreferencesCodingKeys.self, forKey: .preferences)
+        // Map API codes ("EN" → "en", "TC" → "zh-Hant")
         let lang  = try prefs.decode(String.self, forKey: .language)
         preferredLanguage = lang == "TC" ? "zh-Hant" : "en"
+        preferredTheme = try prefs.decodeIfPresent(String.self, forKey: .theme) ?? "system"
+        notificationsEnabled = try prefs.decodeIfPresent(Bool.self, forKey: .notifications) ?? true
     }
 
     // MARK: - Custom Encodable
@@ -195,6 +205,8 @@ struct User: Codable, Identifiable, Hashable, Sendable {
             langCode = "EN"
         }
         try prefs.encode(langCode, forKey: .language)
+        try prefs.encode(preferredTheme, forKey: .theme)
+        try prefs.encode(notificationsEnabled, forKey: .notifications)
     }
 
     // MARK: - Initialisation
@@ -228,7 +240,9 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         phoneNumber: String? = nil,
         bio: String? = nil,
         restaurantId: String? = nil,
-        preferredLanguage: String = "en"
+        preferredLanguage: String = "en",
+        preferredTheme: String = "system",
+        notificationsEnabled: Bool = true
     ) {
         self.id = id
         self.email = email
@@ -239,6 +253,8 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         self.bio = bio
         self.restaurantId = restaurantId
         self.preferredLanguage = preferredLanguage
+        self.preferredTheme = preferredTheme
+        self.notificationsEnabled = notificationsEnabled
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -291,15 +307,43 @@ struct CreateUserRequest: Codable {
 /// To only update the display name:
 /// UpdateUserRequest(displayName: "New Name", photoURL: nil, preferredLanguage: nil)
 ///
-/// FLUTTER EQUIVALENT:
-/// class UpdateUserRequest {
-///   String? displayName;
-///   String? photoURL;
-///   String? preferredLanguage;
-/// }
+/// The API stores language inside `preferences.language` with values "EN" or "TC".
+/// This struct mirrors that nested structure so `{ merge: true }` on the server
+/// correctly updates the nested field.
 struct UpdateUserRequest: Codable {
-    let displayName: String?          // New display name (nil = don't update)
-    let photoURL: String?             // New photo URL (nil = don't update)
-    let preferredLanguage: String?    // New language preference (nil = don't update)
+    let displayName: String?
+    let photoURL: String?
+    let phoneNumber: String?
+    let bio: String?
+    let preferences: Preferences?
+
+    struct Preferences: Codable {
+        let language: String?
+        let theme: String?
+        let notifications: Bool?
+    }
+
+    /// Convenience initialiser that maps app language codes ("en"/"zh-Hant")
+    /// to the API codes ("EN"/"TC") used inside `preferences.language`.
+    init(
+        displayName: String? = nil,
+        photoURL: String? = nil,
+        phoneNumber: String? = nil,
+        bio: String? = nil,
+        preferredLanguage: String? = nil,
+        theme: String? = nil,
+        notifications: Bool? = nil
+    ) {
+        self.displayName = displayName
+        self.photoURL = photoURL
+        self.phoneNumber = phoneNumber
+        self.bio = bio
+        if preferredLanguage != nil || theme != nil || notifications != nil {
+            let apiLangCode: String? = preferredLanguage.map { $0 == "zh-Hant" ? "TC" : "EN" }
+            self.preferences = Preferences(language: apiLangCode, theme: theme, notifications: notifications)
+        } else {
+            self.preferences = nil
+        }
+    }
 }
 

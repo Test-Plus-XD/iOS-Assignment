@@ -60,39 +60,39 @@ enum APIError: LocalizedError {
         switch self {
         case .networkError(let error):
             // Include underlying error description for debugging
-            return String(localized: "error_network") + ": \(error.localizedDescription)"
+            return String(localized: "error_network", bundle: L10n.bundle) + ": \(error.localizedDescription)"
 
         case .decodingError:
             // JSON decoding failure
-            return String(localized: "error_decoding")
+            return String(localized: "error_decoding", bundle: L10n.bundle)
 
         case .unauthorized:
             // 401 Unauthorised - token expired or invalid
-            return String(localized: "error_unauthorised")
+            return String(localized: "error_unauthorised", bundle: L10n.bundle)
 
         case .clientError(let code):
             // 4xx errors (Bad Request, Not Found, etc.)
-            return String(localized: "error_client_\(code)")
+            return String(localized: "error_client_\(code)", bundle: L10n.bundle)
 
         case .serverError(let code):
             // 5xx errors (Internal Server Error, Service Unavailable, etc.)
-            return String(localized: "error_server_\(code)")
+            return String(localized: "error_server_\(code)", bundle: L10n.bundle)
 
         case .invalidResponse:
             // Non-HTTP response or unexpected format
-            return String(localized: "error_invalid_response")
+            return String(localized: "error_invalid_response", bundle: L10n.bundle)
 
         case .invalidURL:
             // URL construction failed (programming error)
-            return String(localized: "error_invalid_url")
+            return String(localized: "error_invalid_url", bundle: L10n.bundle)
 
         case .timeout:
             // Request exceeded 30-second timeout
-            return String(localized: "error_timeout")
+            return String(localized: "error_timeout", bundle: L10n.bundle)
 
         case .noConnection:
             // Device offline or in aeroplane mode
-            return String(localized: "error_no_connection")
+            return String(localized: "error_no_connection", bundle: L10n.bundle)
         }
     }
 
@@ -103,23 +103,23 @@ enum APIError: LocalizedError {
         switch self {
         case .networkError, .noConnection:
             // Suggest checking Wi-Fi/cellular connection
-            return String(localized: "error_recovery_network")
+            return String(localized: "error_recovery_network", bundle: L10n.bundle)
 
         case .unauthorized:
             // Suggest re-authenticating via sign-in screen
-            return String(localized: "error_recovery_unauthorised")
+            return String(localized: "error_recovery_unauthorised", bundle: L10n.bundle)
 
         case .serverError:
             // Suggest trying again later (server issue)
-            return String(localized: "error_recovery_server")
+            return String(localized: "error_recovery_server", bundle: L10n.bundle)
 
         case .timeout:
             // Suggest retrying the request
-            return String(localized: "error_recovery_timeout")
+            return String(localized: "error_recovery_timeout", bundle: L10n.bundle)
 
         default:
             // Generic "try again" suggestion
-            return String(localized: "error_recovery_default")
+            return String(localized: "error_recovery_default", bundle: L10n.bundle)
         }
     }
 

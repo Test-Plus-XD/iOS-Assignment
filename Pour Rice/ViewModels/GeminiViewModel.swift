@@ -39,17 +39,17 @@ final class GeminiViewModel {
     var suggestionChips: [String] {
         if restaurantContext != nil {
             return [
-                String(localized: "gemini_chip_recommend_dishes"),
-                String(localized: "gemini_chip_dietary_options"),
-                String(localized: "gemini_chip_restaurant_info"),
-                String(localized: "gemini_chip_nearby_similar")
+                String(localized: "gemini_chip_recommend_dishes", bundle: L10n.bundle),
+                String(localized: "gemini_chip_dietary_options", bundle: L10n.bundle),
+                String(localized: "gemini_chip_restaurant_info", bundle: L10n.bundle),
+                String(localized: "gemini_chip_nearby_similar", bundle: L10n.bundle)
             ]
         } else {
             return [
-                String(localized: "gemini_chip_find_restaurant"),
-                String(localized: "gemini_chip_vegan_options"),
-                String(localized: "gemini_chip_hk_districts"),
-                String(localized: "gemini_chip_cuisine_types")
+                String(localized: "gemini_chip_find_restaurant", bundle: L10n.bundle),
+                String(localized: "gemini_chip_vegan_options", bundle: L10n.bundle),
+                String(localized: "gemini_chip_hk_districts", bundle: L10n.bundle),
+                String(localized: "gemini_chip_cuisine_types", bundle: L10n.bundle)
             ]
         }
     }
@@ -57,9 +57,9 @@ final class GeminiViewModel {
     /// Welcome message text
     var welcomeMessage: String {
         if let restaurant = restaurantContext {
-            return String(localized: "gemini_welcome_restaurant \(restaurant.name.localised)")
+            return String(localized: "gemini_welcome_restaurant \(restaurant.name.localised)", bundle: L10n.bundle)
         } else {
-            return String(localized: "gemini_welcome_general")
+            return String(localized: "gemini_welcome_general", bundle: L10n.bundle)
         }
     }
 
@@ -110,7 +110,7 @@ final class GeminiViewModel {
             self.error = error
             messages.append(GeminiMessage(
                 role: .model,
-                content: String(localized: "gemini_error_response")
+                content: String(localized: "gemini_error_response", bundle: L10n.bundle)
             ))
         }
 

@@ -35,11 +35,11 @@ struct ClaimRestaurantView: View {
                     .font(.system(size: 48))
                     .foregroundStyle(.accent)
 
-                Text(String(localized: "store_claim_title"))
+                Text("store_claim_title")
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text(String(localized: "store_claim_description"))
+                Text("store_claim_description")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -50,7 +50,7 @@ struct ClaimRestaurantView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField(String(localized: "store_claim_search"), text: $searchQuery)
+                TextField("store_claim_search", text: $searchQuery)
                     .textFieldStyle(.plain)
                     .onSubmit { Task { await search() } }
 
@@ -103,10 +103,10 @@ struct ClaimRestaurantView: View {
                     Image(systemName: "checkmark.seal.fill")
                         .font(.system(size: 64))
                         .foregroundStyle(.green)
-                    Text(String(localized: "store_claim_success"))
+                    Text("store_claim_success")
                         .font(.title3)
                         .fontWeight(.bold)
-                    Text(String(localized: "store_claim_success_description"))
+                    Text("store_claim_success_description")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

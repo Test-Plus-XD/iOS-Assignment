@@ -33,6 +33,9 @@ final class SocketService {
     /// Continuation for typing indicator updates
     private var typingContinuation: AsyncStream<(userId: String, displayName: String, isTyping: Bool)>.Continuation?
 
+    /// Continuation for connection state changes
+    private var connectionStateContinuation: AsyncStream<Bool>.Continuation?
+
     /// Background task for receiving messages
     private var receiveTask: Task<Void, Never>?
 
@@ -42,27 +45,46 @@ final class SocketService {
     /// Ping interval from server handshake (default 25s)
     private var pingInterval: TimeInterval = 25
 
+    /// Stored connection credentials for reconnection
+    private var lastUserId: String?
+    private var lastDisplayName: String?
+    private var lastAuthToken: String?
+
     // MARK: - Streams
 
-    /// Stream of incoming chat messages (from Socket.IO 'new-message' events)
-    lazy var incomingMessages: AsyncStream<ChatMessage> = {
-        AsyncStream { continuation in
-            self.messageContinuation = continuation
-        }
-    }()
+    /// Stream of incoming chat messages (from Socket.IO 'new-message' events).
+    /// Recreated on each `connect()` call so the stream is fresh for each session.
+    private(set) var incomingMessages: AsyncStream<ChatMessage> = AsyncStream { _ in }
 
-    /// Stream of typing indicator updates
-    lazy var typingIndicators: AsyncStream<(userId: String, displayName: String, isTyping: Bool)> = {
-        AsyncStream { continuation in
-            self.typingContinuation = continuation
-        }
-    }()
+    /// Stream of typing indicator updates.
+    /// Recreated on each `connect()` call so the stream is fresh for each session.
+    private(set) var typingIndicators: AsyncStream<(userId: String, displayName: String, isTyping: Bool)> = AsyncStream { _ in }
+
+    /// Stream of connection state changes (true = connected, false = disconnected).
+    /// Used by ChatRoomViewModel to switch between socket and polling modes.
+    private(set) var connectionStateChanges: AsyncStream<Bool> = AsyncStream { _ in }
 
     // MARK: - Connection
 
     /// Connects to the Socket.IO server and registers the user.
     func connect(userId: String, displayName: String, authToken: String) {
         guard !isConnected else { return }
+
+        // Store credentials for reconnection
+        lastUserId = userId
+        lastDisplayName = displayName
+        lastAuthToken = authToken
+
+        // Create fresh AsyncStreams for this connection session
+        incomingMessages = AsyncStream { continuation in
+            self.messageContinuation = continuation
+        }
+        typingIndicators = AsyncStream { continuation in
+            self.typingContinuation = continuation
+        }
+        connectionStateChanges = AsyncStream { continuation in
+            self.connectionStateContinuation = continuation
+        }
 
         // Socket.IO v4 initial connection uses HTTP polling, then upgrades to WebSocket.
         // For simplicity, connect directly to the WebSocket transport.
@@ -100,8 +122,47 @@ final class SocketService {
         pingTask = nil
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
         webSocketTask = nil
+
+        let wasConnected = isConnected
         isConnected = false
+
+        // Finish streams so any `for await` loops exit cleanly
+        messageContinuation?.finish()
+        messageContinuation = nil
+        typingContinuation?.finish()
+        typingContinuation = nil
+
+        // Notify observers of disconnection
+        if wasConnected {
+            connectionStateContinuation?.yield(false)
+        }
+
         print("🔌 SocketService: Disconnected")
+    }
+
+    /// Attempts to reconnect using stored credentials.
+    /// Call after a disconnect to re-establish the socket connection.
+    func reconnect() {
+        guard !isConnected,
+              let userId = lastUserId,
+              let displayName = lastDisplayName,
+              let authToken = lastAuthToken else { return }
+
+        // Clean up old connection state without finishing the connection state stream
+        receiveTask?.cancel()
+        receiveTask = nil
+        pingTask?.cancel()
+        pingTask = nil
+        webSocketTask?.cancel(with: .normalClosure, reason: nil)
+        webSocketTask = nil
+        messageContinuation?.finish()
+        messageContinuation = nil
+        typingContinuation?.finish()
+        typingContinuation = nil
+
+        // Re-connect with stored credentials
+        print("🔄 SocketService: Attempting reconnect...")
+        connect(userId: userId, displayName: displayName, authToken: authToken)
     }
 
     // MARK: - Room Operations
@@ -164,6 +225,7 @@ final class SocketService {
                 if !Task.isCancelled {
                     print("❌ SocketService: Receive error: \(error.localizedDescription)")
                     isConnected = false
+                    connectionStateContinuation?.yield(false)
                 }
                 break
             }
@@ -189,6 +251,7 @@ final class SocketService {
         } else if packet.hasPrefix("40") {
             // Socket.IO connected — register the user
             isConnected = true
+            connectionStateContinuation?.yield(true)
             print("✅ SocketService: Connected")
 
             emit(event: "register", data: [
@@ -242,6 +305,18 @@ final class SocketService {
             if let dict = payload as? [String: Any],
                let roomId = dict["roomId"] as? String {
                 print("🚪 SocketService: Joined room \(roomId)")
+            }
+
+        case "message-sent":
+            if let dict = payload as? [String: Any],
+               let success = dict["success"] as? Bool {
+                if success {
+                    let msgId = dict["messageId"] as? String ?? "unknown"
+                    print("📨 SocketService: Message delivered (\(msgId))")
+                } else {
+                    let error = dict["error"] as? String ?? "unknown"
+                    print("❌ SocketService: Message delivery failed: \(error)")
+                }
             }
 
         default:

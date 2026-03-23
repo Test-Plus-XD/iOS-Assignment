@@ -258,7 +258,7 @@ struct ChatMessage: Codable, Identifiable, Hashable, Sendable {
 
     /// Display text, showing "[Message deleted]" for soft-deleted messages
     var displayText: String {
-        deleted ? String(localized: "chat_message_deleted") : message
+        deleted ? String(localized: "chat_message_deleted", bundle: L10n.bundle) : message
     }
 
     /// Formatted timestamp for display (e.g. "14:30")

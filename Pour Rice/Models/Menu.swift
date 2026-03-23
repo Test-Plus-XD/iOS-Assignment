@@ -303,15 +303,15 @@ enum MenuCategory: String, Codable, CaseIterable {
     var localised: String {
         switch self {
         case .appetiser:
-            return String(localized: "menu_category_appetiser")
+            return String(localized: "menu_category_appetiser", bundle: L10n.bundle)
         case .mainCourse:
-            return String(localized: "menu_category_main")
+            return String(localized: "menu_category_main", bundle: L10n.bundle)
         case .dessert:
-            return String(localized: "menu_category_dessert")
+            return String(localized: "menu_category_dessert", bundle: L10n.bundle)
         case .beverage:
-            return String(localized: "menu_category_beverage")
+            return String(localized: "menu_category_beverage", bundle: L10n.bundle)
         case .side:
-            return String(localized: "menu_category_side")
+            return String(localized: "menu_category_side", bundle: L10n.bundle)
         }
     }
 }
@@ -392,21 +392,21 @@ enum DietaryTag: String, Codable, CaseIterable {
     var localised: String {
         switch self {
         case .vegetarian:
-            return String(localized: "dietary_vegetarian")
+            return String(localized: "dietary_vegetarian", bundle: L10n.bundle)
         case .vegan:
-            return String(localized: "dietary_vegan")
+            return String(localized: "dietary_vegan", bundle: L10n.bundle)
         case .glutenFree:
-            return String(localized: "dietary_gluten_free")
+            return String(localized: "dietary_gluten_free", bundle: L10n.bundle)
         case .dairyFree:
-            return String(localized: "dietary_dairy_free")
+            return String(localized: "dietary_dairy_free", bundle: L10n.bundle)
         case .nutFree:
-            return String(localized: "dietary_nut_free")
+            return String(localized: "dietary_nut_free", bundle: L10n.bundle)
         case .halal:
-            return String(localized: "dietary_halal")
+            return String(localized: "dietary_halal", bundle: L10n.bundle)
         case .seafood:
-            return String(localized: "dietary_seafood")
+            return String(localized: "dietary_seafood", bundle: L10n.bundle)
         case .spicy:
-            return String(localized: "dietary_spicy")
+            return String(localized: "dietary_spicy", bundle: L10n.bundle)
         }
     }
 }

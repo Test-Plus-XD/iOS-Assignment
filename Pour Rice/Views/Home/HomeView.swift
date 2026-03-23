@@ -44,6 +44,9 @@ struct HomeView: View {
 
     // MARK: - State
 
+    /// Tracks language changes to force BilingualText re-evaluation
+    @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
     /// ViewModel managing data and business logic for this screen
     ///
     /// WHAT IS @State:
@@ -62,10 +65,10 @@ struct HomeView: View {
             if let vm = viewModel {
                 content(vm: vm)
             } else {
-                LoadingView(message: String(localized: "home_loading"))
+                LoadingView(message: "home_loading")
             }
         }
-        .navigationTitle(String(localized: "home_title"))
+        .navigationTitle("home_title")
         .navigationBarTitleDisplayMode(.large)
         // .task runs async code when this view appears on screen
         // Equivalent to initState() + async operation in Flutter
@@ -121,6 +124,7 @@ struct HomeView: View {
             .refreshable {
                 await vm.refresh()
             }
+            .id(preferredLanguage)
         }
     }
 
@@ -132,7 +136,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
             // Section header
-            Text(String(localized: "home_featured_title"))
+            Text("home_featured_title")
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.horizontal, Constants.UI.spacingMedium)
@@ -162,7 +166,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)  // Removes default button styling
                         .hapticFeedback(style: .light)
-                        .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars, \(restaurant.isOpenNow ? String(localized: "open_now") : String(localized: "closed"))")
+                        .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars, \(restaurant.isOpenNow ? "open_now" : "closed")")
                     }
                 }
                 .padding(.horizontal, Constants.UI.spacingMedium)
@@ -179,7 +183,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
             // Section header
-            Text(String(localized: "home_nearby_title"))
+            Text("home_nearby_title")
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.horizontal, Constants.UI.spacingMedium)
@@ -268,8 +272,8 @@ private struct FeaturedRestaurantCard: View {
                     Spacer()
 
                     Text(restaurant.isOpenNow
-                         ? String(localized: "open_now")
-                         : String(localized: "closed"))
+                         ? "open_now"
+                         : "closed")
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundStyle(restaurant.isOpenNow ? .green : .white.opacity(0.6))
@@ -327,8 +331,8 @@ private struct RestaurantRowView: View {
 
                 // Open/Closed pill overlaid on image
                 Text(restaurant.isOpenNow
-                     ? String(localized: "open_now")
-                     : String(localized: "closed"))
+                     ? "open_now"
+                     : "closed")
                     .font(.system(size: 9, weight: .bold))
                     .textCase(.uppercase)
                     .foregroundStyle(.white)
@@ -343,6 +347,7 @@ private struct RestaurantRowView: View {
                     .padding(6)
             }
             .frame(width: 88, height: 88)
+            .clipped()
 
             // Restaurant info
             VStack(alignment: .leading, spacing: 6) {
@@ -485,7 +490,7 @@ private struct HomeSkeletonView: View {
             LazyVStack(alignment: .leading, spacing: 0) {
 
                 // Featured skeleton header
-                Text(String(localized: "home_featured_title"))
+                Text("home_featured_title")
                     .font(.title2).fontWeight(.bold)
                     .padding(.horizontal, Constants.UI.spacingMedium)
                     .padding(.top, Constants.UI.spacingMedium)
@@ -503,7 +508,7 @@ private struct HomeSkeletonView: View {
                 }
 
                 // Nearby skeleton header
-                Text(String(localized: "home_nearby_title"))
+                Text("home_nearby_title")
                     .font(.title2).fontWeight(.bold)
                     .padding(.horizontal, Constants.UI.spacingMedium)
                     .padding(.top, Constants.UI.spacingMedium)

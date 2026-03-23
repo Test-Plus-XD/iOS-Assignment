@@ -83,12 +83,6 @@ struct Pour_RiceApp: App {
         return Services()
     }()
 
-    /// Persisted language preference ("en" or "zh-Hant") stored in UserDefaults.
-    /// @AppStorage watches UserDefaults — when AccountView's Picker changes this value,
-    /// SwiftUI rebuilds body and re-injects the new locale into the entire view tree,
-    /// causing all String(localized:) calls to instantly switch language without restart.
-    @AppStorage("preferredLanguage") private var preferredLanguage = "en"
-
     // MARK: - Initialisation
 
     /// Configures Firebase and creates the services container in the correct order.
@@ -137,12 +131,6 @@ struct Pour_RiceApp: App {
                 //
                 // Now any view can use: @Environment(\.services) to access services
                 //
-                // LANGUAGE TOGGLE:
-                // Re-injects locale whenever @AppStorage("preferredLanguage") changes.
-                // This causes all String(localized:) in the tree to pick up the new language
-                // without an app restart. BilingualText.localised also reads UserDefaults
-                // directly, so dynamic API data (restaurant names etc.) switches too.
-                .environment(\.locale, Locale(identifier: preferredLanguage))
                 .environment(\.services, services)
                 .environment(\.authService, services.authService)
                 .onOpenURL { url in
@@ -191,6 +179,16 @@ struct RootView: View {
     /// and Restaurant pages. The Account tab prompts them to sign in.
     @State private var isGuest = false
 
+    /// Persisted language preference ("en" or "zh-Hant") stored in UserDefaults.
+    /// @AppStorage watches UserDefaults — when AccountView's Picker changes this value,
+    /// SwiftUI rebuilds body and re-injects the new locale into the entire view tree,
+    /// causing all String(localized:) calls to instantly switch language without restart.
+    ///
+    /// Placed here in RootView (a View) rather than Pour_RiceApp (an App) because
+    /// @AppStorage reliably triggers body re-evaluation on View conformers, whereas
+    /// Scene body re-evaluation from App-level @AppStorage is unreliable.
+    @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
     // MARK: - Body
 
     /// The UI content of this view
@@ -231,6 +229,12 @@ struct RootView: View {
         // )
         .animation(.easeInOut, value: authService.isAuthenticated)
         .animation(.easeInOut, value: isGuest)
+        // LANGUAGE TOGGLE:
+        // Re-injects locale whenever @AppStorage("preferredLanguage") changes.
+        // This causes all String(localized:) in the tree to pick up the new language
+        // without an app restart. BilingualText.localised also reads UserDefaults
+        // directly, so dynamic API data (restaurant names etc.) switches too.
+        .environment(\.locale, Locale(identifier: preferredLanguage))
     }
 }
 
@@ -281,7 +285,7 @@ struct MainTabView: View {
             // HOME TAB — restaurant discovery + featured carousel
             // ================================================================
 
-            Tab(String(localized: "home_title"), systemImage: "house.fill") {
+            Tab("home_title", systemImage: "house.fill") {
                 NavigationStack {
                     HomeView()
                         .navigationDestination(for: Restaurant.self) { restaurant in
@@ -303,7 +307,7 @@ struct MainTabView: View {
             // SEARCH TAB — Algolia-powered restaurant search
             // ================================================================
 
-            Tab(String(localized: "search_title"), systemImage: "magnifyingglass") {
+            Tab("search_title", systemImage: "magnifyingglass") {
                 NavigationStack {
                     SearchView()
                         .navigationDestination(for: Restaurant.self) { restaurant in
@@ -326,7 +330,7 @@ struct MainTabView: View {
             // ================================================================
 
             if isDiner {
-                Tab(String(localized: "bookings_title"), systemImage: "calendar") {
+                Tab("bookings_title", systemImage: "calendar") {
                     NavigationStack {
                         BookingsView()
                     }
@@ -338,7 +342,7 @@ struct MainTabView: View {
             // ================================================================
 
             if !isGuest && isRestaurantOwner {
-                Tab(String(localized: "store_title"), systemImage: "storefront.fill") {
+                Tab("store_title", systemImage: "storefront.fill") {
                     NavigationStack {
                         StoreView()
                             .navigationDestination(for: StoreDestination.self) { destination in
@@ -349,8 +353,8 @@ struct MainTabView: View {
                                     StoreBookingsView()
                                 case .reviews:
                                     // Reviews is a read-only page accessible via restaurantId
-                                    Text(String(localized: "store_reviews_placeholder"))
-                                        .navigationTitle(String(localized: "store_view_reviews"))
+                                    Text("store_reviews_placeholder")
+                                        .navigationTitle("store_view_reviews")
                                 case .editInfo:
                                     StoreInfoEditView()
                                 }
@@ -364,7 +368,7 @@ struct MainTabView: View {
             // ================================================================
 
             if !isGuest && authService.isAuthenticated {
-                Tab(String(localized: "chat_title"), systemImage: "bubble.left.and.bubble.right.fill") {
+                Tab("chat_title", systemImage: "bubble.left.and.bubble.right.fill") {
                     NavigationStack {
                         ChatListView()
                             .navigationDestination(for: ChatRoom.self) { room in
@@ -378,7 +382,7 @@ struct MainTabView: View {
             // ACCOUNT TAB — user profile, preferences, and sign-out
             // ================================================================
 
-            Tab(String(localized: "account_title"), systemImage: "person.fill") {
+            Tab("account_title", systemImage: "person.fill") {
                 NavigationStack {
                     AccountView(isGuest: $isGuest)
                         .navigationDestination(for: GeminiNavigation.self) { nav in

@@ -37,9 +37,9 @@ final class BookingsViewModel {
 
         var label: String {
             switch self {
-            case .all:      return String(localized: "bookings_tab_all")
-            case .upcoming: return String(localized: "bookings_tab_upcoming")
-            case .past:     return String(localized: "bookings_tab_past")
+            case .all:      return String(localized: "bookings_tab_all", bundle: L10n.bundle)
+            case .upcoming: return String(localized: "bookings_tab_upcoming", bundle: L10n.bundle)
+            case .past:     return String(localized: "bookings_tab_past", bundle: L10n.bundle)
             }
         }
     }

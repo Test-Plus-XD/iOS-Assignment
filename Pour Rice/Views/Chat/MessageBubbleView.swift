@@ -49,13 +49,13 @@ struct MessageBubbleView: View {
                                 editText = message.message
                                 showEditSheet = true
                             } label: {
-                                Label(String(localized: "chat_edit"), systemImage: "pencil")
+                                Label("chat_edit", systemImage: "pencil")
                             }
 
                             Button(role: .destructive) {
                                 onDelete?()
                             } label: {
-                                Label(String(localized: "chat_delete"), systemImage: "trash")
+                                Label("chat_delete", systemImage: "trash")
                             }
                         }
                     }
@@ -63,7 +63,7 @@ struct MessageBubbleView: View {
                 // Metadata row
                 HStack(spacing: 4) {
                     if message.edited {
-                        Text(String(localized: "chat_edited"))
+                        Text("chat_edited")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -91,19 +91,19 @@ struct MessageBubbleView: View {
     private var editSheet: some View {
         NavigationStack {
             Form {
-                TextField(String(localized: "chat_edit_message"), text: $editText, axis: .vertical)
+                TextField("chat_edit_message", text: $editText, axis: .vertical)
                     .lineLimit(3...8)
             }
-            .navigationTitle(String(localized: "chat_edit_title"))
+            .navigationTitle("chat_edit_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "cancel")) {
+                    Button("cancel") {
                         showEditSheet = false
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "save")) {
+                    Button("save") {
                         onEdit?(editText)
                         showEditSheet = false
                     }

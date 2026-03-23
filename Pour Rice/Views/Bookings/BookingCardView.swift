@@ -52,7 +52,7 @@ struct BookingCardView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if let requests = booking.specialRequests, !requests.isEmpty {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(String(localized: "booking_special_requests"))
+                            Text("booking_special_requests")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                             Text(requests)
@@ -62,7 +62,7 @@ struct BookingCardView: View {
 
                     if booking.status == .declined, let reason = booking.declineMessage, !reason.isEmpty {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(String(localized: "booking_decline_reason"))
+                            Text("booking_decline_reason")
                                 .font(.caption)
                                 .foregroundStyle(.red.opacity(0.8))
                             Text(reason)
@@ -79,7 +79,7 @@ struct BookingCardView: View {
                 Button(role: .destructive) {
                     showCancelConfirmation = true
                 } label: {
-                    Label(String(localized: "booking_cancel"), systemImage: "xmark.circle")
+                    Label("booking_cancel", systemImage: "xmark.circle")
                         .font(.subheadline)
                         .frame(maxWidth: .infinity)
                 }
@@ -95,15 +95,15 @@ struct BookingCardView: View {
             }
         }
         .confirmationDialog(
-            String(localized: "booking_cancel_title"),
+            "booking_cancel_title",
             isPresented: $showCancelConfirmation,
             titleVisibility: .visible
         ) {
-            Button(String(localized: "booking_cancel_confirm"), role: .destructive) {
+            Button("booking_cancel_confirm", role: .destructive) {
                 onCancel?()
             }
         } message: {
-            Text(String(localized: "booking_cancel_message"))
+            Text("booking_cancel_message")
         }
     }
 }

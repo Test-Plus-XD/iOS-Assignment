@@ -486,7 +486,7 @@ struct OpeningHour: Codable, Hashable, Sendable {
         if isClosed {
             // String(localized:) automatically selects English or Chinese
             // based on user's device language setting
-            return String(localized: "closed")
+            return String(localized: "closed", bundle: L10n.bundle)
         }
         // String interpolation: \(variable) inserts the variable's value
         // Similar to "$open - $close" in Dart or "${open} - ${close}" in Kotlin

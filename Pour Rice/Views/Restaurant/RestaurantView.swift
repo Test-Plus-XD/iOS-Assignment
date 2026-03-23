@@ -55,7 +55,7 @@ struct RestaurantView: View {
             if let vm = viewModel {
                 content(vm: vm)
             } else {
-                LoadingView(message: String(localized: "restaurant_loading"))
+                LoadingView(message: "restaurant_loading")
             }
         }
         // Hide default navigation title — we use the large hero image instead
@@ -167,7 +167,7 @@ struct RestaurantView: View {
                     showingCreateBooking = true
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 } label: {
-                    Label(String(localized: "restaurant_action_book"), systemImage: "calendar.badge.plus")
+                    Label("restaurant_action_book", systemImage: "calendar.badge.plus")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -183,7 +183,7 @@ struct RestaurantView: View {
                         name: restaurant.name.localised
                     )
                     NavigationLink(value: chatRoom) {
-                        Label(String(localized: "restaurant_action_chat"), systemImage: "bubble.left.and.text.bubble.right")
+                        Label("restaurant_action_chat", systemImage: "bubble.left.and.text.bubble.right")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -192,7 +192,7 @@ struct RestaurantView: View {
 
                 // Ask AI — always accessible (including guests)
                 NavigationLink(value: GeminiNavigation(restaurant: restaurant)) {
-                    Label(String(localized: "restaurant_action_ai"), systemImage: "sparkles")
+                    Label("restaurant_action_ai", systemImage: "sparkles")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -269,8 +269,8 @@ struct RestaurantView: View {
 
                 // Open/Closed badge
                 Text(restaurant.isOpenNow
-                     ? String(localized: "open_now")
-                     : String(localized: "closed"))
+                     ? "open_now"
+                     : "closed")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
@@ -288,7 +288,7 @@ struct RestaurantView: View {
                     vm.showingReviewSheet = true
                 } label: {
                     Label(
-                        String(localized: "review_write_button"),
+                        "review_write_button",
                         systemImage: "star.bubble"
                     )
                     .frame(maxWidth: .infinity)
@@ -306,7 +306,7 @@ struct RestaurantView: View {
     private func openingHoursSection(restaurant: Restaurant) -> some View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
-            Text(String(localized: "restaurant_hours_title"))
+            Text("restaurant_hours_title")
                 .font(.headline)
 
             // Show each day's hours
@@ -333,7 +333,7 @@ struct RestaurantView: View {
     private func contactSection(restaurant: Restaurant) -> some View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
-            Text(String(localized: "restaurant_contact_title"))
+            Text("restaurant_contact_title")
                 .font(.headline)
 
             // Phone — tappable to open dialler
@@ -363,7 +363,7 @@ struct RestaurantView: View {
             }
 
             // Seats
-            Label("\(restaurant.seats) \(String(localized: "restaurant_seats"))", systemImage: "chair")
+            Label("\(restaurant.seats) \("restaurant_seats")", systemImage: "chair")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -376,12 +376,12 @@ struct RestaurantView: View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
             HStack {
-                Text(String(localized: "restaurant_menu_preview_title"))
+                Text("restaurant_menu_preview_title")
                     .font(.headline)
                 Spacer()
                 // NavigationLink(value:) pushes MenuView — matched by .navigationDestination
                 NavigationLink(value: restaurantId) {
-                    Text(String(localized: "restaurant_see_full_menu"))
+                    Text("restaurant_see_full_menu")
                         .font(.subheadline)
                         .foregroundStyle(.tint)
                 }
@@ -405,19 +405,19 @@ struct RestaurantView: View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
             HStack {
-                Text(String(localized: "restaurant_reviews_title"))
+                Text("restaurant_reviews_title")
                     .font(.headline)
 
                 Spacer()
 
                 // Review count
-                Text("\(vm.reviews.count) \(String(localized: "restaurant_reviews_count"))")
+                Text("\(vm.reviews.count) \("restaurant_reviews_count")")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
             if vm.isLoading {
-                InlineLoadingView(label: String(localized: "restaurant_loading_reviews"))
+                InlineLoadingView(label: "restaurant_loading_reviews")
             } else if vm.reviews.isEmpty {
                 EmptyStateView.noReviews()
                     .frame(height: 150)
@@ -533,7 +533,7 @@ struct ReviewSubmissionView: View {
         NavigationStack {
             Form {
                 // Star rating picker
-                Section(String(localized: "review_rating_label")) {
+                Section("review_rating_label") {
                     HStack {
                         ForEach(1...5, id: \.self) { star in
                             Button {
@@ -552,19 +552,19 @@ struct ReviewSubmissionView: View {
                 }
 
                 // Written comment
-                Section(String(localized: "review_comment_label")) {
+                Section("review_comment_label") {
                     TextEditor(text: $comment)
                         .frame(minHeight: 100)
                 }
             }
-            .navigationTitle(String(localized: "review_sheet_title"))
+            .navigationTitle("review_sheet_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "cancel")) { dismiss() }
+                    Button("cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "review_submit_button")) {
+                    Button("review_submit_button") {
                         Task {
                             isSubmitting = true
                             _ = await viewModel.submitReview(

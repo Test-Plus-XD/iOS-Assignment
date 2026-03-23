@@ -30,9 +30,9 @@ struct StoreBookingsView: View {
 
         var label: String {
             switch self {
-            case .pending:  return String(localized: "store_bookings_pending")
-            case .accepted: return String(localized: "store_bookings_accepted")
-            case .all:      return String(localized: "store_bookings_all")
+            case .pending:  return "store_bookings_pending"
+            case .accepted: return "store_bookings_accepted"
+            case .all:      return "store_bookings_all"
             }
         }
     }
@@ -52,7 +52,7 @@ struct StoreBookingsView: View {
             let filtered = filteredBookings
             if filtered.isEmpty {
                 ContentUnavailableView(
-                    String(localized: "store_bookings_empty"),
+                    "store_bookings_empty",
                     systemImage: "calendar.badge.checkmark"
                 )
             } else {
@@ -62,7 +62,7 @@ struct StoreBookingsView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle(String(localized: "store_manage_bookings"))
+        .navigationTitle("store_manage_bookings")
         .task {
             if let restaurantId = authService.currentUser?.restaurantId {
                 await viewModel.loadDashboard(
@@ -99,7 +99,7 @@ struct StoreBookingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(booking.diner?.displayName ?? String(localized: "store_unknown_diner"))
+                    Text(booking.diner?.displayName ?? "store_unknown_diner")
                         .font(.headline)
                     if let email = booking.diner?.email {
                         Text(email)
@@ -131,7 +131,7 @@ struct StoreBookingsView: View {
                     Button {
                         Task { await viewModel.acceptBooking(id: booking.id) }
                     } label: {
-                        Label(String(localized: "store_accept"), systemImage: "checkmark")
+                        Label("store_accept", systemImage: "checkmark")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -142,7 +142,7 @@ struct StoreBookingsView: View {
                         declineReason = ""
                         showDeclineSheet = true
                     } label: {
-                        Label(String(localized: "store_decline"), systemImage: "xmark")
+                        Label("store_decline", systemImage: "xmark")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -153,7 +153,7 @@ struct StoreBookingsView: View {
                 Button {
                     Task { await viewModel.completeBooking(id: booking.id) }
                 } label: {
-                    Label(String(localized: "store_complete"), systemImage: "checkmark.seal")
+                    Label("store_complete", systemImage: "checkmark.seal")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -169,8 +169,8 @@ struct StoreBookingsView: View {
     private var declineSheet: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "store_decline_reason_title")) {
-                    TextField(String(localized: "store_decline_reason_placeholder"), text: $declineReason, axis: .vertical)
+                Section("store_decline_reason_title") {
+                    TextField("store_decline_reason_placeholder", text: $declineReason, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
@@ -188,18 +188,18 @@ struct StoreBookingsView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            Text(String(localized: "store_decline_confirm"))
+                            Text("store_decline_confirm")
                                 .fontWeight(.semibold)
                             Spacer()
                         }
                     }
                 }
             }
-            .navigationTitle(String(localized: "store_decline_title"))
+            .navigationTitle("store_decline_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "cancel")) {
+                    Button("cancel") {
                         showDeclineSheet = false
                     }
                 }

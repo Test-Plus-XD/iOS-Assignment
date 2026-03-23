@@ -172,7 +172,7 @@ final class RestaurantViewModel {
 
         // Validate the review before submitting
         guard request.validate() else {
-            errorMessage = request.validationError() ?? String(localized: "review_validation_error")
+            errorMessage = request.validationError() ?? String(localized: "review_validation_error", bundle: L10n.bundle)
             return false
         }
 

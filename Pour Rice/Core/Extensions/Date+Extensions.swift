@@ -53,7 +53,7 @@ extension Date {
 
         // Return "Just now" for very recent events (under 1 minute)
         if secondsAgo < 60 {
-            return String(localized: "time_just_now")
+            return String(localized: "time_just_now", bundle: L10n.bundle)
         }
 
         // Convert to minutes (1 minute = 60 seconds)
@@ -61,32 +61,32 @@ extension Date {
         if minutesAgo < 60 {
             // Singular vs plural: "1 minute ago" vs "5 minutes ago"
             return minutesAgo == 1
-                ? String(localized: "time_1_minute_ago")
-                : String(localized: "time_minutes_ago \(minutesAgo)")
+                ? String(localized: "time_1_minute_ago", bundle: L10n.bundle)
+                : String(localized: "time_minutes_ago \(minutesAgo)", bundle: L10n.bundle)
         }
 
         // Convert to hours (1 hour = 3600 seconds)
         let hoursAgo = Int(secondsAgo / 3600)
         if hoursAgo < 24 {
             return hoursAgo == 1
-                ? String(localized: "time_1_hour_ago")
-                : String(localized: "time_hours_ago \(hoursAgo)")
+                ? String(localized: "time_1_hour_ago", bundle: L10n.bundle)
+                : String(localized: "time_hours_ago \(hoursAgo)", bundle: L10n.bundle)
         }
 
         // Convert to days (1 day = 86400 seconds)
         let daysAgo = Int(secondsAgo / 86400)
         if daysAgo < 7 {
             return daysAgo == 1
-                ? String(localized: "time_1_day_ago")
-                : String(localized: "time_days_ago \(daysAgo)")
+                ? String(localized: "time_1_day_ago", bundle: L10n.bundle)
+                : String(localized: "time_days_ago \(daysAgo)", bundle: L10n.bundle)
         }
 
         // Convert to weeks
         let weeksAgo = Int(secondsAgo / 604800)
         if weeksAgo < 4 {
             return weeksAgo == 1
-                ? String(localized: "time_1_week_ago")
-                : String(localized: "time_weeks_ago \(weeksAgo)")
+                ? String(localized: "time_1_week_ago", bundle: L10n.bundle)
+                : String(localized: "time_weeks_ago \(weeksAgo)", bundle: L10n.bundle)
         }
 
         // For older dates, display the actual date (e.g. "Jan 15, 2024")

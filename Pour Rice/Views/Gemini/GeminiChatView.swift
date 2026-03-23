@@ -43,7 +43,7 @@ struct GeminiChatView: View {
             // Input bar
             inputBar
         }
-        .navigationTitle(String(localized: "gemini_title"))
+        .navigationTitle("gemini_title")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -74,7 +74,7 @@ struct GeminiChatView: View {
                         HStack(spacing: 8) {
                             ProgressView()
                                 .scaleEffect(0.8)
-                            Text(String(localized: "gemini_thinking"))
+                            Text("gemini_thinking")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .italic()
@@ -192,7 +192,7 @@ struct GeminiChatView: View {
 
     private var inputBar: some View {
         HStack(spacing: 12) {
-            TextField(String(localized: "gemini_placeholder"), text: $viewModel.inputText, axis: .vertical)
+            TextField("gemini_placeholder", text: $viewModel.inputText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...4)
                 .focused($isInputFocused)

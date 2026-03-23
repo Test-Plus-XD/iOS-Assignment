@@ -113,7 +113,7 @@ struct SignUpViewLiquidGlass: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
 
-                        TextField(String(localized: "display_name_placeholder"), text: $displayName)
+                        TextField("display_name_placeholder", text: $displayName)
                             .textFieldStyle(.roundedBorder)
                             .textContentType(.name)
                             .autocorrectionDisabled()
@@ -125,7 +125,7 @@ struct SignUpViewLiquidGlass: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
 
-                        TextField(String(localized: "email_placeholder"), text: $email)
+                        TextField("email_placeholder", text: $email)
                             .textFieldStyle(.roundedBorder)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)
@@ -141,10 +141,10 @@ struct SignUpViewLiquidGlass: View {
 
                         HStack {
                             if isPasswordVisible {
-                                TextField(String(localized: "password_placeholder"), text: $password)
+                                TextField("password_placeholder", text: $password)
                                     .textContentType(.newPassword)
                             } else {
-                                SecureField(String(localized: "password_placeholder"), text: $password)
+                                SecureField("password_placeholder", text: $password)
                                     .textContentType(.newPassword)
                             }
 
@@ -172,10 +172,10 @@ struct SignUpViewLiquidGlass: View {
 
                         HStack {
                             if isConfirmPasswordVisible {
-                                TextField(String(localized: "confirm_password_placeholder"), text: $confirmPassword)
+                                TextField("confirm_password_placeholder", text: $confirmPassword)
                                     .textContentType(.newPassword)
                             } else {
-                                SecureField(String(localized: "confirm_password_placeholder"), text: $confirmPassword)
+                                SecureField("confirm_password_placeholder", text: $confirmPassword)
                                     .textContentType(.newPassword)
                             }
 
@@ -345,19 +345,19 @@ struct SignUpViewLiquidGlass: View {
         var errors: [String] = []
 
         if !displayName.isEmpty && displayName.count < 2 {
-            errors.append(String(localized: "error_name_too_short"))
+            errors.append("error_name_too_short")
         }
 
         if !email.isEmpty && !email.contains("@") {
-            errors.append(String(localized: "error_invalid_email"))
+            errors.append("error_invalid_email")
         }
 
         if !password.isEmpty && password.count < 6 {
-            errors.append(String(localized: "error_password_too_short"))
+            errors.append("error_password_too_short")
         }
 
         if !confirmPassword.isEmpty && !passwordsMatch {
-            errors.append(String(localized: "error_passwords_dont_match"))
+            errors.append("error_passwords_dont_match")
         }
 
         return errors

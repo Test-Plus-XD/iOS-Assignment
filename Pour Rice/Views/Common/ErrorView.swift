@@ -71,7 +71,7 @@ struct ErrorView: View {
     ///   - message: Detailed error description
     ///   - onRetry: Optional retry action (nil hides the retry button)
     init(
-        title: String = String(localized: "error_title"),
+        title: String = "error_title",
         message: String,
         onRetry: (() -> Void)? = nil
     ) {
@@ -113,7 +113,7 @@ struct ErrorView: View {
             if let onRetry = onRetry {
                 Button(action: onRetry) {
                     Label(
-                        String(localized: "error_retry"),
+                        "error_retry",
                         systemImage: "arrow.clockwise"
                     )
                     .padding(.horizontal, Constants.UI.spacingLarge)
@@ -148,8 +148,8 @@ struct NetworkErrorView: View {
 
     var body: some View {
         ErrorView(
-            title: String(localized: "network_error_title"),
-            message: String(localized: "network_error_message"),
+            title: "network_error_title",
+            message: "network_error_message",
             onRetry: onRetry
         )
     }

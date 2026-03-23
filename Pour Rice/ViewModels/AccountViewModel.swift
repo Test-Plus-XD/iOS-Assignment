@@ -38,6 +38,38 @@ final class AccountViewModel {
     /// Error message if sign-out failed
     var errorMessage: String?
 
+    // MARK: - Profile Editing State
+
+    /// Whether the profile edit sheet is presented
+    var isEditing = false
+
+    /// Edit buffer for display name
+    var editDisplayName = ""
+
+    /// Edit buffer for phone number
+    var editPhoneNumber = ""
+
+    /// Edit buffer for bio
+    var editBio = ""
+
+    /// Edit buffer for preferred theme
+    var editTheme = "system"
+
+    /// Edit buffer for notifications enabled
+    var editNotifications = true
+
+    /// Whether a profile save operation is in progress
+    var isSaving = false
+
+    /// Whether the success/error toast is visible
+    var showToast = false
+
+    /// Toast message text
+    var toastMessage = ""
+
+    /// Toast style (success, error, info)
+    var toastStyle: ToastStyle = .success
+
     // MARK: - Dependencies
 
     private let authService: AuthService
@@ -69,9 +101,9 @@ final class AccountViewModel {
     var accountTypeDisplay: String {
         switch authService.currentUser?.userType {
         case .restaurant:
-            return String(localized: "account_type_owner")
+            return String(localized: "account_type_owner", bundle: L10n.bundle)
         case .diner, .none:
-            return String(localized: "account_type_customer")
+            return String(localized: "account_type_customer", bundle: L10n.bundle)
         }
     }
 
@@ -79,9 +111,9 @@ final class AccountViewModel {
     var preferredLanguageDisplay: String {
         switch authService.currentUser?.preferredLanguage {
         case "zh-Hant":
-            return String(localized: "language_tc")
+            return String(localized: "language_tc", bundle: L10n.bundle)
         default:
-            return String(localized: "language_en")
+            return String(localized: "language_en", bundle: L10n.bundle)
         }
     }
 
@@ -91,13 +123,83 @@ final class AccountViewModel {
         authService.currentUser?.preferredLanguage ?? "en"
     }
 
+    /// Preferred theme display label
+    var themeDisplay: String {
+        switch authService.currentUser?.preferredTheme {
+        case "light":
+            return String(localized: "theme_light", bundle: L10n.bundle)
+        case "dark":
+            return String(localized: "theme_dark", bundle: L10n.bundle)
+        default:
+            return String(localized: "theme_system", bundle: L10n.bundle)
+        }
+    }
+
+    /// Notifications enabled display label
+    var notificationsDisplay: String {
+        if authService.currentUser?.notificationsEnabled ?? true {
+            return String(localized: "notifications_enabled", bundle: L10n.bundle)
+        } else {
+            return String(localized: "notifications_disabled", bundle: L10n.bundle)
+        }
+    }
+
     // MARK: - Initialisation
 
     init(authService: AuthService) {
         self.authService = authService
     }
 
+    // MARK: - Profile Editing Computed
+
+    /// Whether the edit buffers differ from the current user profile
+    var hasChanges: Bool {
+        guard let user = authService.currentUser else { return false }
+        return editDisplayName != user.displayName
+            || editPhoneNumber != (user.phoneNumber ?? "")
+            || editBio != (user.bio ?? "")
+            || editTheme != user.preferredTheme
+            || editNotifications != user.notificationsEnabled
+    }
+
     // MARK: - Actions
+
+    /// Populates edit buffers from the current user profile and presents the edit sheet
+    func startEditing() {
+        guard let user = authService.currentUser else { return }
+        editDisplayName = user.displayName
+        editPhoneNumber = user.phoneNumber ?? ""
+        editBio = user.bio ?? ""
+        editTheme = user.preferredTheme
+        editNotifications = user.notificationsEnabled
+        isEditing = true
+    }
+
+    /// Saves the edited profile fields to the backend and dismisses the sheet
+    func saveProfile() async {
+        guard let user = authService.currentUser else { return }
+        isSaving = true
+        errorMessage = nil
+
+        let request = UpdateUserRequest(
+            displayName: editDisplayName != user.displayName ? editDisplayName : nil,
+            phoneNumber: editPhoneNumber != (user.phoneNumber ?? "") ? editPhoneNumber : nil,
+            bio: editBio != (user.bio ?? "") ? editBio : nil,
+            theme: editTheme != user.preferredTheme ? editTheme : nil,
+            notifications: editNotifications != user.notificationsEnabled ? editNotifications : nil
+        )
+
+        do {
+            try await authService.updateUserProfile(request)
+            isEditing = false
+            toastMessage = String(localized: "profile_saved_success", bundle: L10n.bundle)
+            toastStyle = .success
+            showToast = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isSaving = false
+    }
 
     /// Updates the user's preferred language in UserDefaults and persists it to the backend
     ///

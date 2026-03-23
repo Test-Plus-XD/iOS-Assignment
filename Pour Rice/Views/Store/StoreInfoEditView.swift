@@ -39,35 +39,35 @@ struct StoreInfoEditView: View {
     var body: some View {
         Form {
             // Name
-            Section(String(localized: "store_edit_name")) {
+            Section("store_edit_name") {
                 TextField("English", text: $nameEN)
                 TextField("繁體中文", text: $nameTC)
             }
 
             // Address
-            Section(String(localized: "store_edit_address")) {
+            Section("store_edit_address") {
                 TextField("English", text: $addressEN)
                 TextField("繁體中文", text: $addressTC)
             }
 
             // Details
-            Section(String(localized: "store_edit_details")) {
-                TextField(String(localized: "store_edit_seats"), text: $seats)
+            Section("store_edit_details") {
+                TextField("store_edit_seats", text: $seats)
                     .keyboardType(.numberPad)
-                TextField(String(localized: "store_edit_contacts"), text: $contacts)
+                TextField("store_edit_contacts", text: $contacts)
                     .textContentType(.telephoneNumber)
             }
 
             // Image
-            Section(String(localized: "store_edit_image")) {
+            Section("store_edit_image") {
                 PhotosPicker(
                     selection: $selectedPhoto,
                     matching: .images
                 ) {
                     Label(
                         isUploadingImage
-                            ? String(localized: "store_edit_uploading")
-                            : String(localized: "store_edit_choose_image"),
+                            ? "store_edit_uploading"
+                            : "store_edit_choose_image",
                         systemImage: "photo"
                     )
                 }
@@ -84,7 +84,7 @@ struct StoreInfoEditView: View {
                         if isSaving {
                             ProgressView()
                         } else {
-                            Text(String(localized: "store_edit_save"))
+                            Text("store_edit_save")
                                 .fontWeight(.semibold)
                         }
                         Spacer()
@@ -93,7 +93,7 @@ struct StoreInfoEditView: View {
                 .disabled(isSaving)
             }
         }
-        .navigationTitle(String(localized: "store_edit_info"))
+        .navigationTitle("store_edit_info")
         .task {
             await loadExistingData()
         }
@@ -172,7 +172,7 @@ struct StoreInfoEditView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(.green)
-            Text(String(localized: "store_edit_saved"))
+            Text("store_edit_saved")
                 .font(.headline)
         }
         .padding(24)

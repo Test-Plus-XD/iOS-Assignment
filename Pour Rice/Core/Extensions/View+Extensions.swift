@@ -180,7 +180,7 @@ extension View {
     /// - Returns: Modified view with error alert
     func errorAlert(error: Binding<Error?>, buttonTitle: String = "OK") -> some View {
         self.alert(
-            String(localized: "error_title"),
+            "error_title",
             isPresented: .constant(error.wrappedValue != nil),
             presenting: error.wrappedValue
         ) { _ in
@@ -319,5 +319,108 @@ extension View {
     /// Fires a UINotificationFeedbackGenerator on the given feedback type.
     func notificationHaptic(_ type: UINotificationFeedbackGenerator.FeedbackType) {
         UINotificationFeedbackGenerator().notificationOccurred(type)
+    }
+}
+
+// MARK: - Toast / Snackbar System
+
+/// Visual style for toast notifications
+enum ToastStyle {
+    case success
+    case error
+    case info
+
+    var backgroundColor: Color {
+        switch self {
+        case .success: .green
+        case .error:   .red
+        case .info:    .blue
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .success: "checkmark.circle.fill"
+        case .error:   "xmark.circle.fill"
+        case .info:    "info.circle.fill"
+        }
+    }
+
+    var hapticType: UINotificationFeedbackGenerator.FeedbackType {
+        switch self {
+        case .success: .success
+        case .error:   .error
+        case .info:    .warning
+        }
+    }
+}
+
+/// ViewModifier that overlays a toast banner at the top of the screen
+private struct ToastModifier: ViewModifier {
+    let message: String
+    let style: ToastStyle
+    @Binding var isPresented: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .top) {
+                if isPresented {
+                    HStack(spacing: 10) {
+                        Image(systemName: style.iconName)
+                            .font(.title3)
+                        Text(message)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(style.backgroundColor.gradient, in: RoundedRectangle(cornerRadius: 12))
+                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .onAppear {
+                        UINotificationFeedbackGenerator().notificationOccurred(style.hapticType)
+                    }
+                }
+            }
+            .animation(.spring(duration: 0.4), value: isPresented)
+            .onChange(of: isPresented) { _, shown in
+                if shown {
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 2_500_000_000)
+                        withAnimation { isPresented = false }
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    /// Displays a temporary toast banner at the top of the view.
+    /// Auto-dismisses after 2.5 seconds with haptic feedback.
+    func toast(message: String, style: ToastStyle, isPresented: Binding<Bool>) -> some View {
+        modifier(ToastModifier(message: message, style: style, isPresented: isPresented))
+    }
+}
+
+// MARK: - Localisation Bundle Helper
+
+/// Provides the correct language-specific Bundle for `String(localized:bundle:)`.
+/// Used in Models, ViewModels, and Services where `LocalizedStringKey` (SwiftUI) is unavailable.
+///
+/// Views should use `Text("key")` / `.navigationTitle("key")` with `LocalizedStringKey` instead,
+/// which respects `.environment(\.locale, ...)` automatically.
+enum L10n {
+    static var bundle: Bundle {
+        let lang = UserDefaults.standard.string(forKey: "preferredLanguage") ?? "en"
+        let langCode = lang.hasPrefix("zh") ? "zh-Hant" : "en"
+        if let path = Bundle.main.path(forResource: langCode, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            return bundle
+        }
+        return .main
     }
 }

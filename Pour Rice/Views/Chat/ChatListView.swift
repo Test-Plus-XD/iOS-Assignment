@@ -34,7 +34,7 @@ struct ChatListView: View {
                 roomList
             }
         }
-        .navigationTitle(String(localized: "chat_title"))
+        .navigationTitle("chat_title")
         .task {
             if let userId = authService.currentUser?.id {
                 await viewModel.loadRooms(userId: userId, service: services.chatService)
@@ -75,7 +75,7 @@ struct ChatListView: View {
 
             // Name and preview
             VStack(alignment: .leading, spacing: 4) {
-                Text(room.roomName ?? String(localized: "chat_unnamed_room"))
+                Text(room.roomName ?? "chat_unnamed_room")
                     .font(.headline)
                     .lineLimit(1)
 
@@ -112,13 +112,13 @@ struct ChatListView: View {
     private var emptyState: some View {
         ContentUnavailableView {
             Label {
-                Text(String(localized: "chat_empty_title"))
+                Text("chat_empty_title")
             } icon: {
                 Image(systemName: "bubble.left.and.bubble.right")
                     .foregroundStyle(.secondary)
             }
         } description: {
-            Text(String(localized: "chat_empty_description"))
+            Text("chat_empty_description")
         }
     }
 

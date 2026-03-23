@@ -54,7 +54,7 @@ struct FilterView: View {
                 // ── District Filter Section ────────────────────────────────
                 // Multi-select toggle list for Hong Kong districts
 
-                Section(String(localized: "filter_district_title")) {
+                Section("filter_district_title") {
                     ForEach(SearchViewModel.availableDistricts, id: \.self) { district in
                         // Toggle row — checkmark appears when district is selected
                         Button {
@@ -78,7 +78,7 @@ struct FilterView: View {
                 // ── Keyword Filter Section ─────────────────────────────────
                 // Multi-select toggle list for cuisine/dietary keywords
 
-                Section(String(localized: "filter_keyword_title")) {
+                Section("filter_keyword_title") {
                     ForEach(SearchViewModel.availableKeywords, id: \.self) { keyword in
                         Button {
                             toggleKeyword(keyword)
@@ -97,20 +97,20 @@ struct FilterView: View {
                     }
                 }
             }
-            .navigationTitle(String(localized: "filter_title"))
+            .navigationTitle("filter_title")
             .navigationBarTitleDisplayMode(.inline)
             // Toolbar with Cancel, Clear, and Apply buttons
             .toolbar {
                 // Cancel — dismiss without applying
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "filter_cancel")) {
+                    Button("filter_cancel") {
                         dismiss()
                     }
                 }
 
                 // Apply — apply filters and trigger search
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "filter_apply")) {
+                    Button("filter_apply") {
                         Task { await viewModel.applyFilters() }
                     }
                     .fontWeight(.semibold)
@@ -120,7 +120,7 @@ struct FilterView: View {
                 // Clear — reset all filters (shown only when filters are active)
                 if viewModel.hasActiveFilters {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button(String(localized: "filter_clear")) {
+                        Button("filter_clear") {
                             Task { await viewModel.clearFilters() }
                             dismiss()
                         }

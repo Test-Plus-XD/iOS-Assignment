@@ -173,9 +173,9 @@ extension EmptyStateView {
     static func noSearchResults(onClear: (() -> Void)? = nil) -> EmptyStateView {
         EmptyStateView(
             icon: "magnifyingglass",
-            title: String(localized: "empty_search_title"),
-            message: String(localized: "empty_search_message"),
-            actionTitle: onClear != nil ? String(localized: "empty_search_action") : nil,
+            title: "empty_search_title",
+            message: "empty_search_message",
+            actionTitle: onClear != nil ? "empty_search_action" : nil,
             onAction: onClear
         )
     }
@@ -184,8 +184,8 @@ extension EmptyStateView {
     static func noNearbyRestaurants() -> EmptyStateView {
         EmptyStateView(
             assetImage: "AppLogo",
-            title: String(localized: "empty_restaurants_title"),
-            message: String(localized: "empty_restaurants_message")
+            title: "empty_restaurants_title",
+            message: "empty_restaurants_message"
         )
     }
 
@@ -193,8 +193,8 @@ extension EmptyStateView {
     static func noReviews() -> EmptyStateView {
         EmptyStateView(
             icon: "star",
-            title: String(localized: "empty_reviews_title"),
-            message: String(localized: "empty_reviews_message")
+            title: "empty_reviews_title",
+            message: "empty_reviews_message"
         )
     }
 
@@ -202,8 +202,8 @@ extension EmptyStateView {
     static func noMenuItems() -> EmptyStateView {
         EmptyStateView(
             icon: "list.bullet.rectangle",
-            title: String(localized: "empty_menu_title"),
-            message: String(localized: "empty_menu_message")
+            title: "empty_menu_title",
+            message: "empty_menu_message"
         )
     }
 }

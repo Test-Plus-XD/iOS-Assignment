@@ -46,7 +46,7 @@ struct BookingsView: View {
                 bookingsList
             }
         }
-        .navigationTitle(String(localized: "bookings_title"))
+        .navigationTitle("bookings_title")
         .task {
             await viewModel.loadBookings(service: services.bookingService)
         }
@@ -90,13 +90,13 @@ struct BookingsView: View {
 
     private var emptyTitle: String {
         switch viewModel.selectedTab {
-        case .all:      return String(localized: "bookings_empty_all")
-        case .upcoming: return String(localized: "bookings_empty_upcoming")
-        case .past:     return String(localized: "bookings_empty_past")
+        case .all:      return "bookings_empty_all"
+        case .upcoming: return "bookings_empty_upcoming"
+        case .past:     return "bookings_empty_past"
         }
     }
 
     private var emptyDescription: String {
-        String(localized: "bookings_empty_description")
+        "bookings_empty_description"
     }
 }

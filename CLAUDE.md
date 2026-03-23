@@ -38,7 +38,7 @@ Pour Rice/
   │   ├── Restaurant.swift               # Core restaurant model (Decodable + memberwise init)
   │   ├── Menu.swift                     # Menu item and category models
   │   ├── Review.swift                   # User review model
-  │   ├── User.swift                     # User profile model (restaurantId, phoneNumber, bio)
+  │   ├── User.swift                     # User profile model (restaurantId, phoneNumber, bio, theme, notifications)
   │   ├── Booking.swift                  # Booking + BookingStatus + BookingDiner + request models
   │   ├── ChatRoom.swift                 # ChatRoom + ChatMessage + request/response models
   │   ├── GeminiMessage.swift            # GeminiMessage + history + request/response models
@@ -48,12 +48,12 @@ Pour Rice/
   │   ├── SearchViewModel.swift          # Debounced search, district/keyword filter state
   │   ├── RestaurantViewModel.swift      # Restaurant detail + reviews
   │   ├── MenuViewModel.swift            # Restaurant menu fetching
-  │   ├── AccountViewModel.swift         # Auth state, profile editing
+  │   ├── AccountViewModel.swift         # Auth state, profile editing (theme, notifications, toast)
   │   ├── BookingsViewModel.swift        # Diner booking list (all/upcoming/past tabs)
   │   ├── CreateBookingViewModel.swift   # Booking creation form state + validation
   │   ├── StoreViewModel.swift           # Restaurant owner dashboard stats + actions
   │   ├── ChatListViewModel.swift        # Chat room list sorted by recency
-  │   ├── ChatRoomViewModel.swift        # Message history + Socket.IO stream + typing indicators
+  │   ├── ChatRoomViewModel.swift        # Message history + Socket.IO stream + typing + reconnection
   │   └── GeminiViewModel.swift         # AI conversation state + context-aware suggestion chips
   ├── Views/
   │   ├── Auth/
@@ -85,7 +85,8 @@ Pour Rice/
   │   ├── Gemini/
   │   │   └── GeminiChatView.swift       # Gemini AI chat with markdown rendering + suggestion chips
   │   ├── Account/
-  │   │   └── AccountView.swift          # Profile, preferences, AI assistant link, sign-out
+  │   │   ├── AccountView.swift          # Profile, preferences, AI assistant link, sign-out, toast
+  │   │   └── ProfileEditView.swift      # Profile edit sheet (name, phone, bio, theme, notifications)
   │   └── Common/
   │       ├── AsyncImageView.swift       # Cached async image loader (Kingfisher)
   │       ├── StatusBadgeView.swift      # Reusable status badge (booking statuses)
@@ -117,11 +118,12 @@ Pour Rice/
 
 ## Key Files
 - `Pour_RiceApp.swift` — Adaptive tab bar (`if isDiner`/`if isRestaurantOwner` conditions); registers `NavigationDestination` for `Restaurant`, `MenuNavigation`, `GeminiNavigation`, `ChatRoom`, `StoreDestination`; `private static let sharedServices` guarantees single Firebase init
-- `Core/Extensions/View+Extensions.swift` — `Services` container (all 11 services); `shimmerEffect()` modifier; `hapticFeedback()`, `cardStyle()`, `errorAlert()`, `loadingOverlay()`
+- `Core/Extensions/View+Extensions.swift` — `Services` container (all 11 services); `shimmerEffect()` modifier; `hapticFeedback()`, `cardStyle()`, `errorAlert()`, `loadingOverlay()`, `toast(message:style:isPresented:)` modifier; `L10n.bundle` helper for locale-aware strings in non-view contexts
 - `Models/Booking.swift` — `BookingStatus` enum with `.colour` and `.label`; `BookingDiner` for restaurant-side enrichment; `canCancel`, `isUpcoming`, `isPast` computed properties
 - `Models/ChatRoom.swift` — `ChatRoom.placeholder(roomId:name:)` factory for navigation values; `ChatMessage.displayText` renders "[Message deleted]" for soft-deletes
-- `Core/Services/SocketService.swift` — Manual Socket.IO v4 framing via `URLSessionWebSocketTask`; `incomingMessages` and `typingIndicators` as `AsyncStream`; auto ping/pong keep-alive
-- `ViewModels/ChatRoomViewModel.swift` — Starts/stops socket stream listeners; falls back to REST if socket unavailable; typing debounce with auto-stop
+- `Core/Services/SocketService.swift` — Manual Socket.IO v4 framing via `URLSessionWebSocketTask`; `incomingMessages`, `typingIndicators`, and `connectionStateChanges` as `AsyncStream`; auto ping/pong keep-alive; `reconnect()` with stored credentials
+- `ViewModels/ChatRoomViewModel.swift` — Starts/stops socket stream listeners; falls back to REST if socket unavailable; typing debounce with auto-stop; automatic reconnection with connection state monitoring; `isUsingSocket` observable for UI feedback
+- `ViewModels/AccountViewModel.swift` — Profile editing with edit buffers (name, phone, bio, theme, notifications); toast feedback on save; language preference management
 - `Views/Restaurant/RestaurantView.swift` — Action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`)
 - `Pour_RiceApp.swift` — `GeminiNavigation` struct (Hashable, wraps `Restaurant?`) for type-safe Gemini navigation
 - `Core/Utilities/Constants.swift` — `Constants.Chat.socketURL` + `messagePageSize` + `typingDebounceNs`
@@ -142,12 +144,19 @@ Pour Rice/
 ChatRoomView.task
   ├── ChatService.fetchMessages(roomId:)        # Load history via REST
   ├── SocketService.connect(userId:token:)      # WebSocket to Railway
+  │     └── Waits up to 5s for connection (50 × 100ms)
   ├── SocketService.joinRoom(roomId:userId:)    # Register for broadcasts
   └── for await message in socketService.incomingMessages   # Real-time stream
 
 On send:
   SocketService.sendMessage(...)    # Real-time path (preferred)
   ChatService.sendMessage(...)      # REST fallback if socket unavailable
+
+Reconnection:
+  SocketService.connectionStateChanges  # AsyncStream<Bool> monitors connect/disconnect
+  ChatRoomViewModel.connectionListenerTask  # Switches between socket ↔ polling
+  SocketService.reconnect()             # Re-connects with stored credentials
+  ChatRoomView toolbar                  # Shows "Reconnecting…" when !isUsingSocket
 
 Socket.IO v4 wire protocol:
   "0"   → Engine.IO open (parse pingInterval)
@@ -216,6 +225,17 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 - Async operations use `async/await` with structured concurrency (`Task {}`)
 - Real-time streams use `AsyncStream` iterated via `for await` inside `Task`
 
+### Localisation Pattern
+- **Views**: Use raw string keys as `LocalizedStringKey` — e.g., `Text("search_title")`, `.navigationTitle("home_title")` — which respects SwiftUI's `.environment(\.locale, ...)` injected by `RootView`
+- **Models/ViewModels/Services**: Use `String(localized: "key", bundle: L10n.bundle)` — `L10n.bundle` reads `UserDefaults("preferredLanguage")` and returns the matching `.lproj` bundle
+- **BilingualText re-rendering**: Views displaying `BilingualText.localised` (e.g., `SearchView`, `HomeView`) use `@AppStorage("preferredLanguage")` + `.id(preferredLanguage)` to force re-evaluation when the language changes
+- **Language switch flow**: `AccountViewModel.updateLanguage()` writes to `UserDefaults` immediately (instant UI switch) then persists to backend API asynchronously
+
+### Toast/Snackbar System
+- `ToastStyle` enum: `.success` (green), `.error` (red), `.info` (blue) — each with icon and haptic type
+- `.toast(message:style:isPresented:)` view modifier — overlays banner at top, auto-dismisses after 2.5s, spring animation, haptic feedback
+- Used in `AccountView` for profile save confirmation; available app-wide via the modifier
+
 ### iOS 26 / Liquid Glass Patterns
 - **Tab navigation**: Uses `Tab("title", systemImage:) { content }` API (not legacy `.tabItem {}`)
 - **Conditional tabs**: `if isDiner { Tab(...) }` — SwiftUI handles dynamic tab counts natively in iOS 26
@@ -267,17 +287,17 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 | `Views/Menu/MenuView.swift` | 330 |
 | `Core/Services/LocationService.swift` | 315 |
 | `Models/ChatRoom.swift` | ~330 |
-| `Core/Services/SocketService.swift` | ~290 |
-| `ViewModels/ChatRoomViewModel.swift` | ~220 |
+| `Core/Services/SocketService.swift` | ~370 |
+| `ViewModels/ChatRoomViewModel.swift` | ~410 |
 | `Views/Search/SearchView.swift` | 266 |
 | `Views/Common/AsyncImageView.swift` | 259 |
-| `Views/Account/AccountView.swift` | ~360 |
+| `Views/Account/AccountView.swift` | ~390 |
 | `Models/BilingualText.swift` | 251 |
 | `Core/Network/APIEndpoint.swift` | ~440 |
 | `Core/Network/APIClient.swift` | ~280 |
-| `Models/User.swift` | ~310 |
+| `Models/User.swift` | ~350 |
 | `Views/Common/EmptyStateView.swift` | 216 |
-| `Core/Extensions/View+Extensions.swift` | ~320 |
+| `Core/Extensions/View+Extensions.swift` | ~425 |
 | `ViewModels/SearchViewModel.swift` | 206 |
 | `ViewModels/RestaurantViewModel.swift` | 202 |
 | `Core/Services/MenuService.swift` | 185 |
@@ -300,17 +320,18 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 | `Views/Bookings/BookingCardView.swift` | ~100 |
 | `Views/Bookings/CreateBookingView.swift` | ~120 |
 | `Views/Chat/ChatListView.swift` | ~135 |
-| `Views/Chat/ChatRoomView.swift` | ~200 |
+| `Views/Chat/ChatRoomView.swift` | ~160 |
+| `Views/Account/ProfileEditView.swift` | ~110 |
 | `Views/Chat/MessageBubbleView.swift` | ~80 |
 | `Views/Common/LoadingView.swift` | 135 |
 | `Views/Common/StatusBadgeView.swift` | ~50 |
 | `Models/Booking.swift` | ~300 |
 | `Models/GeminiMessage.swift` | ~200 |
-| `ViewModels/AccountViewModel.swift` | 133 |
+| `ViewModels/AccountViewModel.swift` | ~235 |
 | `Models/Review.swift` | 130 |
 | `Core/Services/ReviewService.swift` | 126 |
 | `App/AppDelegate.swift` | 62 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~12,000** |
+| **Total (estimated)** | **~12,700** |

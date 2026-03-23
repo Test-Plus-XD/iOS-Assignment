@@ -41,9 +41,9 @@ struct CreateBookingView: View {
                 }
 
                 // Date & time
-                Section(String(localized: "booking_date_time")) {
+                Section("booking_date_time") {
                     DatePicker(
-                        String(localized: "booking_date_label"),
+                        "booking_date_label",
                         selection: $viewModel.selectedDate,
                         in: viewModel.minimumDate...,
                         displayedComponents: [.date, .hourAndMinute]
@@ -51,18 +51,18 @@ struct CreateBookingView: View {
                 }
 
                 // Number of guests
-                Section(String(localized: "booking_guests_section")) {
+                Section("booking_guests_section") {
                     Stepper(
-                        "\(viewModel.numberOfGuests) \(String(localized: "booking_guests_label"))",
+                        "\(viewModel.numberOfGuests) \("booking_guests_label")",
                         value: $viewModel.numberOfGuests,
                         in: 1...20
                     )
                 }
 
                 // Special requests
-                Section(String(localized: "booking_requests_section")) {
+                Section("booking_requests_section") {
                     TextField(
-                        String(localized: "booking_requests_placeholder"),
+                        "booking_requests_placeholder",
                         text: $viewModel.specialRequests,
                         axis: .vertical
                     )
@@ -85,7 +85,7 @@ struct CreateBookingView: View {
                             if viewModel.isSubmitting {
                                 ProgressView()
                             } else {
-                                Label(String(localized: "booking_submit"), systemImage: "checkmark.circle.fill")
+                                Label("booking_submit", systemImage: "checkmark.circle.fill")
                                     .fontWeight(.semibold)
                             }
                             Spacer()
@@ -94,11 +94,11 @@ struct CreateBookingView: View {
                     .disabled(!viewModel.isValid || viewModel.isSubmitting)
                 }
             }
-            .navigationTitle(String(localized: "booking_create_title"))
+            .navigationTitle("booking_create_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "cancel")) {
+                    Button("cancel") {
                         dismiss()
                     }
                 }

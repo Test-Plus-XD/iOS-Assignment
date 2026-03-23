@@ -211,10 +211,10 @@ struct ReviewRequest: Codable {
     /// - Returns: Localised error message or nil if valid
     func validationError() -> String? {
         if rating < 1 || rating > 5 {
-            return String(localized: "error_invalid_rating")
+            return String(localized: "error_invalid_rating", bundle: L10n.bundle)
         }
         if comment.count < 10 {
-            return String(localized: "error_review_too_short")
+            return String(localized: "error_review_too_short", bundle: L10n.bundle)
         }
         return nil
     }

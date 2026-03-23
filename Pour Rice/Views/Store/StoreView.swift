@@ -30,7 +30,7 @@ struct StoreView: View {
                 ClaimRestaurantView()
             }
         }
-        .navigationTitle(String(localized: "store_title"))
+        .navigationTitle("store_title")
     }
 
     // MARK: - Dashboard
@@ -109,19 +109,19 @@ struct StoreView: View {
     private var statsRow: some View {
         HStack(spacing: 12) {
             StatCard(
-                title: String(localized: "store_stat_today"),
+                title: "store_stat_today",
                 value: "\(viewModel.todayBookingsCount)",
                 icon: "calendar",
                 colour: .blue
             )
             StatCard(
-                title: String(localized: "store_stat_pending"),
+                title: "store_stat_pending",
                 value: "\(viewModel.pendingCount)",
                 icon: "clock",
                 colour: .orange
             )
             StatCard(
-                title: String(localized: "store_stat_total"),
+                title: "store_stat_total",
                 value: "\(viewModel.totalCount)",
                 icon: "number",
                 colour: .green
@@ -134,19 +134,19 @@ struct StoreView: View {
     private var quickActionsGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             NavigationLink(value: StoreDestination.manageMenu) {
-                QuickActionCard(title: String(localized: "store_manage_menu"), icon: "menucard", colour: .purple)
+                QuickActionCard(title: "store_manage_menu", icon: "menucard", colour: .purple)
             }
 
             NavigationLink(value: StoreDestination.bookings) {
-                QuickActionCard(title: String(localized: "store_manage_bookings"), icon: "calendar.badge.clock", colour: .orange)
+                QuickActionCard(title: "store_manage_bookings", icon: "calendar.badge.clock", colour: .orange)
             }
 
             NavigationLink(value: StoreDestination.reviews) {
-                QuickActionCard(title: String(localized: "store_view_reviews"), icon: "star.bubble", colour: .yellow)
+                QuickActionCard(title: "store_view_reviews", icon: "star.bubble", colour: .yellow)
             }
 
             NavigationLink(value: StoreDestination.editInfo) {
-                QuickActionCard(title: String(localized: "store_edit_info"), icon: "pencil.circle", colour: .blue)
+                QuickActionCard(title: "store_edit_info", icon: "pencil.circle", colour: .blue)
             }
         }
     }
@@ -156,11 +156,11 @@ struct StoreView: View {
     private var pendingBookingsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(String(localized: "store_pending_bookings"))
+                Text("store_pending_bookings")
                     .font(.headline)
                 Spacer()
                 NavigationLink(value: StoreDestination.bookings) {
-                    Text(String(localized: "store_see_all"))
+                    Text("store_see_all")
                         .font(.subheadline)
                         .foregroundStyle(.accent)
                 }
@@ -169,10 +169,10 @@ struct StoreView: View {
             ForEach(viewModel.pendingBookings.prefix(3)) { booking in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(booking.diner?.displayName ?? String(localized: "store_unknown_diner"))
+                        Text(booking.diner?.displayName ?? "store_unknown_diner")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                        Text("\(booking.formattedDate) · \(booking.numberOfGuests) \(String(localized: "booking_guests_label"))")
+                        Text("\(booking.formattedDate) · \(booking.numberOfGuests) \("booking_guests_label")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

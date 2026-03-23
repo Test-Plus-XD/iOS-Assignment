@@ -36,6 +36,9 @@ struct SearchView: View {
 
     @State private var viewModel: SearchViewModel?
 
+    /// Tracks language changes to force BilingualText re-evaluation
+    @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
     // MARK: - Body
 
     var body: some View {
@@ -47,7 +50,7 @@ struct SearchView: View {
                 Color.clear
             }
         }
-        .navigationTitle(String(localized: "search_title"))
+        .navigationTitle("search_title")
         .navigationBarTitleDisplayMode(.large)
         .task {
             // Initialise ViewModel with services from environment
@@ -67,7 +70,7 @@ struct SearchView: View {
             // Show results, loading, or empty/initial state
             if vm.isLoading {
                 // Loading state — show inline spinner
-                InlineLoadingView(label: String(localized: "search_loading"))
+                InlineLoadingView(label: "search_loading")
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
 
@@ -133,6 +136,7 @@ struct SearchView: View {
             }
         }
         .listStyle(.plain)
+        .id(preferredLanguage)
         // .searchable() adds iOS native search bar to the NavigationStack
         // Binds to vm.searchQuery (two-way binding with $)
         //
@@ -144,7 +148,7 @@ struct SearchView: View {
                 set: { vm.searchQuery = $0 }
             ),
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: String(localized: "search_placeholder")
+            prompt: "search_placeholder"
         )
         // .onChange fires whenever vm.searchQuery changes
         // Calls debounced search on each keystroke
@@ -183,7 +187,7 @@ struct SearchView: View {
                 .symbolVariant(vm.hasActiveFilters ? .fill : .none)
                 .foregroundStyle(vm.hasActiveFilters ? Color.accentColor : .primary)
         }
-        .accessibilityLabel(String(localized: "search_filter_button"))
+        .accessibilityLabel("search_filter_button")
     }
 
     // MARK: - Initial Prompt View
@@ -195,11 +199,11 @@ struct SearchView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
 
-            Text(String(localized: "search_prompt_title"))
+            Text("search_prompt_title")
                 .font(.title3)
                 .fontWeight(.semibold)
 
-            Text(String(localized: "search_prompt_message"))
+            Text("search_prompt_message")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -236,8 +240,8 @@ private struct SearchResultRow: View {
                 // Open/Closed pill — only when opening hours are available
                 if !restaurant.openingHours.isEmpty {
                     Text(restaurant.isOpenNow
-                         ? String(localized: "open_now")
-                         : String(localized: "closed"))
+                         ? "open_now"
+                         : "closed")
                         .font(.system(size: 9, weight: .bold))
                         .textCase(.uppercase)
                         .foregroundStyle(.white)
@@ -253,6 +257,7 @@ private struct SearchResultRow: View {
                 }
             }
             .frame(width: 80, height: 80)
+            .clipped()
 
             // Restaurant details
             VStack(alignment: .leading, spacing: 6) {

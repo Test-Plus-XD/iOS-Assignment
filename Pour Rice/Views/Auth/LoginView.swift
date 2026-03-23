@@ -112,7 +112,7 @@ struct LoginViewLiquidGlass: View {
                                 .font(.subheadline)
                                 .fontWeight(.medium)
 
-                            TextField(String(localized: "email_placeholder"), text: $email)
+                            TextField("email_placeholder", text: $email)
                                 .textFieldStyle(.roundedBorder)
                                 .textContentType(.emailAddress)
                                 .keyboardType(.emailAddress)
@@ -128,10 +128,10 @@ struct LoginViewLiquidGlass: View {
 
                             HStack {
                                 if isPasswordVisible {
-                                    TextField(String(localized: "password_placeholder"), text: $password)
+                                    TextField("password_placeholder", text: $password)
                                         .textContentType(.password)
                                 } else {
-                                    SecureField(String(localized: "password_placeholder"), text: $password)
+                                    SecureField("password_placeholder", text: $password)
                                         .textContentType(.password)
                                 }
 
@@ -437,7 +437,7 @@ struct PasswordResetViewLiquidGlass: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
-                        TextField(String(localized: "email_placeholder"), text: $resetEmail)
+                        TextField("email_placeholder", text: $resetEmail)
                             .textFieldStyle(.roundedBorder)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)

@@ -27,11 +27,11 @@ struct StoreMenuManageView: View {
         Group {
             if viewModel.menuItems.isEmpty && !viewModel.isLoading {
                 ContentUnavailableView {
-                    Label(String(localized: "store_menu_empty"), systemImage: "menucard")
+                    Label("store_menu_empty", systemImage: "menucard")
                 } description: {
-                    Text(String(localized: "store_menu_empty_description"))
+                    Text("store_menu_empty_description")
                 } actions: {
-                    Button(String(localized: "store_menu_add")) {
+                    Button("store_menu_add") {
                         showAddItem = true
                     }
                     .buttonStyle(.bordered)
@@ -51,7 +51,7 @@ struct StoreMenuManageView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle(String(localized: "store_manage_menu"))
+        .navigationTitle("store_manage_menu")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -122,19 +122,19 @@ private struct AddMenuItemSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "store_menu_name")) {
+                Section("store_menu_name") {
                     TextField("English", text: $nameEN)
                     TextField("繁體中文", text: $nameTC)
                 }
 
-                Section(String(localized: "store_menu_description")) {
+                Section("store_menu_description") {
                     TextField("English", text: $descEN, axis: .vertical)
                         .lineLimit(2...4)
                     TextField("繁體中文", text: $descTC, axis: .vertical)
                         .lineLimit(2...4)
                 }
 
-                Section(String(localized: "store_menu_price")) {
+                Section("store_menu_price") {
                     TextField("HK$", text: $price)
                         .keyboardType(.decimalPad)
                 }
@@ -148,7 +148,7 @@ private struct AddMenuItemSheet: View {
                             if isSubmitting {
                                 ProgressView()
                             } else {
-                                Text(String(localized: "store_menu_add"))
+                                Text("store_menu_add")
                                     .fontWeight(.semibold)
                             }
                             Spacer()
@@ -157,11 +157,11 @@ private struct AddMenuItemSheet: View {
                     .disabled(nameEN.isEmpty || nameTC.isEmpty || isSubmitting)
                 }
             }
-            .navigationTitle(String(localized: "store_menu_add_title"))
+            .navigationTitle("store_menu_add_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "cancel")) { dismiss() }
+                    Button("cancel") { dismiss() }
                 }
             }
         }

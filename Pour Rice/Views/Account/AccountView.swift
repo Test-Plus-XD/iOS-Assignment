@@ -74,7 +74,7 @@ struct AccountView: View {
                 guestPromptView
             }
         }
-        .navigationTitle(String(localized: "account_title"))
+        .navigationTitle("account_title")
         .navigationBarTitleDisplayMode(.large)
         .task {
             if authService.isAuthenticated, viewModel == nil {
@@ -110,12 +110,23 @@ struct AccountView: View {
             signOutSection(vm: vm)
         }
         .listStyle(.insetGrouped)
+        .toast(message: vm.toastMessage, style: vm.toastStyle, isPresented: Binding(
+            get: { vm.showToast },
+            set: { vm.showToast = $0 }
+        ))
+        // Profile edit sheet
+        .sheet(isPresented: Binding(
+            get: { vm.isEditing },
+            set: { vm.isEditing = $0 }
+        )) {
+            ProfileEditView(viewModel: vm)
+        }
         // Error alert if sign-out fails
-        .alert(String(localized: "error_title"), isPresented: Binding(
+        .alert("error_title", isPresented: Binding(
             get: { vm.errorMessage != nil },
             set: { if !$0 { vm.errorMessage = nil } }
         )) {
-            Button(String(localized: "ok"), role: .cancel) {
+            Button("ok", role: .cancel) {
                 vm.errorMessage = nil
             }
         } message: {
@@ -165,6 +176,13 @@ struct AccountView: View {
                 }
             }
             .padding(.vertical, Constants.UI.spacingSmall)
+
+            // Edit Profile button
+            Button {
+                vm.startEditing()
+            } label: {
+                Label("profile_edit_title", systemImage: "pencil")
+            }
         }
     }
 
@@ -172,14 +190,24 @@ struct AccountView: View {
 
     @ViewBuilder
     private func accountDetailsSection(vm: AccountViewModel) -> some View {
-        Section(header: Text(String(localized: "account_section_details"))) {
-            LabeledContent(String(localized: "account_email_label")) {
+        Section(header: Text("account_section_details")) {
+            LabeledContent("account_email_label") {
                 Text(vm.email)
                     .foregroundStyle(.secondary)
             }
 
-            LabeledContent(String(localized: "account_type_label")) {
+            LabeledContent("account_type_label") {
                 Text(vm.accountTypeDisplay)
+                    .foregroundStyle(.secondary)
+            }
+
+            LabeledContent("account_theme_label") {
+                Text(vm.themeDisplay)
+                    .foregroundStyle(.secondary)
+            }
+
+            LabeledContent("account_notifications_label") {
+                Text(vm.notificationsDisplay)
                     .foregroundStyle(.secondary)
             }
         }
@@ -189,17 +217,17 @@ struct AccountView: View {
 
     @ViewBuilder
     private func preferencesSection(vm: AccountViewModel) -> some View {
-        Section(header: Text(String(localized: "account_section_preferences"))) {
+        Section(header: Text("account_section_preferences")) {
             // Language picker — tapping cycles between English and Traditional Chinese.
             // The selection binding writes to UserDefaults via vm.updateLanguage(), which
             // triggers @AppStorage in Pour_RiceApp to re-inject the new locale environment
             // and instantly switches all String(localized:) text across the app.
-            Picker(String(localized: "account_language_label"), selection: Binding(
+            Picker("account_language_label", selection: Binding(
                 get: { vm.preferredLanguage },
                 set: { newValue in Task { await vm.updateLanguage(newValue) } }
             )) {
-                Text(String(localized: "language_en")).tag("en")
-                Text(String(localized: "language_tc")).tag("zh-Hant")
+                Text("language_en").tag("en")
+                Text("language_tc").tag("zh-Hant")
             }
         }
     }
@@ -208,9 +236,9 @@ struct AccountView: View {
 
     @ViewBuilder
     private var toolsSection: some View {
-        Section(header: Text(String(localized: "account_section_tools"))) {
+        Section(header: Text("account_section_tools")) {
             NavigationLink(value: GeminiNavigation(restaurant: nil)) {
-                Label(String(localized: "account_ai_assistant"), systemImage: "sparkles")
+                Label("account_ai_assistant", systemImage: "sparkles")
                     .foregroundStyle(.primary)
             }
         }
@@ -235,7 +263,7 @@ struct AccountView: View {
                             ProgressView()
                                 .tint(.red)
                         } else {
-                            Label(String(localized: "sign_out"),
+                            Label("sign_out",
                                   systemImage: "rectangle.portrait.and.arrow.right")
                         }
                         Spacer()
@@ -258,16 +286,16 @@ struct AccountView: View {
                 .hapticFeedback(style: .heavy)
                 .disabled(vm.isSigningOut)
                 .confirmationDialog(
-                    String(localized: "account_sign_out_confirm_title"),
+                    "account_sign_out_confirm_title",
                     isPresented: $showingSignOutConfirm,
                     titleVisibility: .visible
                 ) {
-                    Button(String(localized: "sign_out"), role: .destructive) {
+                    Button("sign_out", role: .destructive) {
                         vm.signOut()
                     }
-                    Button(String(localized: "cancel"), role: .cancel) { }
+                    Button("cancel", role: .cancel) { }
                 } message: {
-                    Text(String(localized: "account_sign_out_confirm_message"))
+                    Text("account_sign_out_confirm_message")
                 }
             }
         }
@@ -318,17 +346,17 @@ struct AccountView: View {
             }
 
             // ─── Preferences (available to guests) ────────────────────
-            Section(header: Text(String(localized: "account_section_preferences"))) {
-                Picker(String(localized: "account_language_label"), selection: $preferredLanguage) {
-                    Text(String(localized: "language_en")).tag("en")
-                    Text(String(localized: "language_tc")).tag("zh-Hant")
+            Section(header: Text("account_section_preferences")) {
+                Picker("account_language_label", selection: $preferredLanguage) {
+                    Text("language_en").tag("en")
+                    Text("language_tc").tag("zh-Hant")
                 }
             }
 
             // ─── Tools (available to guests) ─────────────────────────
-            Section(header: Text(String(localized: "account_section_tools"))) {
+            Section(header: Text("account_section_tools")) {
                 NavigationLink(value: GeminiNavigation(restaurant: nil)) {
-                    Label(String(localized: "account_ai_assistant"), systemImage: "sparkles")
+                    Label("account_ai_assistant", systemImage: "sparkles")
                         .foregroundStyle(.primary)
                 }
             }

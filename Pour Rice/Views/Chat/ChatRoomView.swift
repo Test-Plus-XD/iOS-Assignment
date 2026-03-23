@@ -51,8 +51,20 @@ struct ChatRoomView: View {
             // Input bar
             inputBar
         }
-        .navigationTitle(room.roomName ?? String(localized: "chat_conversation"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 2) {
+                    Text(room.roomName ?? String(localized: "chat_conversation", bundle: L10n.bundle))
+                        .font(.headline)
+                    if !viewModel.isUsingSocket {
+                        Text("chat_reconnecting")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
         .task {
             await startChat()
         }
@@ -97,7 +109,7 @@ struct ChatRoomView: View {
 
     private var inputBar: some View {
         HStack(spacing: 12) {
-            TextField(String(localized: "chat_message_placeholder"), text: $viewModel.messageText, axis: .vertical)
+            TextField("chat_message_placeholder", text: $viewModel.messageText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...4)
                 .focused($isInputFocused)

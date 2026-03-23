@@ -57,7 +57,7 @@ struct MenuView: View {
             if let vm = viewModel {
                 content(vm: vm)
             } else {
-                LoadingView(message: String(localized: "menu_loading"))
+                LoadingView(message: "menu_loading")
             }
         }
         .navigationTitle(restaurantName)
@@ -76,7 +76,7 @@ struct MenuView: View {
     @ViewBuilder
     private func content(vm: MenuViewModel) -> some View {
         if vm.isLoading && vm.allItems.isEmpty {
-            LoadingView(message: String(localized: "menu_loading"))
+            LoadingView(message: "menu_loading")
 
         } else if let error = vm.errorMessage, vm.allItems.isEmpty {
             ErrorView(message: error) {
@@ -91,7 +91,7 @@ struct MenuView: View {
                 .searchable(
                     text: Binding(get: { vm.searchQuery }, set: { vm.searchQuery = $0 }),
                     placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: String(localized: "menu_search_placeholder")
+                    prompt: "menu_search_placeholder"
                 )
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -116,9 +116,9 @@ struct MenuView: View {
             // Empty state when filters return no results
             EmptyStateView(
                 icon: "line.3.horizontal.decrease.circle",
-                title: String(localized: "menu_no_results_title"),
-                message: String(localized: "menu_no_results_message"),
-                actionTitle: String(localized: "clear_filters")
+                title: "menu_no_results_title",
+                message: "menu_no_results_message",
+                actionTitle: "clear_filters"
             ) {
                 vm.clearFilters()
             }
@@ -158,7 +158,7 @@ struct MenuView: View {
                 .symbolVariant(vm.hasActiveFilters ? .fill : .none)
                 .foregroundStyle(vm.hasActiveFilters ? Color.accentColor : .primary)
         }
-        .accessibilityLabel(String(localized: "accessibility_filter_menu"))
+        .accessibilityLabel("accessibility_filter_menu")
     }
 }
 
@@ -191,7 +191,7 @@ private struct MenuItemRow: View {
                     Spacer()
 
                     if !item.isAvailable {
-                        Text(String(localized: "unavailable"))
+                        Text("unavailable")
                             .font(.caption2)
                             .foregroundStyle(.white)
                             .padding(.horizontal, 6)
@@ -270,15 +270,15 @@ private struct MenuFilterView: View {
             Form {
 
                 // ─── Availability ─────────────────────────────────────
-                Section(header: Text(String(localized: "menu_filter_availability"))) {
-                    Toggle(String(localized: "menu_filter_available_only"), isOn: Binding(
+                Section(header: Text("menu_filter_availability")) {
+                    Toggle("menu_filter_available_only", isOn: Binding(
                         get: { viewModel.showAvailableOnly },
                         set: { viewModel.showAvailableOnly = $0 }
                     ))
                 }
 
                 // ─── Dietary Requirements ─────────────────────────────
-                Section(header: Text(String(localized: "menu_filter_dietary"))) {
+                Section(header: Text("menu_filter_dietary")) {
                     ForEach(DietaryTag.allCases, id: \.self) { tag in
                         HStack {
                             Text(tag.localised)
@@ -296,12 +296,12 @@ private struct MenuFilterView: View {
                     }
                 }
             }
-            .navigationTitle(String(localized: "menu_filter_title"))
+            .navigationTitle("menu_filter_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 // Done button
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "done")) {
+                    Button("done") {
                         dismiss()
                     }
                 }
@@ -309,7 +309,7 @@ private struct MenuFilterView: View {
                 // Clear All (only when something is active)
                 if viewModel.hasActiveFilters {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(String(localized: "clear_all"), role: .destructive) {
+                        Button("clear_all", role: .destructive) {
                             viewModel.clearFilters()
                         }
                     }
