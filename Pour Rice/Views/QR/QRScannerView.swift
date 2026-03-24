@@ -24,6 +24,7 @@
 import SwiftUI
 import VisionKit       // DataScannerViewController — Apple's high-level barcode scanner (iOS 16+)
 import AVFoundation    // AVCaptureDevice — needed to control the torch separately
+internal import Vision
 
 // MARK: - QR Scanner View
 

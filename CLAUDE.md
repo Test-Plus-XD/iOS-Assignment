@@ -219,7 +219,7 @@ QR Generation (restaurant owners):
       correctionLevel = "H"          ← matches Android QrErrorCorrectLevel.H (~30% tolerance)
     CGAffineTransform(scaleX: 3, y: 3)  ← 3× scale, matches Android pixelRatio: 3.0
     Image(uiImage:).interpolation(.none) ← nearest-neighbour prevents blur on scale-up
-    ShareLink(item: UIImage, ...)        ← UIImage: Transferable, iOS 16+
+    ShareLink(item: UIImage, ...)        ← UIImage+Transferable extension (see RestaurantQRView.swift)
 
 QR Scanning (all users — guests, diners, owners):
   SearchView toolbar → camera.viewfinder button
@@ -391,7 +391,7 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 | `Core/Services/ReviewService.swift` | 126 |
 | `App/AppDelegate.swift` | 62 |
 | `Views/QR/QRScannerView.swift` | ~185 |
-| `Views/QR/RestaurantQRView.swift` | ~135 |
+| `Views/QR/RestaurantQRView.swift` | 237 |
 | `ViewModels/QRScannerViewModel.swift` | ~85 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |

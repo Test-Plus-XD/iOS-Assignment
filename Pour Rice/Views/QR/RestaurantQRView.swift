@@ -26,6 +26,7 @@
 import SwiftUI
 import CoreImage                   // CIFilter, CIContext, CIImage
 import CoreImage.CIFilterBuiltins  // Typed CIFilter.qrCodeGenerator() API (iOS 15+)
+import UniformTypeIdentifiers      // UTType.png — required for DataRepresentation in the Transferable extension
 
 // MARK: - Restaurant QR View
 
@@ -118,8 +119,8 @@ struct RestaurantQRView: View {
                 // ShareLink lets the restaurant owner export the QR code as an image
                 // to WhatsApp, AirDrop, email, or save to Photos.
                 //
-                // ShareLink(item: UIImage) works because UIImage conforms to Transferable
-                // in iOS 16+ — the system exports it as PNG via DataRepresentation.
+                // ShareLink requires Item: Transferable. UIImage does NOT conform to
+                // Transferable natively — the extension below adds this conformance.
                 //
                 // ANDROID EQUIVALENT: Share.shareXFiles([XFile(path)]) via share_plus
                 if let qrUIImage = generateQRImage() {
@@ -209,6 +210,28 @@ struct RestaurantQRView: View {
 
 // MARK: - UIImage Transferable Conformance
 
-// UIImage already conforms to Transferable in iOS 16+ via DataRepresentation(png).
-// No extension needed — ShareLink(item: UIImage, ...) compiles out of the box.
-// This comment documents the fact so future developers don't re-add a custom conformance.
+// UIImage (UIKit) does NOT conform to Transferable out of the box — Apple added
+// Transferable conformances to SwiftUI types and URL, but left UIImage out.
+// ShareLink<Item> requires Item: Transferable, so we add the conformance here.
+//
+// @retroactive tells the compiler this is an intentional cross-module conformance
+// (UIImage is from UIKit; Transferable is from SwiftUI), suppressing the
+// "extension declares conformance of imported type" warning introduced in Swift 5.7.
+//
+// DataRepresentation exports the image as PNG, which is what the system share sheet
+// and share_plus on Android both expect for lossless QR code sharing.
+//
+// ANDROID EQUIVALENT: no manual conformance needed — share_plus accepts XFile directly.
+extension UIImage: @retroactive Transferable {
+    // Declares how the system should serialise a UIImage when it is passed to ShareLink.
+    public static var transferRepresentation: some TransferRepresentation {
+        // DataRepresentation exports the UIImage as PNG bytes under the public.png UTType.
+        // The system share sheet receives these bytes and writes them as a .png file.
+        DataRepresentation(exportedContentType: .png) { uiImage in
+            // pngData() returns nil only if the image has no valid CGImage backing —
+            // practically impossible here since we construct the image from a CGImage above.
+            guard let pngData = uiImage.pngData() else { throw CocoaError(.fileWriteUnknown) }
+            return pngData
+        }
+    }
+}
