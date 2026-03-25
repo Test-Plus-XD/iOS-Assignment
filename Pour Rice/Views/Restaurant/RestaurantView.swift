@@ -18,6 +18,7 @@
 //
 
 import SwiftUI
+import MapKit
 
 // MARK: - Restaurant View
 
@@ -47,6 +48,7 @@ struct RestaurantView: View {
 
     @State private var viewModel: RestaurantViewModel?
     @State private var showingCreateBooking = false
+    @State private var showingDirections = false
 
     // MARK: - Body
 
@@ -110,6 +112,12 @@ struct RestaurantView: View {
 
                 Divider().padding(.vertical, Constants.UI.spacingMedium)
 
+                // ─── Location Map ──────────────────────────────────────────
+                locationSection(restaurant: current)
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+
+                Divider().padding(.vertical, Constants.UI.spacingMedium)
+
                 // ─── Menu Preview ───────────────────────────────────────────
                 if !vm.menuPreview.isEmpty {
                     menuPreviewSection(items: vm.menuPreview, restaurantId: current.id)
@@ -152,6 +160,13 @@ struct RestaurantView: View {
             CreateBookingView(
                 restaurantId: restaurant.id,
                 restaurantName: restaurant.name.localised
+            )
+        }
+        // Directions sheet
+        .sheet(isPresented: $showingDirections) {
+            DirectionsView(
+                restaurant: restaurant,
+                userLocation: services.locationService.currentLocation
             )
         }
     }
@@ -370,6 +385,58 @@ struct RestaurantView: View {
             Label("\(restaurant.seats) \("restaurant_seats")", systemImage: "chair")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Location Section
+
+    /// Embedded map showing the restaurant's location with a "Get Directions" button
+    @ViewBuilder
+    private func locationSection(restaurant: Restaurant) -> some View {
+        VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
+
+            Text("restaurant_location_title")
+                .font(.headline)
+
+            // Embedded map with restaurant pin
+            Map(initialPosition: .region(MKCoordinateRegion(
+                center: CLLocationCoordinate2D(
+                    latitude: restaurant.location.latitude,
+                    longitude: restaurant.location.longitude
+                ),
+                span: MKCoordinateSpan(
+                    latitudeDelta: Constants.Map.detailSpanDelta,
+                    longitudeDelta: Constants.Map.detailSpanDelta
+                )
+            ))) {
+                Marker(
+                    restaurant.name.localised,
+                    systemImage: "fork.knife",
+                    coordinate: CLLocationCoordinate2D(
+                        latitude: restaurant.location.latitude,
+                        longitude: restaurant.location.longitude
+                    )
+                )
+                .tint(.accent)
+            }
+            .frame(height: Constants.Map.detailMapHeight)
+            .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
+
+            // Address
+            Text(restaurant.address.localised)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            // Get Directions button
+            Button {
+                showingDirections = true
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            } label: {
+                Label("restaurant_get_directions", systemImage: "arrow.triangle.turn.up.right.diamond")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
         }
     }
 

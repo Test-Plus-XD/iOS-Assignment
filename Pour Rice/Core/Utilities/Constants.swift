@@ -169,6 +169,27 @@ enum Constants {
         static let nearbyLimit = 10
     }
 
+    // MARK: - Map Configuration
+
+    /// MapKit settings for search results map and restaurant detail map
+    enum Map {
+        /// Default map centre — Hong Kong
+        static let defaultLatitude: Double = 22.3193
+        static let defaultLongitude: Double = 114.1694
+
+        /// Coordinate span for single-restaurant detail maps
+        static let detailSpanDelta: Double = 0.005
+
+        /// Coordinate span for search results map
+        static let searchSpanDelta: Double = 0.05
+
+        /// Height of the embedded map in restaurant detail view
+        static let detailMapHeight: CGFloat = 200
+
+        /// Height of the map in the directions sheet
+        static let directionsMapHeight: CGFloat = 300
+    }
+
     // MARK: - UI Configuration
 
     /// User interface constants and styling values

@@ -102,7 +102,7 @@ struct InlineLoadingView: View {
     // MARK: - Properties
 
     /// Label to display beside the spinner
-    let label: String
+    let label: LocalizedStringKey
 
     // MARK: - Body
 

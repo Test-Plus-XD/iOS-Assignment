@@ -61,7 +61,7 @@ struct FilterView: View {
                             toggleDistrict(district)
                         } label: {
                             HStack {
-                                Text(district)
+                                Text(districtDisplayName(district))
                                     .foregroundStyle(.primary)
                                 Spacer()
                                 // Checkmark if selected (like a checkbox in Flutter)
@@ -84,7 +84,7 @@ struct FilterView: View {
                             toggleKeyword(keyword)
                         } label: {
                             HStack {
-                                Text(keyword)
+                                Text(keywordDisplayName(keyword))
                                     .foregroundStyle(.primary)
                                 Spacer()
                                 if viewModel.selectedKeywords.contains(keyword) {
@@ -129,6 +129,22 @@ struct FilterView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Localisation Helpers
+
+    /// Maps an Algolia district value (English) to its localised display key
+    /// e.g. "Causeway Bay" → LocalizedStringKey("filter_district_causeway_bay")
+    private func districtDisplayName(_ district: String) -> LocalizedStringKey {
+        let key = "filter_district_\(district.lowercased().replacingOccurrences(of: " ", with: "_"))"
+        return LocalizedStringKey(key)
+    }
+
+    /// Maps an Algolia keyword value (English) to its localised display key
+    /// e.g. "Dim Sum" → LocalizedStringKey("filter_keyword_dim_sum")
+    private func keywordDisplayName(_ keyword: String) -> LocalizedStringKey {
+        let key = "filter_keyword_\(keyword.lowercased().replacingOccurrences(of: " ", with: "_"))"
+        return LocalizedStringKey(key)
     }
 
     // MARK: - Actions

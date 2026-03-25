@@ -15,6 +15,7 @@
 //
 
 import SwiftUI
+import MapKit
 import CoreLocation
 
 // MARK: - Search View
@@ -46,6 +47,9 @@ struct SearchView: View {
     /// The scanner is available to all user types (guests, diners, owners)
     /// because scanning a QR code just opens a public menu page.
     @State private var showingQRScanner = false
+
+    /// Controls whether search results are displayed as a map or list
+    @State private var showingMap = false
 
     // MARK: - Body
 
@@ -92,6 +96,14 @@ struct SearchView: View {
 
     @ViewBuilder
     private func searchContent(vm: SearchViewModel) -> some View {
+        Group {
+        // Map/list toggle: show map when toggled and results exist
+        if showingMap && !vm.searchResults.isEmpty && vm.hasSearched {
+            SearchMapView(
+                restaurants: vm.searchResults,
+                userLocation: services.locationService.currentLocation
+            )
+        } else {
         List {
             // Show results, loading, or empty/initial state
             if vm.isLoading {
@@ -162,6 +174,8 @@ struct SearchView: View {
             }
         }
         .listStyle(.plain)
+        } // else (list mode)
+        } // Group
         .id(preferredLanguage)
         // .searchable() adds iOS native search bar to the NavigationStack
         // Binds to vm.searchQuery (two-way binding with $)
@@ -190,6 +204,17 @@ struct SearchView: View {
         // so the scanner button appears to the LEFT of the filter button (further from the edge).
         // This matches common iOS patterns (e.g. iOS Camera app's options toolbar).
         .toolbar {
+            // Map/list toggle button — switches between map and list views
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation { showingMap.toggle() }
+                } label: {
+                    Image(systemName: showingMap ? "list.bullet" : "map")
+                }
+                .accessibilityLabel(showingMap ? Text("search_view_list") : Text("search_view_map"))
+                .disabled(vm.searchResults.isEmpty)
+            }
+
             // Filter button — already existed; opens the district/keyword filter sheet
             ToolbarItem(placement: .topBarTrailing) {
                 filterButton(vm: vm)

@@ -61,13 +61,13 @@ struct EmptyStateView: View {
     let assetImage: String?
 
     /// Primary heading text
-    let title: String
+    let title: LocalizedStringKey
 
     /// Secondary descriptive text explaining the empty state
-    let message: String
+    let message: LocalizedStringKey
 
     /// Optional button title — set to nil to hide the action button
-    let actionTitle: String?
+    let actionTitle: LocalizedStringKey?
 
     /// Optional action closure — called when the action button is tapped
     let onAction: (() -> Void)?
@@ -85,9 +85,9 @@ struct EmptyStateView: View {
     init(
         icon: String = "",
         assetImage: String? = nil,
-        title: String,
-        message: String,
-        actionTitle: String? = nil,
+        title: LocalizedStringKey,
+        message: LocalizedStringKey,
+        actionTitle: LocalizedStringKey? = nil,
         onAction: (() -> Void)? = nil
     ) {
         self.icon = icon

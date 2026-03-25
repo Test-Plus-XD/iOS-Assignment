@@ -13,6 +13,7 @@ Supports multiple user types (diners and restaurant owners) with real-time chat,
 - **Real-time**: Socket.IO v4 via Railway (`https://railway-socket-production.up.railway.app`)
 - **AI**: Google Gemini via Vercel proxy (`POST /API/Gemini/chat`)
 - **Search**: Algolia via Vercel proxy (`GET /API/Algolia/Restaurants`) — no client-side Algolia SDK
+- **Maps**: Apple MapKit (SwiftUI `Map`, `Marker`, `MapPolyline`, `MKDirections`) — no Google Maps SDK
 - **Networking**: `URLSession` with a shared `APIClient`
 - **Localisation**: English and Traditional Chinese (`Localizable.xcstrings`)
 - **Testing**: XCTest (UI), Swift Testing (Unit)
@@ -63,11 +64,13 @@ Pour Rice/
   │   ├── Home/
   │   │   └── HomeView.swift             # Nearby restaurant cards + featured carousel
   │   ├── Restaurant/
-  │   │   └── RestaurantView.swift       # Detail page: carousel, info, hours, menu, reviews, actions
+  │   │   ├── RestaurantView.swift       # Detail page: carousel, info, hours, location map, menu, reviews, actions
+  │   │   └── DirectionsView.swift       # Directions sheet: MKDirections route, transport picker, Apple Maps handoff
   │   ├── Menu/
   │   │   └── MenuView.swift             # Menu item list with dietary filters
   │   ├── Search/
-  │   │   ├── SearchView.swift           # Search bar + results list
+  │   │   ├── SearchView.swift           # Search bar + results list/map toggle
+  │   │   ├── SearchMapView.swift        # MapKit map for search results (pins, callout card)
   │   │   └── FilterView.swift           # District + keyword filter sheet
   │   ├── Bookings/
   │   │   ├── BookingsView.swift         # Diner bookings list (all/upcoming/past segmented)
@@ -114,7 +117,7 @@ Pour Rice/
       │   ├── APIEndpoint.swift          # Typed endpoint enum (all routes)
       │   └── APIError.swift             # Network error types
       ├── Utilities/
-      │   └── Constants.swift            # API URLs, Socket.IO URL, endpoint paths, UI values
+      │   └── Constants.swift            # API URLs, Socket.IO URL, endpoint paths, UI values, Map config
       └── Extensions/
           ├── View+Extensions.swift      # Services env key + shimmerEffect + haptics + cardStyle
           └── Date+Extensions.swift      # Formatting helpers
@@ -128,9 +131,11 @@ Pour Rice/
 - `Core/Services/SocketService.swift` — Socket.IO v4 via `socket.io-client-swift` (`SocketManager` + `SocketIOClient`); `isConnected` and `isRegistered` state gates; `incomingMessages`, `typingIndicators`, and `connectionStateChanges` as `AsyncStream`; `reconnect()` with stored credentials
 - `ViewModels/ChatRoomViewModel.swift` — Starts/stops socket stream listeners; falls back to REST if socket unavailable; typing debounce with auto-stop; automatic reconnection with connection state monitoring; `isUsingSocket` observable for UI feedback
 - `ViewModels/AccountViewModel.swift` — Profile editing with edit buffers (name, phone, bio, theme, notifications); toast feedback on save; language preference management
-- `Views/Restaurant/RestaurantView.swift` — Action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`)
+- `Views/Restaurant/RestaurantView.swift` — Location section (embedded `Map`, address, "Get Directions" button) inserted between Contact and Menu Preview; action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`)
+- `Views/Restaurant/DirectionsView.swift` — `DirectionsViewModel` (`@Observable`, `@MainActor`) with `TransportMode` enum (transit/walking/driving); `fetchDirections()` builds `MKDirections.Request` + `calculate()`; `openInAppleMaps()` uses `MKMapItem.openInMaps(launchOptions:)` with `MKLaunchOptionsDirectionsModeKey`; `DirectionsView` renders map + `MapPolyline(route.polyline)` + segmented picker + route summary card
+- `Views/Search/SearchMapView.swift` — `Map(position:selection:)` with `Marker` per restaurant (tinted by `isOpenNow`); `UserAnnotation()`; auto-fit camera via `MKCoordinateRegion` bounding box over all results; `SearchMapCalloutCard` bottom overlay (`.regularMaterial` card) shown on pin tap; navigates to `RestaurantView` via `NavigationLink(value: restaurant)`
 - `Pour_RiceApp.swift` — `GeminiNavigation` struct (Hashable, wraps `Restaurant?`) for type-safe Gemini navigation
-- `Core/Utilities/Constants.swift` — `Constants.Chat.socketURL` + `messagePageSize` + `typingDebounceNs`
+- `Core/Utilities/Constants.swift` — `Constants.Chat.socketURL` + `messagePageSize` + `typingDebounceNs`; `Constants.Map.defaultLatitude/Longitude` (Hong Kong: 22.3193, 114.1694) + `detailSpanDelta` + `searchSpanDelta` + `detailMapHeight` + `directionsMapHeight`
 
 ## API Integration
 - **Base URL**: `https://vercel-express-api-alpha.vercel.app`
@@ -206,6 +211,82 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 - `SearchFilters` has two fields: `districts: [String]` and `keywords: [String]`
 - Algolia SDK was removed; all search traffic uses `URLSession` through the backend proxy
 - `AlgoliaHit` is a private struct inside `RestaurantService` — maps `objectID` → `Restaurant.id`
+- `SearchView` has a `showingMap: Bool` state that switches between `List` (default) and `SearchMapView`; the toggle toolbar button is disabled when results are empty
+
+## MapKit Architecture
+
+### Search Map (list/map toggle)
+```
+SearchView toolbar
+  └── map/list toggle button (@State showingMap: Bool)
+        ├── list mode (default): existing List { SearchResultRow } unchanged
+        └── map mode: SearchMapView(restaurants: vm.searchResults, userLocation:)
+              Map(position: $cameraPosition, selection: $selectedTag)
+                ├── UserAnnotation()                    # user GPS dot
+                └── ForEach(validRestaurants) {
+                      Marker(name, systemImage: "fork.knife", coordinate:)
+                        .tint(isOpenNow ? .accent : .secondary)  # green/grey
+                        .tag(restaurant.id)
+                    }
+              .mapControls { MapUserLocationButton; MapCompass; MapScaleView }
+              .overlay(alignment: .bottom) {
+                if selectedTag != nil → SearchMapCalloutCard(restaurant:)
+                  NavigationLink(value: restaurant) → RestaurantView
+              }
+              updateCamera(for:) → MKCoordinateRegion bounding all pins (×1.3 padding)
+                                 → falls back to HK default if no valid coords
+```
+
+Key behaviours:
+- Pins filtered: restaurants where `latitude == 0 && longitude == 0` are excluded
+- Toggle button disabled when `searchResults.isEmpty` (no results to show)
+- Camera auto-updates on `.onAppear` and when `restaurants.count` changes
+- `.id(preferredLanguage)` on `Group` keeps BilingualText callout card in sync with language
+
+### Restaurant Detail Directions
+```
+RestaurantView
+  └── locationSection(restaurant:)
+        ├── Map(initialPosition: .region(MKCoordinateRegion(detailSpanDelta)))
+        │     └── Marker(name, systemImage: "fork.knife").tint(.accent)
+        │   .frame(height: Constants.Map.detailMapHeight)      # 200pt
+        │   .clipShape(RoundedRectangle)
+        ├── Text(restaurant.address.localised)
+        └── Button "Get Directions" → showingDirections = true
+              .sheet → DirectionsView(restaurant:, userLocation:)
+
+DirectionsView (NavigationStack modal)
+  ├── mapSection
+  │     Map { UserAnnotation; Marker; MapPolyline(route.polyline).stroke(.tint, 5) }
+  │     .frame(height: Constants.Map.directionsMapHeight)       # 300pt
+  ├── transportPicker (Picker .segmented)
+  │     TransportMode: .transit | .walking | .driving           # Hashable enum
+  │       → maps to MKDirectionsTransportType (.transit / .walking / .automobile)
+  │       → maps to MKLaunchOptionsDirectionsMode* for Apple Maps handoff
+  ├── routeSummary card
+  │     formattedTravelTime  ← DateComponentsFormatter (hour, minute, .abbreviated)
+  │     formattedDistance    ← MeasurementFormatter (.naturalScale, 1 decimal)
+  └── "Open in Apple Maps" → MKMapItem.openInMaps(launchOptions: [DirectionsModeKey:])
+
+DirectionsViewModel.fetchDirections()
+  guard userLocation else → errorMessage ("directions_no_location")
+  MKDirections.Request { source: userCoord, destination: restaurantCoord, transportType }
+  MKDirections.calculate() async → route = response.routes.first
+  catch → errorMessage ("directions_error")
+```
+
+Key behaviours:
+- `TransportMode` is a local `Hashable` enum bridging `MKDirectionsTransportType` (which is not `Hashable`)
+- Re-fetches on `.onChange(of: viewModel.selectedMode)`
+- Transit routing may be unavailable for some HK locations — error shows inline, not a crash
+- `MKPlacemark` used for compatibility; iOS 26 deprecation warnings are informational only (API still functional)
+
+Key files:
+- `Views/Search/SearchMapView.swift` — `SearchMapView` + private `SearchMapCalloutCard`
+- `Views/Restaurant/DirectionsView.swift` — `TransportMode` enum + `DirectionsViewModel` + `DirectionsView`
+- `Views/Restaurant/RestaurantView.swift` — `locationSection(restaurant:)` + `showingDirections` state
+- `Views/Search/SearchView.swift` — `showingMap` state + map toggle toolbar button
+- `Core/Utilities/Constants.swift` — `Constants.Map` enum
 
 ## QR Code & Deep Link Architecture
 
@@ -301,6 +382,7 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 - **Liquid Glass**: `.glassEffect(_:in:)` for glass styling; `.glassEffectID(_:in:)` for morphing transitions (requires `@Namespace`)
 - **ShapeStyle**: Use `.tint` for standalone accent-coloured styles; use `Color.accentColor` in ternaries with `.primary`
 - **AsyncImageView**: `ContentMode` is qualified as `SwiftUI.ContentMode` to avoid ambiguity with UIKit
+- **MapKit**: `Map(initialPosition:)` used for static embedded maps; `Map(position:selection:)` for interactive maps with pin selection; `MKPlacemark` raises iOS 26 deprecation warnings (use `init(location:address:)` in a future pass when the new `MKMapItem` APIs are stable)
 
 ### Guest Mode
 - Users can browse without signing in by tapping "Continue as Guest" on `LoginView`
@@ -334,7 +416,8 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 | File | Lines |
 |------|-------|
 | `Core/Services/AuthService.swift` | 553 |
-| `Views/Restaurant/RestaurantView.swift` | ~580 |
+| `Views/Restaurant/RestaurantView.swift` | ~640 |
+| `Views/Restaurant/DirectionsView.swift` | ~230 |
 | `Models/Restaurant.swift` | 524 |
 | `Views/Auth/LoginView.swift` | 472 |
 | `Views/Auth/SignUpView.swift` | 427 |
@@ -349,7 +432,8 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 | `Models/ChatRoom.swift` | ~330 |
 | `Core/Services/SocketService.swift` | ~280 |
 | `ViewModels/ChatRoomViewModel.swift` | ~440 |
-| `Views/Search/SearchView.swift` | 266 |
+| `Views/Search/SearchView.swift` | ~290 |
+| `Views/Search/SearchMapView.swift` | ~175 |
 | `Views/Common/AsyncImageView.swift` | 259 |
 | `Views/Account/AccountView.swift` | ~390 |
 | `Models/BilingualText.swift` | 251 |
@@ -365,7 +449,7 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 | `Core/Network/APIError.swift` | 179 |
 | `Core/Extensions/Date+Extensions.swift` | 177 |
 | `ViewModels/HomeViewModel.swift` | ~195 |
-| `Core/Utilities/Constants.swift` | ~240 |
+| `Core/Utilities/Constants.swift` | ~285 |
 | `ViewModels/MenuViewModel.swift` | 169 |
 | `Views/Search/FilterView.swift` | 161 |
 | `Core/Services/BookingService.swift` | ~155 |
@@ -397,4 +481,4 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~13,500** |
+| **Total (estimated)** | **~14,100** |
