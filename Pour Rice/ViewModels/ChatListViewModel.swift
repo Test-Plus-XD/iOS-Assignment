@@ -23,6 +23,15 @@ final class ChatListViewModel {
     /// Current error
     var error: Error?
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .success
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     // MARK: - Dependencies
 
     private var chatService: ChatService?
@@ -79,11 +88,21 @@ final class ChatListViewModel {
             let roomId = try await service.createRoom(request)
             // Refresh rooms to include the new one
             await refresh(userId: currentUserId)
+            showToast(String(localized: "toast_chat_room_created", bundle: L10n.bundle), .success)
             return roomId
         } catch {
             self.error = error
+            showToast(String(localized: "toast_chat_room_failed", bundle: L10n.bundle), .error)
             print("❌ ChatListVM: Failed to create room: \(error.localizedDescription)")
             return nil
         }
+    }
+
+    // MARK: - Private Helpers
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }

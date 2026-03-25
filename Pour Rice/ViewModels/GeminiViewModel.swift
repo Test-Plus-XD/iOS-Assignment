@@ -26,6 +26,15 @@ final class GeminiViewModel {
     /// Current error
     var error: Error?
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .info
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     /// Restaurant context (if launched from a restaurant detail page)
     private(set) var restaurantContext: Restaurant?
 
@@ -112,6 +121,7 @@ final class GeminiViewModel {
                 role: .model,
                 content: String(localized: "gemini_error_response", bundle: L10n.bundle)
             ))
+            showToast(String(localized: "toast_gemini_error", bundle: L10n.bundle), .error)
         }
 
         isLoading = false
@@ -129,5 +139,14 @@ final class GeminiViewModel {
         messages = [
             GeminiMessage(role: .model, content: welcomeMessage)
         ]
+        showToast(String(localized: "toast_gemini_cleared", bundle: L10n.bundle), .info)
+    }
+
+    // MARK: - Private Helpers
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }

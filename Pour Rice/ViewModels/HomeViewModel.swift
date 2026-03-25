@@ -72,6 +72,15 @@ final class HomeViewModel {
     /// Prevents showing empty state before data has been fetched
     var hasLoadedOnce = false
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .success
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     // MARK: - Dependencies
 
     /// Service for fetching restaurant data from the API
@@ -132,6 +141,7 @@ final class HomeViewModel {
         } catch {
             // Store the error message for display in the view
             errorMessage = error.localizedDescription
+            showToast(String(localized: "toast_home_load_failed", bundle: L10n.bundle), .error)
             print("❌ HomeViewModel: Failed to load data — \(error.localizedDescription)")
         }
 
@@ -152,5 +162,13 @@ final class HomeViewModel {
 
         // Reload all data
         await loadData()
+    }
+
+    // MARK: - Private Helpers
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }

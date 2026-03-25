@@ -2,18 +2,23 @@
 //  SocketService.swift
 //  Pour Rice
 //
-//  Lightweight Socket.IO v4 client using native URLSessionWebSocketTask
+//  Socket.IO client using the socket.io-client-swift library
 //  Handles real-time chat messaging, typing indicators, and presence
 //
-//  Socket.IO v4 wire format (Engine.IO v4):
-//  - "0"           → Engine.IO open (server sends sid, pingInterval, etc.)
-//  - "2"           → Engine.IO ping (server → client)
-//  - "3"           → Engine.IO pong (client → server, reply to ping)
-//  - "40"          → Socket.IO connect to default namespace
-//  - "42[...]"     → Socket.IO event with JSON array payload
+//  ============================================================================
+//  FOR FLUTTER/ANDROID DEVELOPERS:
+//  FLUTTER EQUIVALENT: socket_io_client package with IO.io() factory
+//
+//  KEY IOS DIFFERENCES:
+//  - SocketManager + SocketIOClient = IO.io() from socket_io_client
+//  - socket.on("event") { data, _ in } = socket.on("event", (data) { })
+//  - AsyncStream = StreamController.broadcast()
+//  - @MainActor = ensures UI updates on main thread (like setState in Flutter)
+//  ============================================================================
 //
 
 import Foundation
+import SocketIO
 
 /// Service for real-time Socket.IO communication with the Railway chat server
 @MainActor
@@ -24,8 +29,14 @@ final class SocketService {
     /// Whether the socket is currently connected
     private(set) var isConnected = false
 
-    /// WebSocket task for the current connection
-    private var webSocketTask: URLSessionWebSocketTask?
+    /// Whether the user has been successfully registered with the server
+    private(set) var isRegistered = false
+
+    /// Socket.IO manager (owns the connection lifecycle)
+    private var manager: SocketManager?
+
+    /// The default namespace socket client
+    private var socket: SocketIOClient?
 
     /// Continuation for the incoming messages stream
     private var messageContinuation: AsyncStream<ChatMessage>.Continuation?
@@ -35,15 +46,6 @@ final class SocketService {
 
     /// Continuation for connection state changes
     private var connectionStateContinuation: AsyncStream<Bool>.Continuation?
-
-    /// Background task for receiving messages
-    private var receiveTask: Task<Void, Never>?
-
-    /// Ping timer task
-    private var pingTask: Task<Void, Never>?
-
-    /// Ping interval from server handshake (default 25s)
-    private var pingInterval: TimeInterval = 25
 
     /// Stored connection credentials for reconnection
     private var lastUserId: String?
@@ -75,6 +77,9 @@ final class SocketService {
         lastDisplayName = displayName
         lastAuthToken = authToken
 
+        // Reset registration state
+        isRegistered = false
+
         // Create fresh AsyncStreams for this connection session
         incomingMessages = AsyncStream { continuation in
             self.messageContinuation = continuation
@@ -86,45 +91,42 @@ final class SocketService {
             self.connectionStateContinuation = continuation
         }
 
-        // Socket.IO v4 initial connection uses HTTP polling, then upgrades to WebSocket.
-        // For simplicity, connect directly to the WebSocket transport.
-        let socketURL = Constants.Chat.socketURL
-            .replacingOccurrences(of: "https://", with: "wss://")
-            .replacingOccurrences(of: "http://", with: "ws://")
-        let urlString = "\(socketURL)/socket.io/?EIO=4&transport=websocket"
-
-        guard let url = URL(string: urlString) else {
+        // Configure Socket.IO manager
+        guard let url = URL(string: Constants.Chat.socketURL) else {
             print("❌ SocketService: Invalid URL")
             return
         }
 
-        var request = URLRequest(url: url)
-        // Set Origin header required by Socket.IO CORS validation
-        request.setValue(Constants.Chat.socketURL, forHTTPHeaderField: "Origin")
+        manager = SocketManager(socketURL: url, config: [
+            .log(false),
+            .compress,
+            .forceWebsockets(true),
+            .reconnects(true),
+            .reconnectAttempts(5),
+            .reconnectWait(2)
+        ])
 
-        let session = URLSession(configuration: .default)
-        webSocketTask = session.webSocketTask(with: request)
-        webSocketTask?.resume()
+        socket = manager?.defaultSocket
 
-        // Start receiving messages
-        receiveTask = Task { [weak self] in
-            await self?.receiveLoop(userId: userId, displayName: displayName, authToken: authToken)
-        }
+        // Set up event listeners before connecting
+        setupEventListeners(userId: userId, displayName: displayName, authToken: authToken)
 
-        print("🔌 SocketService: Connecting to \(socketURL)...")
+        // Connect
+        socket?.connect()
+        print("🔌 SocketService: Connecting to \(Constants.Chat.socketURL)...")
     }
 
     /// Disconnects from the Socket.IO server.
     func disconnect() {
-        receiveTask?.cancel()
-        receiveTask = nil
-        pingTask?.cancel()
-        pingTask = nil
-        webSocketTask?.cancel(with: .normalClosure, reason: nil)
-        webSocketTask = nil
+        socket?.disconnect()
+        socket?.removeAllHandlers()
+        manager?.disconnect()
+        manager = nil
+        socket = nil
 
         let wasConnected = isConnected
         isConnected = false
+        isRegistered = false
 
         // Finish streams so any `for await` loops exit cleanly
         messageContinuation?.finish()
@@ -149,12 +151,12 @@ final class SocketService {
               let authToken = lastAuthToken else { return }
 
         // Clean up old connection state without finishing the connection state stream
-        receiveTask?.cancel()
-        receiveTask = nil
-        pingTask?.cancel()
-        pingTask = nil
-        webSocketTask?.cancel(with: .normalClosure, reason: nil)
-        webSocketTask = nil
+        socket?.disconnect()
+        socket?.removeAllHandlers()
+        manager?.disconnect()
+        manager = nil
+        socket = nil
+        isRegistered = false
         messageContinuation?.finish()
         messageContinuation = nil
         typingContinuation?.finish()
@@ -169,12 +171,12 @@ final class SocketService {
 
     /// Joins a chat room to receive its broadcasts.
     func joinRoom(roomId: String, userId: String) {
-        emit(event: "join-room", data: ["roomId": roomId, "userId": userId])
+        socket?.emit("join-room", ["roomId": roomId, "userId": userId])
     }
 
     /// Leaves a chat room.
     func leaveRoom(roomId: String, userId: String) {
-        emit(event: "leave-room", data: ["roomId": roomId, "userId": userId])
+        socket?.emit("leave-room", ["roomId": roomId, "userId": userId])
     }
 
     // MARK: - Messaging
@@ -190,12 +192,12 @@ final class SocketService {
         if let imageUrl = imageUrl {
             data["imageUrl"] = imageUrl
         }
-        emit(event: "send-message", data: data)
+        socket?.emit("send-message", data)
     }
 
     /// Sends a typing indicator.
     func sendTyping(roomId: String, userId: String, displayName: String, isTyping: Bool) {
-        emit(event: "typing", data: [
+        socket?.emit("typing", [
             "roomId": roomId,
             "userId": userId,
             "displayName": displayName,
@@ -203,112 +205,90 @@ final class SocketService {
         ])
     }
 
-    // MARK: - Private — Socket.IO Protocol
+    // MARK: - Private — Event Listeners
 
-    /// Main receive loop — processes incoming WebSocket frames.
-    private func receiveLoop(userId: String, displayName: String, authToken: String) async {
-        guard let ws = webSocketTask else { return }
+    /// Sets up all Socket.IO event listeners.
+    private func setupEventListeners(userId: String, displayName: String, authToken: String) {
+        guard let socket else { return }
 
-        while !Task.isCancelled {
-            do {
-                let message = try await ws.receive()
+        // Connection established
+        socket.on(clientEvent: .connect) { [weak self] _, _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isConnected = true
+                self.connectionStateContinuation?.yield(true)
+                print("✅ SocketService: Connected")
 
-                switch message {
-                case .string(let text):
-                    await handlePacket(text, userId: userId, displayName: displayName, authToken: authToken)
-                case .data:
-                    break // Binary frames not used
-                @unknown default:
-                    break
-                }
-            } catch {
-                if !Task.isCancelled {
-                    print("❌ SocketService: Receive error: \(error.localizedDescription)")
-                    isConnected = false
-                    connectionStateContinuation?.yield(false)
-                }
-                break
+                // Register with server immediately after connection
+                socket.emit("register", [
+                    "userId": userId,
+                    "displayName": displayName,
+                    "authToken": authToken
+                ])
             }
         }
-    }
 
-    /// Parses and handles Engine.IO / Socket.IO packets.
-    private func handlePacket(_ packet: String, userId: String, displayName: String, authToken: String) async {
-        if packet.hasPrefix("0") {
-            // Engine.IO open — parse pingInterval
-            if let jsonStart = packet.firstIndex(of: "{"),
-               let data = packet[jsonStart...].data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let interval = json["pingInterval"] as? Double {
-                pingInterval = interval / 1000.0
+        // Disconnection
+        socket.on(clientEvent: .disconnect) { [weak self] _, _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isConnected = false
+                self.isRegistered = false
+                self.connectionStateContinuation?.yield(false)
+                print("🔌 SocketService: Connection lost")
             }
-
-            // Send Socket.IO connect to default namespace
-            send(raw: "40")
-        } else if packet == "2" {
-            // Engine.IO ping → respond with pong
-            send(raw: "3")
-        } else if packet.hasPrefix("40") {
-            // Socket.IO connected — register the user
-            isConnected = true
-            connectionStateContinuation?.yield(true)
-            print("✅ SocketService: Connected")
-
-            emit(event: "register", data: [
-                "userId": userId,
-                "displayName": displayName,
-                "authToken": authToken
-            ])
-
-            // Start ping timer
-            startPingTimer()
-        } else if packet.hasPrefix("42") {
-            // Socket.IO event
-            handleEvent(packet)
-        }
-    }
-
-    /// Parses a Socket.IO event packet (42["eventName", {payload}]).
-    private func handleEvent(_ packet: String) {
-        let jsonString = String(packet.dropFirst(2)) // Remove "42" prefix
-        guard let data = jsonString.data(using: .utf8),
-              let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              let eventName = array.first as? String else {
-            return
         }
 
-        let payload = array.count > 1 ? array[1] : nil
+        // Connection error
+        socket.on(clientEvent: .error) { _, _ in
+            print("❌ SocketService: Connection error")
+        }
 
-        switch eventName {
-        case "new-message":
-            if let dict = payload as? [String: Any],
-               let jsonData = try? JSONSerialization.data(withJSONObject: dict),
-               let message = try? JSONDecoder.iso8601Decoder.decode(ChatMessage.self, from: jsonData) {
-                messageContinuation?.yield(message)
-            }
-
-        case "user-typing":
-            if let dict = payload as? [String: Any],
-               let uid = dict["userId"] as? String,
-               let name = dict["displayName"] as? String,
-               let isTyping = dict["isTyping"] as? Bool {
-                typingContinuation?.yield((userId: uid, displayName: name, isTyping: isTyping))
-            }
-
-        case "registered":
-            if let dict = payload as? [String: Any],
-               let success = dict["success"] as? Bool {
+        // Registration response
+        socket.on("registered") { [weak self] data, _ in
+            Task { @MainActor in
+                guard let self,
+                      let dict = data.first as? [String: Any],
+                      let success = dict["success"] as? Bool else { return }
+                self.isRegistered = success
                 print("🔑 SocketService: Registration \(success ? "successful" : "failed")")
             }
+        }
 
-        case "joined-room":
-            if let dict = payload as? [String: Any],
+        // New message received
+        socket.on("new-message") { [weak self] data, _ in
+            Task { @MainActor in
+                guard let self,
+                      let dict = data.first as? [String: Any],
+                      let jsonData = try? JSONSerialization.data(withJSONObject: dict),
+                      let message = try? JSONDecoder.iso8601Decoder.decode(ChatMessage.self, from: jsonData) else { return }
+                self.messageContinuation?.yield(message)
+            }
+        }
+
+        // Typing indicator
+        socket.on("user-typing") { [weak self] data, _ in
+            Task { @MainActor in
+                guard let self,
+                      let dict = data.first as? [String: Any],
+                      let uid = dict["userId"] as? String,
+                      let name = dict["displayName"] as? String,
+                      let typing = dict["isTyping"] as? Bool else { return }
+                self.typingContinuation?.yield((userId: uid, displayName: name, isTyping: typing))
+            }
+        }
+
+        // Room join confirmation
+        socket.on("joined-room") { data, _ in
+            if let dict = data.first as? [String: Any],
                let roomId = dict["roomId"] as? String {
                 print("🚪 SocketService: Joined room \(roomId)")
             }
+        }
 
-        case "message-sent":
-            if let dict = payload as? [String: Any],
+        // Message delivery confirmation
+        socket.on("message-sent") { data, _ in
+            if let dict = data.first as? [String: Any],
                let success = dict["success"] as? Bool {
                 if success {
                     let msgId = dict["messageId"] as? String ?? "unknown"
@@ -317,40 +297,6 @@ final class SocketService {
                     let error = dict["error"] as? String ?? "unknown"
                     print("❌ SocketService: Message delivery failed: \(error)")
                 }
-            }
-
-        default:
-            break
-        }
-    }
-
-    /// Emits a Socket.IO event (42["eventName", {payload}]).
-    private func emit(event: String, data: [String: Any]) {
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: data),
-              let jsonString = String(data: jsonData, encoding: .utf8) else {
-            return
-        }
-
-        let packet = "42[\"\(event)\",\(jsonString)]"
-        send(raw: packet)
-    }
-
-    /// Sends a raw string frame over the WebSocket.
-    private func send(raw: String) {
-        webSocketTask?.send(.string(raw)) { error in
-            if let error = error {
-                print("❌ SocketService: Send error: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    /// Starts a periodic ping to keep the connection alive.
-    private func startPingTimer() {
-        pingTask?.cancel()
-        pingTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64((self?.pingInterval ?? 25) * 1_000_000_000))
-                self?.send(raw: "3")
             }
         }
     }

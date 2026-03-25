@@ -20,6 +20,10 @@ struct StoreView: View {
 
     @State private var viewModel = StoreViewModel()
 
+    /// Controls whether the QR code sheet is presented.
+    /// Declared here so dashboardContent can read it via a closure capture.
+    @State private var showingQRCode = false
+
     // MARK: - Body
 
     var body: some View {
@@ -31,6 +35,10 @@ struct StoreView: View {
             }
         }
         .navigationTitle("store_title")
+        .toast(message: viewModel.toastMessage, style: viewModel.toastStyle, isPresented: Binding(
+            get: { viewModel.showToast },
+            set: { viewModel.showToast = $0 }
+        ))
     }
 
     // MARK: - Dashboard
@@ -75,6 +83,21 @@ struct StoreView: View {
             }
         }
         .errorAlert(error: $viewModel.error)
+        // QR code sheet — presented as a sheet (not full-screen) because it is
+        // informational content, not a camera feed. Matches the Android app's
+        // dialog-style QR display (full-screen card in store_page.dart).
+        //
+        // The sheet is intentionally NOT tied to StoreDestination push navigation:
+        //   - RestaurantQRView is a modal presentation, not a push-navigation destination
+        //   - Putting it in StoreDestination would incorrectly add it to the nav stack history
+        .sheet(isPresented: $showingQRCode) {
+            // guard: viewModel.restaurant should always be non-nil here because
+            // the QR button is only visible inside dashboardContent(restaurantId:),
+            // which is only rendered after loadDashboard() completes successfully.
+            if let restaurant = viewModel.restaurant {
+                RestaurantQRView(restaurant: restaurant)
+            }
+        }
     }
 
     // MARK: - Restaurant Header
@@ -132,6 +155,11 @@ struct StoreView: View {
     // MARK: - Quick Actions
 
     private var quickActionsGrid: some View {
+        // 2-column flexible grid.
+        // With 5 items, SwiftUI fills rows left-to-right: [Manage Menu | Manage Bookings]
+        //                                                   [View Reviews | Edit Info   ]
+        //                                                   [QR Code      |             ]
+        // The lone 5th card sits left-aligned — a common iOS pattern (see App Store, Settings).
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             NavigationLink(value: StoreDestination.manageMenu) {
                 QuickActionCard(title: "store_manage_menu", icon: "menucard", colour: .purple)
@@ -148,6 +176,24 @@ struct StoreView: View {
             NavigationLink(value: StoreDestination.editInfo) {
                 QuickActionCard(title: "store_edit_info", icon: "pencil.circle", colour: .blue)
             }
+
+            // QR Code card — opens a sheet showing the restaurant's menu QR code.
+            //
+            // WHY a Button instead of NavigationLink(value: StoreDestination):
+            //   NavigationLink pushes onto the navigation stack (back button appears).
+            //   The QR sheet is a modal — it should dismiss with a swipe or "Done" button.
+            //   A Button that sets showingQRCode = true is the correct presentation trigger.
+            //
+            // ANDROID EQUIVALENT:
+            //   MenuQRGenerator widget embedded inline in the Quick Actions section
+            //   of lib/pages/store_page.dart (not a separate navigation route).
+            Button {
+                showingQRCode = true
+            } label: {
+                QuickActionCard(title: "store_qr_code", icon: "qrcode", colour: .green)
+            }
+            // Remove the default Button tap highlight — QuickActionCard has its own background
+            .buttonStyle(.plain)
         }
     }
 

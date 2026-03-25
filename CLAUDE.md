@@ -54,7 +54,8 @@ Pour Rice/
   │   ├── StoreViewModel.swift           # Restaurant owner dashboard stats + actions
   │   ├── ChatListViewModel.swift        # Chat room list sorted by recency
   │   ├── ChatRoomViewModel.swift        # Message history + Socket.IO stream + typing + reconnection
-  │   └── GeminiViewModel.swift         # AI conversation state + context-aware suggestion chips
+  │   ├── GeminiViewModel.swift         # AI conversation state + context-aware suggestion chips
+  │   └── QRScannerViewModel.swift      # QR scan state: URL validation, restaurant fetch, toast
   ├── Views/
   │   ├── Auth/
   │   │   ├── LoginView.swift            # Email/Google sign-in + guest mode
@@ -84,6 +85,9 @@ Pour Rice/
   │   │   └── MessageBubbleView.swift    # Individual message bubble (edit/delete context menu)
   │   ├── Gemini/
   │   │   └── GeminiChatView.swift       # Gemini AI chat with markdown rendering + suggestion chips
+  │   ├── QR/
+  │   │   ├── QRScannerView.swift        # Full-screen camera scanner (VisionKit DataScannerViewController)
+  │   │   └── RestaurantQRView.swift     # QR code generation + sharing (CoreImage, for restaurant owners)
   │   ├── Account/
   │   │   ├── AccountView.swift          # Profile, preferences, AI assistant link, sign-out, toast
   │   │   └── ProfileEditView.swift      # Profile edit sheet (name, phone, bio, theme, notifications)
@@ -102,7 +106,7 @@ Pour Rice/
       │   ├── ReviewService.swift        # Review API calls
       │   ├── BookingService.swift       # Booking CRUD (diner + restaurant owner perspectives)
       │   ├── ChatService.swift          # Chat REST API (rooms, messages, edit/delete)
-      │   ├── SocketService.swift        # Socket.IO v4 real-time (URLSessionWebSocketTask)
+      │   ├── SocketService.swift        # Socket.IO v4 real-time (socket.io-client-swift library)
       │   ├── GeminiService.swift        # Gemini AI chat + description generation
       │   └── StoreService.swift         # Restaurant management (claim, update, image, menu CRUD)
       ├── Network/
@@ -121,7 +125,7 @@ Pour Rice/
 - `Core/Extensions/View+Extensions.swift` — `Services` container (all 11 services); `shimmerEffect()` modifier; `hapticFeedback()`, `cardStyle()`, `errorAlert()`, `loadingOverlay()`, `toast(message:style:isPresented:)` modifier; `L10n.bundle` helper for locale-aware strings in non-view contexts
 - `Models/Booking.swift` — `BookingStatus` enum with `.colour` and `.label`; `BookingDiner` for restaurant-side enrichment; `canCancel`, `isUpcoming`, `isPast` computed properties
 - `Models/ChatRoom.swift` — `ChatRoom.placeholder(roomId:name:)` factory for navigation values; `ChatMessage.displayText` renders "[Message deleted]" for soft-deletes
-- `Core/Services/SocketService.swift` — Manual Socket.IO v4 framing via `URLSessionWebSocketTask`; `incomingMessages`, `typingIndicators`, and `connectionStateChanges` as `AsyncStream`; auto ping/pong keep-alive; `reconnect()` with stored credentials
+- `Core/Services/SocketService.swift` — Socket.IO v4 via `socket.io-client-swift` (`SocketManager` + `SocketIOClient`); `isConnected` and `isRegistered` state gates; `incomingMessages`, `typingIndicators`, and `connectionStateChanges` as `AsyncStream`; `reconnect()` with stored credentials
 - `ViewModels/ChatRoomViewModel.swift` — Starts/stops socket stream listeners; falls back to REST if socket unavailable; typing debounce with auto-stop; automatic reconnection with connection state monitoring; `isUsingSocket` observable for UI feedback
 - `ViewModels/AccountViewModel.swift` — Profile editing with edit buffers (name, phone, bio, theme, notifications); toast feedback on save; language preference management
 - `Views/Restaurant/RestaurantView.swift` — Action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`)
@@ -143,9 +147,10 @@ Pour Rice/
 ```
 ChatRoomView.task
   ├── ChatService.fetchMessages(roomId:)        # Load history via REST
-  ├── SocketService.connect(userId:token:)      # WebSocket to Railway
-  │     └── Waits up to 5s for connection (50 × 100ms)
-  ├── SocketService.joinRoom(roomId:userId:)    # Register for broadcasts
+  ├── SocketService.connect(userId:token:)      # Connect via socket.io-client-swift
+  │     ├── "connect" event → set isConnected=true, emit "register"
+  │     └── "registered" event → set isRegistered=true (server confirms token valid)
+  ├── SocketService.joinRoom(roomId:userId:)    # Waits for isRegistered before joining
   └── for await message in socketService.incomingMessages   # Real-time stream
 
 On send:
@@ -158,11 +163,10 @@ Reconnection:
   SocketService.reconnect()             # Re-connects with stored credentials
   ChatRoomView toolbar                  # Shows "Reconnecting…" when !isUsingSocket
 
-Socket.IO v4 wire protocol:
-  "0"   → Engine.IO open (parse pingInterval)
-  "2"   → Ping from server → reply "3" (pong)
-  "40"  → Socket.IO namespace connect → emit "register"
-  "42[\"event\",{data}]" → Socket.IO events
+isRegistered gate (critical — prevents "Not registered" server error):
+  connect() emits "register" on "connect" event
+  joinRoom() polls isRegistered (up to 3s) before emitting "join-room"
+  startConnectionListener() waits for isRegistered after reconnect before re-joining
 ```
 
 ## Bookings Architecture
@@ -203,6 +207,58 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 - Algolia SDK was removed; all search traffic uses `URLSession` through the backend proxy
 - `AlgoliaHit` is a private struct inside `RestaurantService` — maps `objectID` → `Restaurant.id`
 
+## QR Code & Deep Link Architecture
+
+Deep link format: `pourrice://menu/{restaurantId}` — **identical on iOS and Android** for cross-platform QR compatibility.
+
+```
+QR Generation (restaurant owners):
+  StoreView → "QR Code" button → .sheet → RestaurantQRView
+    CoreImage.CIFilter.qrCodeGenerator()
+      message = Data("pourrice://menu/{id}".utf8)
+      correctionLevel = "H"          ← matches Android QrErrorCorrectLevel.H (~30% tolerance)
+    CGAffineTransform(scaleX: 3, y: 3)  ← 3× scale, matches Android pixelRatio: 3.0
+    Image(uiImage:).interpolation(.none) ← nearest-neighbour prevents blur on scale-up
+    ShareLink(item: UIImage, ...)        ← UIImage+Transferable extension (see RestaurantQRView.swift)
+
+QR Scanning (all users — guests, diners, owners):
+  SearchView toolbar → camera.viewfinder button
+    → .fullScreenCover { NavigationStack { QRScannerView() } }
+        DataScannerRepresentable (UIViewControllerRepresentable)
+          DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])])
+          Coordinator.dataScanner(_:didAdd:allItems:)
+            → Task { @MainActor in vm.handleScannedString(payload) }
+        QRScannerViewModel.handleScannedString(_:)
+          1. Validate scheme == "pourrice", host == "menu"
+          2. Extract restaurantId from pathComponents.dropFirst().first
+          3. RestaurantService.fetchRestaurant(id:)  ← GET /API/Restaurants/{id}, no auth
+          4. scannerState = .success(restaurant)
+        .navigationDestination(isPresented:) → MenuView(restaurantId:restaurantName:)
+
+OS-level deep link (app opened from pourrice:// URL):
+  Info.plist CFBundleURLTypes → scheme "pourrice" registered
+  RootView.onOpenURL { url in
+    GIDSignIn.sharedInstance.handle(url)         ← existing Google OAuth (unchanged)
+    pendingDeepLinkId = url.pathComponents[1]    ← pourrice://menu/{id}
+  }
+  .onChange(of: pendingDeepLinkId) → Task {
+    services.restaurantService.fetchRestaurant(id:)
+    deepLinkRestaurant = restaurant
+    showingDeepLinkMenu = true
+  }
+  .sheet → NavigationStack { MenuView(...) }     ← modal, works regardless of active tab
+```
+
+Key files:
+- `Views/QR/QRScannerView.swift` — VisionKit scanner + DataScannerRepresentable + Coordinator
+- `Views/QR/RestaurantQRView.swift` — CoreImage QR generation + ShareLink
+- `ViewModels/QRScannerViewModel.swift` — ScannerState enum + URL validation + fetch
+- `Core/Utilities/Constants.swift` — `Constants.DeepLink.scheme` + `.menuHost`
+- `Pour Rice/Info.plist` — `pourrice` URL scheme + `NSCameraUsageDescription`
+- `Pour_RiceApp.swift` `RootView` — `onOpenURL` + `.onChange` + deep link sheet
+
+Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestaurantId}"`
+
 ## Code & Comments Structure
 
 ### Naming Conventions
@@ -235,7 +291,9 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 ### Toast/Snackbar System
 - `ToastStyle` enum: `.success` (green), `.error` (red), `.info` (blue) — each with icon and haptic type
 - `.toast(message:style:isPresented:)` view modifier — overlays banner at top, auto-dismisses after 2.5s, spring animation, haptic feedback
-- Used in `AccountView` for profile save confirmation; available app-wide via the modifier
+- All ViewModels expose `toastMessage: String`, `toastStyle: ToastStyle`, `showToast: Bool` + private `showToast(_:_:)` helper
+- Coverage: all major user actions across Home, Search, Bookings, Store, Chat, Gemini, Restaurant, and Account pages
+- Toast keys follow `toast_<context>_<action>` naming (e.g., `toast_booking_cancelled`, `toast_store_info_updated`)
 
 ### iOS 26 / Liquid Glass Patterns
 - **Tab navigation**: Uses `Tab("title", systemImage:) { content }` API (not legacy `.tabItem {}`)
@@ -268,6 +326,7 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 - **Kingfisher** — image loading and caching (`AsyncImageView`)
 - **Firebase iOS SDK** — FirebaseCore, FirebaseAuth, FirebaseAnalytics, FirebaseAnalyticsCore, FirebaseInstallations
 - **GoogleSignIn-iOS** — Google OAuth sign-in (v8.0.0)
+- **socket.io-client-swift** — Socket.IO v4 client (`SocketManager` + `SocketIOClient`); branch `master`; used in `SocketService.swift`
 - Removed (unused): Alamofire, algoliasearch-client-swift, swift-async-algorithms, FirebaseFirestore, FirebaseInAppMessaging-Beta, FirebaseMessaging, FirebaseStorage
 
 ## Swift File Line Counts
@@ -288,8 +347,8 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 | `Views/Menu/MenuView.swift` | 330 |
 | `Core/Services/LocationService.swift` | 315 |
 | `Models/ChatRoom.swift` | ~330 |
-| `Core/Services/SocketService.swift` | ~370 |
-| `ViewModels/ChatRoomViewModel.swift` | ~410 |
+| `Core/Services/SocketService.swift` | ~280 |
+| `ViewModels/ChatRoomViewModel.swift` | ~440 |
 | `Views/Search/SearchView.swift` | 266 |
 | `Views/Common/AsyncImageView.swift` | 259 |
 | `Views/Account/AccountView.swift` | ~390 |
@@ -299,29 +358,29 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 | `Models/User.swift` | ~350 |
 | `Views/Common/EmptyStateView.swift` | 216 |
 | `Core/Extensions/View+Extensions.swift` | ~425 |
-| `ViewModels/SearchViewModel.swift` | 206 |
-| `ViewModels/RestaurantViewModel.swift` | 202 |
+| `ViewModels/SearchViewModel.swift` | ~225 |
+| `ViewModels/RestaurantViewModel.swift` | ~220 |
 | `Core/Services/MenuService.swift` | 185 |
 | `Core/Services/StoreService.swift` | ~180 |
 | `Core/Network/APIError.swift` | 179 |
 | `Core/Extensions/Date+Extensions.swift` | 177 |
-| `ViewModels/HomeViewModel.swift` | 176 |
+| `ViewModels/HomeViewModel.swift` | ~195 |
 | `Core/Utilities/Constants.swift` | ~240 |
 | `ViewModels/MenuViewModel.swift` | 169 |
 | `Views/Search/FilterView.swift` | 161 |
 | `Core/Services/BookingService.swift` | ~155 |
 | `Core/Services/GeminiService.swift` | ~120 |
 | `Core/Services/ChatService.swift` | ~130 |
-| `ViewModels/StoreViewModel.swift` | ~220 |
-| `ViewModels/BookingsViewModel.swift` | ~120 |
-| `ViewModels/GeminiViewModel.swift` | ~140 |
-| `ViewModels/ChatListViewModel.swift` | ~90 |
-| `ViewModels/CreateBookingViewModel.swift` | ~85 |
-| `Views/Bookings/BookingsView.swift` | ~105 |
+| `ViewModels/StoreViewModel.swift` | ~250 |
+| `ViewModels/BookingsViewModel.swift` | ~140 |
+| `ViewModels/GeminiViewModel.swift` | ~160 |
+| `ViewModels/ChatListViewModel.swift` | ~110 |
+| `ViewModels/CreateBookingViewModel.swift` | ~100 |
+| `Views/Bookings/BookingsView.swift` | ~115 |
 | `Views/Bookings/BookingCardView.swift` | ~100 |
-| `Views/Bookings/CreateBookingView.swift` | ~120 |
-| `Views/Chat/ChatListView.swift` | ~135 |
-| `Views/Chat/ChatRoomView.swift` | ~160 |
+| `Views/Bookings/CreateBookingView.swift` | ~130 |
+| `Views/Chat/ChatListView.swift` | ~145 |
+| `Views/Chat/ChatRoomView.swift` | ~170 |
 | `Views/Account/ProfileEditView.swift` | ~110 |
 | `Views/Chat/MessageBubbleView.swift` | ~80 |
 | `Views/Common/LoadingView.swift` | 135 |
@@ -332,7 +391,10 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 | `Models/Review.swift` | 130 |
 | `Core/Services/ReviewService.swift` | 126 |
 | `App/AppDelegate.swift` | 62 |
+| `Views/QR/QRScannerView.swift` | ~185 |
+| `Views/QR/RestaurantQRView.swift` | 237 |
+| `ViewModels/QRScannerViewModel.swift` | ~85 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~12,700** |
+| **Total (estimated)** | **~13,500** |

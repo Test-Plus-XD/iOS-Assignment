@@ -84,6 +84,10 @@ struct HomeView: View {
                 await vm.loadData()
             }
         }
+        .toast(message: viewModel?.toastMessage ?? "", style: viewModel?.toastStyle ?? .success, isPresented: Binding(
+            get: { viewModel?.showToast ?? false },
+            set: { viewModel?.showToast = $0 }
+        ))
     }
 
     // MARK: - Content

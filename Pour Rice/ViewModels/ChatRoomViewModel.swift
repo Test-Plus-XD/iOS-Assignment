@@ -50,6 +50,17 @@ final class ChatRoomViewModel {
     /// Whether the real-time socket is active (false = using REST polling fallback)
     private(set) var isUsingSocket = false
 
+    // MARK: - Toast
+
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .info
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     // MARK: - Dependencies
 
     private var chatService: ChatService?
@@ -127,26 +138,30 @@ final class ChatRoomViewModel {
         // Attempt socket connection
         socketService.connect(userId: userId, displayName: displayName, authToken: authToken)
 
-        // Wait for socket to connect (up to ~5 seconds)
-        var connected = false
+        // Wait for socket to register (up to ~5 seconds)
+        // Must wait for isRegistered, not just isConnected, because the server
+        // rejects join-room requests from unregistered sockets
+        var registered = false
         for _ in 0..<50 {
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
-            if socketService.isConnected {
-                connected = true
+            if socketService.isRegistered {
+                registered = true
                 break
             }
         }
 
-        if connected {
+        if registered {
             // Real-time path — join room and start stream listeners
             socketService.joinRoom(roomId: roomId, userId: userId)
             startSocketListeners()
             isUsingSocket = true
+            showToast(String(localized: "toast_chat_connected", bundle: L10n.bundle), .success)
             print("💬 ChatRoomViewModel: Using Socket.IO for room \(roomId)")
         } else {
             // Fallback — socket failed, use REST polling
             isUsingSocket = false
             startPolling()
+            showToast(String(localized: "toast_chat_offline_mode", bundle: L10n.bundle), .info)
             print("💬 ChatRoomViewModel: Socket unavailable, falling back to REST polling")
         }
 
@@ -213,16 +228,18 @@ final class ChatRoomViewModel {
             // Wait up to 3 seconds for reconnect
             try? await Task.sleep(nanoseconds: 3_000_000_000)
 
-            if self.socketService?.isConnected == true, !Task.isCancelled {
+            if self.socketService?.isRegistered == true, !Task.isCancelled {
                 // Reconnected — re-join room and restart listeners
                 if let roomId = self.roomId, let userId = self.currentUserId {
                     self.socketService?.joinRoom(roomId: roomId, userId: userId)
                 }
                 self.isUsingSocket = true
                 self.startSocketListeners()
+                self.showToast(String(localized: "toast_chat_reconnected", bundle: L10n.bundle), .success)
                 print("💬 ChatRoomViewModel: Reconnected to Socket.IO")
             } else if !Task.isCancelled {
                 // Reconnect failed — fall back to polling
+                self.showToast(String(localized: "toast_chat_offline_mode", bundle: L10n.bundle), .info)
                 print("💬 ChatRoomViewModel: Reconnect failed, falling back to REST polling")
                 self.startPolling()
             }
@@ -254,7 +271,19 @@ final class ChatRoomViewModel {
                 guard let self, !Task.isCancelled else { break }
 
                 if connected && !self.isUsingSocket {
-                    // Socket reconnected — switch from polling to socket
+                    // Socket reconnected — wait for registration before joining room
+                    var didRegister = false
+                    for _ in 0..<30 {
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                        if socketService.isRegistered {
+                            didRegister = true
+                            break
+                        }
+                    }
+
+                    guard didRegister, !Task.isCancelled else { continue }
+
+                    // Switch from polling to socket
                     self.pollingTask?.cancel()
                     self.pollingTask = nil
 
@@ -263,9 +292,11 @@ final class ChatRoomViewModel {
                     }
                     self.startSocketListeners()
                     self.isUsingSocket = true
+                    self.showToast(String(localized: "toast_chat_reconnected", bundle: L10n.bundle), .success)
                     print("💬 ChatRoomViewModel: Socket reconnected, switched from polling to socket")
                 } else if !connected && self.isUsingSocket {
                     self.isUsingSocket = false
+                    self.showToast(String(localized: "toast_chat_connection_lost", bundle: L10n.bundle), .info)
                 }
             }
         }
@@ -347,6 +378,7 @@ final class ChatRoomViewModel {
                 await pollMessages()
             } catch {
                 self.error = error
+                showToast(String(localized: "toast_chat_send_failed", bundle: L10n.bundle), .error)
             }
         }
     }
@@ -382,8 +414,10 @@ final class ChatRoomViewModel {
             if let index = messages.firstIndex(where: { $0.id == id }) {
                 messages[index].message = newText
             }
+            showToast(String(localized: "toast_chat_message_edited", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_chat_edit_failed", bundle: L10n.bundle), .error)
         }
     }
 
@@ -404,8 +438,19 @@ final class ChatRoomViewModel {
                     deleted: true
                 )
             }
+            showToast(String(localized: "toast_chat_message_deleted", bundle: L10n.bundle), .success)
         } catch {
             self.error = error
+            showToast(String(localized: "toast_chat_delete_failed", bundle: L10n.bundle), .error)
         }
+    }
+
+    // MARK: - Private Helpers
+
+    /// Triggers a toast notification with the given message and style.
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }

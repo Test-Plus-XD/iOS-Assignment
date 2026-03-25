@@ -18,7 +18,9 @@
       "Bash(grep -c '\"\"chat_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
       "Bash(grep -c '\"\"store_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
       "Bash(grep -c '\"\"gemini_title\"\"' \"/Users/test-plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
-      "Bash(xcrun simctl:*)"
+      "Bash(xcrun simctl:*)",
+      "Bash(grep -c '\"\"extractionState\"\"' \"C:/Users/Test-Plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")",
+      "Bash(grep -c '\"\"zh-Hant\"\"' \"C:/Users/Test-Plus/Projects/iOS Assignment/Pour Rice/Resources/Localizable.xcstrings\")"
     ]
   }
 }

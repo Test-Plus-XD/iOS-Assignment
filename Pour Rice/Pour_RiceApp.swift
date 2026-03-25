@@ -133,11 +133,12 @@ struct Pour_RiceApp: App {
                 //
                 .environment(\.services, services)
                 .environment(\.authService, services.authService)
-                .onOpenURL { url in
-                    // iOS 26+ preferred URL handling path (scene-based lifecycle)
-                    // for OAuth callback handoff from Google Sign-In.
-                    _ = GIDSignIn.sharedInstance.handle(url)
-                }
+                // NOTE: onOpenURL is intentionally placed on RootView (below), not here.
+                // RootView needs @Environment(\.services) to fetch restaurants for deep links,
+                // and environment values are not available on the WindowGroup content before
+                // the view is inserted into the hierarchy. The .environment() injections above
+                // are visible to RootView's body, but a modifier on WindowGroup itself runs
+                // before those injections propagate — so the handler is on RootView instead.
         }
     }
 }
@@ -173,6 +174,11 @@ struct RootView: View {
     /// The syntax \.authService uses KeyPath - it's Swift's way of accessing properties
     @Environment(\.authService) private var authService
 
+    /// Services container used to fetch a restaurant when a pourrice:// deep link is received.
+    /// Must live here (not in Pour_RiceApp.body) because @Environment is only available
+    /// inside View conformers, not inside Scene.body modifiers.
+    @Environment(\.services) private var services
+
     // MARK: - State
 
     /// Guest browsing mode — allows unauthenticated users to browse Home, Search,
@@ -188,6 +194,27 @@ struct RootView: View {
     /// @AppStorage reliably triggers body re-evaluation on View conformers, whereas
     /// Scene body re-evaluation from App-level @AppStorage is unreliable.
     @AppStorage("preferredLanguage") private var preferredLanguage = "en"
+
+    // MARK: - Deep Link State
+
+    /// Holds the restaurantId extracted from an incoming pourrice://menu/{id} URL.
+    ///
+    /// Flow:
+    ///  onOpenURL (synchronous) → set pendingDeepLinkId
+    ///  .onChange(of: pendingDeepLinkId) → async fetch → set deepLinkRestaurant → show sheet
+    ///
+    /// Using a String? here rather than MenuNavigation? because onOpenURL is synchronous —
+    /// we cannot await the restaurant name fetch inside the handler.
+    /// The async fetch and sheet presentation are handled in .onChange below.
+    @State private var pendingDeepLinkId: String?
+
+    /// The fully-fetched Restaurant object for the pending deep link.
+    /// Set by the .onChange task after a successful API call.
+    /// Cleared in the sheet's onDismiss callback.
+    @State private var deepLinkRestaurant: Restaurant?
+
+    /// Drives the deep link MenuView sheet presentation.
+    @State private var showingDeepLinkMenu = false
 
     // MARK: - Body
 
@@ -235,6 +262,91 @@ struct RootView: View {
         // without an app restart. BilingualText.localised also reads UserDefaults
         // directly, so dynamic API data (restaurant names etc.) switches too.
         .environment(\.locale, Locale(identifier: preferredLanguage))
+        // ── URL / Deep Link Handling ──────────────────────────────────────
+        // Handles both Google Sign-In OAuth callbacks AND Pour Rice QR deep links.
+        //
+        // Placed here on RootView.body (not on WindowGroup in Pour_RiceApp.body)
+        // so that @Environment(\.services) is accessible for the async restaurant fetch.
+        //
+        // FLUTTER EQUIVALENT:
+        // In Flutter you'd listen to a Stream from the uni_links package.
+        // In iOS, the OS delivers URLs directly to this modifier on scene resume.
+        //
+        // ANDROID EQUIVALENT:
+        // The Android app has NO OS-level deep link handling (no intent-filter in
+        // AndroidManifest.xml). iOS requires the Info.plist scheme registration
+        // and this handler for the OS to route pourrice:// URLs to the app.
+        .onOpenURL { url in
+            // ── Google Sign-In OAuth ──────────────────────────────────────
+            // Passes the URL to Google's SDK first — it returns true if it handled it.
+            // Must remain as the first call so OAuth token exchanges are never lost.
+            _ = GIDSignIn.sharedInstance.handle(url)
+
+            // ── Pour Rice QR Deep Link ────────────────────────────────────
+            // Only handle URLs matching pourrice://menu/{restaurantId}.
+            // All other schemes (including Google's reverse client ID) fall through
+            // to GIDSignIn.handle above and are ignored here.
+            guard url.scheme == Constants.DeepLink.scheme,          // "pourrice"
+                  url.host == Constants.DeepLink.menuHost,           // "menu"
+                  let restaurantId = url.pathComponents               // ["/" , "abc123"]
+                      .dropFirst()                                     // ["abc123"]
+                      .first,                                          // "abc123"
+                  !restaurantId.isEmpty
+            else { return }
+
+            // Store the ID; the async fetch happens in .onChange below.
+            // onOpenURL is a synchronous callback — we cannot await here.
+            pendingDeepLinkId = restaurantId
+        }
+        // ── Async restaurant fetch triggered by deep link ─────────────────
+        // .onChange fires on the main actor whenever pendingDeepLinkId changes.
+        // It launches a Task to fetch the restaurant, then presents the menu sheet.
+        //
+        // WHY .onChange instead of fetching inside onOpenURL:
+        //   onOpenURL is a synchronous closure. Swift async/await requires an async
+        //   context. .onChange provides one via Task { } on the main actor.
+        .onChange(of: pendingDeepLinkId) { _, newId in
+            guard let restaurantId = newId else { return }
+
+            Task {
+                do {
+                    // Fetch restaurant details from GET /API/Restaurants/{id}
+                    // RestaurantService caches results — repeat opens of the same QR are free
+                    let restaurant = try await services.restaurantService.fetchRestaurant(id: restaurantId)
+                    deepLinkRestaurant = restaurant
+                    showingDeepLinkMenu = true
+                } catch {
+                    // Silently discard — a broken deep link should not crash or confuse the user.
+                    // The app simply stays on the current screen (same as Android behaviour).
+                    print("❌ Deep link restaurant fetch failed for id '\(restaurantId)': \(error)")
+                }
+                // Clear the pending ID regardless of success/failure so repeated
+                // taps on the same QR code fire a fresh .onChange next time
+                pendingDeepLinkId = nil
+            }
+        }
+        // ── Deep link sheet ───────────────────────────────────────────────
+        // Presents MenuView modally when a valid pourrice:// deep link is opened.
+        // Modal presentation (not push navigation) is used because:
+        //   1. We don't know which tab is active when the URL arrives
+        //   2. Modal sheets layer on top of the current UI without disrupting tab state
+        //   3. The user can dismiss with a swipe to return exactly where they were
+        //
+        // NavigationStack wrapper gives MenuView its own navigation bar with a
+        // back/done button. Without it, MenuView renders without any chrome.
+        .sheet(isPresented: $showingDeepLinkMenu, onDismiss: {
+            // Release the restaurant object when dismissed to free memory
+            deepLinkRestaurant = nil
+        }) {
+            if let restaurant = deepLinkRestaurant {
+                NavigationStack {
+                    MenuView(
+                        restaurantId: restaurant.id,
+                        restaurantName: restaurant.name.localised
+                    )
+                }
+            }
+        }
     }
 }
 

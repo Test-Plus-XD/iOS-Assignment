@@ -57,6 +57,15 @@ final class RestaurantViewModel {
     /// Whether the review submission sheet is presented
     var showingReviewSheet = false
 
+    /// Toast message to display
+    var toastMessage = ""
+
+    /// Toast visual style
+    var toastStyle: ToastStyle = .success
+
+    /// Whether the toast is currently visible
+    var showToast = false
+
     /// Calculated average rating from loaded reviews
     var averageRating: Double {
         guard !reviews.isEmpty else { return restaurant?.rating ?? 0 }
@@ -183,15 +192,23 @@ final class RestaurantViewModel {
             // After submitting, reload reviews to show the new one
             await loadData(restaurantId: restaurantId)
             showingReviewSheet = false
+            showToast(String(localized: "toast_review_submitted", bundle: L10n.bundle), .success)
             return true
 
         } catch {
             errorMessage = error.localizedDescription
+            showToast(String(localized: "toast_review_failed", bundle: L10n.bundle), .error)
             return false
         }
     }
 
     // MARK: - Private Helpers
+
+    private func showToast(_ message: String, _ style: ToastStyle) {
+        toastMessage = message
+        toastStyle = style
+        showToast = true
+    }
 
     /// Checks if the currently logged-in user has already reviewed this restaurant
     private func checkIfUserHasReviewed(restaurantId: String) {

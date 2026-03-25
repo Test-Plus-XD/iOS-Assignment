@@ -179,6 +179,7 @@
 				CD7409962F3F8C8C000A59BE /* FirebaseAuth */,
 				CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */,
 				EEA100011111111111111111 /* GoogleSignIn */,
+				EEB200011111111111111111 /* SocketIO */,
 			);
 			productName = "Pour Rice";
 			productReference = CDEC24932F3AE8A20038A578 /* Pour Rice.app */;
@@ -262,6 +263,7 @@
 				CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				CD5900A42F3DDDC7000E3C82 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				EEA100021111111111111111 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				EEB200021111111111111111 /* XCRemoteSwiftPackageReference "socket.io-client-swift" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = CDEC24942F3AE8A20038A578 /* Products */;
@@ -694,6 +696,14 @@
 				minimumVersion = 8.0.0;
 			};
 		};
+		EEB200021111111111111111 /* XCRemoteSwiftPackageReference "socket.io-client-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/socketio/socket.io-client-swift";
+			requirement = {
+				kind = branch;
+				branch = master;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -731,6 +741,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = EEA100021111111111111111 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		EEB200011111111111111111 /* SocketIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EEB200021111111111111111 /* XCRemoteSwiftPackageReference "socket.io-client-swift" */;
+			productName = SocketIO;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
