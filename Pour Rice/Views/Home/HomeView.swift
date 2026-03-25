@@ -320,7 +320,7 @@ private struct RestaurantRowView: View {
         HStack(spacing: 14) {
 
             // Rounded thumbnail with overlay badges
-            ZStack(alignment: .bottomLeading) {
+            ZStack {
                 AsyncImageView(
                     url: restaurant.imageURLs.first,
                     contentMode: .fill,
@@ -329,22 +329,35 @@ private struct RestaurantRowView: View {
                 )
                 .frame(width: 88, height: 88)
 
-                // Open/Closed pill overlaid on image
-                Text(restaurant.isOpenNow
-                     ? "open_now"
-                     : "closed")
-                    .font(.system(size: 9, weight: .bold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(
-                        restaurant.isOpenNow
-                            ? Color.accentColor.opacity(0.9)
-                            : Color.secondary.opacity(0.7),
-                        in: Capsule()
-                    )
-                    .padding(6)
+                VStack {
+                    // Distance badge — top-left
+                    HStack {
+                        if let distance = restaurant.distance(from: userLocation) {
+                            DistanceBadge(meters: distance)
+                        }
+                        Spacer()
+                    }
+                    Spacer()
+                    // Open/Closed pill — bottom-left
+                    HStack {
+                        Text(restaurant.isOpenNow
+                             ? "open_now"
+                             : "closed")
+                            .font(.system(size: 9, weight: .bold))
+                            .textCase(.uppercase)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(
+                                restaurant.isOpenNow
+                                    ? Color.accentColor.opacity(0.9)
+                                    : Color.secondary.opacity(0.7),
+                                in: Capsule()
+                            )
+                        Spacer()
+                    }
+                }
+                .padding(6)
             }
             .frame(width: 88, height: 88)
             .clipped()
@@ -357,7 +370,14 @@ private struct RestaurantRowView: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                Text(restaurant.cuisine.localised)
+                if !restaurant.keywords.isEmpty {
+                    Text(restaurant.keywords.map { $0.localised }.joined(separator: " · "))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Text(restaurant.district.localised)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -382,18 +402,6 @@ private struct RestaurantRowView: View {
                         .foregroundStyle(.secondary)
 
                     Spacer()
-
-                    // Distance badge
-                    if let distance = restaurant.distance(from: userLocation) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 9))
-                            DistanceBadge.label(meters: distance)
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundStyle(Color.accentColor)
-                    }
                 }
             }
 

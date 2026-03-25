@@ -88,7 +88,7 @@ struct BookingsView: View {
         }
     }
 
-    private var emptyTitle: String {
+    private var emptyTitle: LocalizedStringKey {
         switch viewModel.selectedTab {
         case .all:      return "bookings_empty_all"
         case .upcoming: return "bookings_empty_upcoming"
@@ -96,7 +96,7 @@ struct BookingsView: View {
         }
     }
 
-    private var emptyDescription: String {
+    private var emptyDescription: LocalizedStringKey {
         "bookings_empty_description"
     }
 }

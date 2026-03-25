@@ -227,36 +227,47 @@ private struct SearchResultRow: View {
     var body: some View {
         HStack(spacing: 14) {
 
-            // Rounded thumbnail with open/closed overlay
-            ZStack(alignment: .bottomLeading) {
+            // Rounded thumbnail with open/closed and distance overlays
+            ZStack {
                 AsyncImageView(
                     url: restaurant.imageURLs.first,
                     contentMode: .fill,
                     cornerRadius: Constants.UI.cornerRadiusLarge,
                     aspectRatio: 1
                 )
-                .frame(width: 80, height: 80)
+                .frame(width: 88, height: 88)
 
-                // Open/Closed pill — only when opening hours are available
-                if !restaurant.openingHours.isEmpty {
-                    Text(restaurant.isOpenNow
-                         ? "open_now"
-                         : "closed")
-                        .font(.system(size: 9, weight: .bold))
-                        .textCase(.uppercase)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(
-                            restaurant.isOpenNow
-                                ? Color.accentColor.opacity(0.9)
-                                : Color.secondary.opacity(0.7),
-                            in: Capsule()
-                        )
-                        .padding(5)
+                VStack {
+                    // Distance badge — top-left
+                    HStack {
+                        if let distance = restaurant.distance(from: userLocation) {
+                            DistanceBadge(meters: distance)
+                        }
+                        Spacer()
+                    }
+                    Spacer()
+                    // Open/Closed pill — bottom-left
+                    HStack {
+                        Text(restaurant.isOpenNow
+                             ? "open_now"
+                             : "closed")
+                            .font(.system(size: 9, weight: .bold))
+                            .textCase(.uppercase)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(
+                                restaurant.isOpenNow
+                                    ? Color.accentColor.opacity(0.9)
+                                    : Color.secondary.opacity(0.7),
+                                in: Capsule()
+                            )
+                        Spacer()
+                    }
                 }
+                .padding(6)
             }
-            .frame(width: 80, height: 80)
+            .frame(width: 88, height: 88)
             .clipped()
 
             // Restaurant details
@@ -267,17 +278,22 @@ private struct SearchResultRow: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
-                    Text(restaurant.cuisine.localised)
-                        .font(.subheadline)
+                if !restaurant.keywords.isEmpty {
+                    Text(restaurant.keywords.map { $0.localised }.joined(separator: " · "))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
-                    Text("·")
-                        .foregroundStyle(.secondary)
-                    Text(restaurant.district.localised)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                .lineLimit(1)
+
+                Text(restaurant.district.localised)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Text(restaurant.address.localised)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
 
                 HStack(spacing: 10) {
                     // Rating with accent background
@@ -299,18 +315,6 @@ private struct SearchResultRow: View {
                         .foregroundStyle(.secondary)
 
                     Spacer()
-
-                    // Distance
-                    if let distance = restaurant.distance(from: userLocation) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 9))
-                            DistanceBadge.label(meters: distance)
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundStyle(Color.accentColor)
-                    }
                 }
             }
         }

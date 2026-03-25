@@ -227,6 +227,7 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 
 ### Localisation Pattern
 - **Views**: Use raw string keys as `LocalizedStringKey` — e.g., `Text("search_title")`, `.navigationTitle("home_title")` — which respects SwiftUI's `.environment(\.locale, ...)` injected by `RootView`
+- **Subview components**: Declare title/label parameters as `LocalizedStringKey` (not `String`) so `Text(title)` performs localisation lookup — using `String` renders keys verbatim (e.g., `StatCard`, `QuickActionCard`). Same applies to computed properties passed directly to `Text()`.
 - **Models/ViewModels/Services**: Use `String(localized: "key", bundle: L10n.bundle)` — `L10n.bundle` reads `UserDefaults("preferredLanguage")` and returns the matching `.lproj` bundle
 - **BilingualText re-rendering**: Views displaying `BilingualText.localised` (e.g., `SearchView`, `HomeView`) use `@AppStorage("preferredLanguage")` + `.id(preferredLanguage)` to force re-evaluation when the language changes
 - **Language switch flow**: `AccountViewModel.updateLanguage()` writes to `UserDefaults` immediately (instant UI switch) then persists to backend API asynchronously

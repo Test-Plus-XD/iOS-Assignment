@@ -213,7 +213,7 @@ enum StoreDestination: Hashable {
 // MARK: - Stat Card
 
 private struct StatCard: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     let icon: String
     let colour: Color
@@ -239,7 +239,7 @@ private struct StatCard: View {
 // MARK: - Quick Action Card
 
 private struct QuickActionCard: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
     let colour: Color
 
