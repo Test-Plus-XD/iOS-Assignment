@@ -68,6 +68,16 @@ final class AuthService {
     /// This is used by RootView to decide whether to show LoginView or MainTabView
     var isAuthenticated = false
 
+    /// Whether the signed-in user still needs to choose their account type.
+    ///
+    /// Set to `true` only for brand-new accounts (after `createUserProfile`).
+    /// Set to `false` when the user selects a type in `UserTypeSelectionView`,
+    /// or when an existing account is loaded on a device for the first time.
+    ///
+    /// Stored separately (rather than computed from UserDefaults) so SwiftUI can
+    /// observe it and dismiss the sheet reactively.
+    var needsTypeSelection = false
+
     /// Loading state for async operations (sign in, sign up, etc.)
     /// Shows/hides loading spinner in the UI
     ///
@@ -445,6 +455,7 @@ final class AuthService {
             // Clear local state
             currentUser = nil
             isAuthenticated = false
+            needsTypeSelection = false
             error = nil
 
             print("✅ User signed out successfully")
@@ -543,6 +554,17 @@ final class AuthService {
         if let lang = currentUser?.preferredLanguage {
             UserDefaults.standard.set(lang, forKey: "preferredLanguage")
         }
+
+        // ── Type-selection gate ────────────────────────────────────────────
+        // If this device has never seen a choice key for this UID, the user is
+        // returning from a previous install or a different device → treat them
+        // as having already chosen their type (skip the sheet).
+        // New accounts set the key to `false` inside createUserProfile.
+        let choiceKey = "userTypeChosen_\(uid)"
+        if UserDefaults.standard.object(forKey: choiceKey) == nil {
+            UserDefaults.standard.set(true, forKey: choiceKey)
+        }
+        needsTypeSelection = !UserDefaults.standard.bool(forKey: choiceKey)
     }
 
     /// Creates a new user profile in the backend database
@@ -582,6 +604,12 @@ final class AuthService {
             responseType: User.self,
             callerService: "AuthService"
         )
+
+        // Mark this brand-new account as requiring type selection.
+        // The key is set to `false` so that the subsequent auth-state listener
+        // call to loadUserProfile preserves it and keeps needsTypeSelection = true.
+        UserDefaults.standard.set(false, forKey: "userTypeChosen_\(uid)")
+        needsTypeSelection = true
     }
 
     /// Updates the current user's profile
@@ -621,6 +649,45 @@ final class AuthService {
         } catch {
             self.error = error
             print("❌ Profile update failed: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    // MARK: - User Type Selection
+
+    /// Updates the authenticated user's account type (Diner / Restaurant Owner).
+    ///
+    /// Called from `UserTypeSelectionView` when a new user picks their type.
+    /// After a successful API update:
+    ///   1. Reloads the user profile so `currentUser.userType` is in sync.
+    ///   2. Sets the UserDefaults gate key to `true`.
+    ///   3. Sets `needsTypeSelection = false`, dismissing the sheet reactively.
+    ///
+    /// - Parameter userType: The chosen `User.UserType` value.
+    func updateUserType(_ userType: User.UserType) async throws {
+        guard let userId = currentUser?.id else { throw APIError.unauthorized }
+
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
+
+        do {
+            let request = UpdateUserTypeRequest(type: userType.rawValue)
+            let endpoint = APIEndpoint.updateUserType(userId: userId, request)
+            try await apiClient.requestVoid(endpoint, callerService: "AuthService")
+
+            // Reload so currentUser reflects the new type from the server
+            try await loadUserProfile(uid: userId)
+
+            // Confirm choice — loadUserProfile preserves the existing key value,
+            // so we must flip it to true here after the reload.
+            UserDefaults.standard.set(true, forKey: "userTypeChosen_\(userId)")
+            needsTypeSelection = false
+
+            print("✅ User type updated: \(userType.rawValue)")
+        } catch {
+            self.error = error
+            print("❌ User type update failed: \(error.localizedDescription)")
             throw error
         }
     }

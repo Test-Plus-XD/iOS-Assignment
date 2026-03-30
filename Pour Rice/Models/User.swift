@@ -294,6 +294,16 @@ struct CreateUserRequest: Codable {
     }
 }
 
+/// Request model for updating only the user type (Diner / Restaurant)
+///
+/// WHAT IS THIS FOR:
+/// Sent by the user-type selection sheet after first sign-up.
+/// Uses a minimal payload so only `type` is updated via `{ merge: true }` on the server.
+struct UpdateUserTypeRequest: Codable, Sendable {
+    /// Raw string value — "Diner" or "Restaurant"
+    let type: String
+}
+
 /// Request model for updating user profile
 ///
 /// WHAT IS THIS FOR:

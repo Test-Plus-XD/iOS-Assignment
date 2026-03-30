@@ -60,6 +60,9 @@ enum APIEndpoint {
     /// Update existing user profile.
     case updateUserProfile(userId: String, UpdateUserRequest)
 
+    /// Update only the user type field (Diner / Restaurant) — used by the type-selection sheet.
+    case updateUserType(userId: String, UpdateUserTypeRequest)
+
     // MARK: - Booking Endpoints
 
     /// Fetch all bookings for the authenticated diner (GET /API/Bookings).
@@ -120,7 +123,7 @@ enum APIEndpoint {
     var requiresAuth: Bool {
         switch self {
         // Auth-required endpoints
-        case .submitReview, .fetchUserProfile, .createUserProfile, .updateUserProfile,
+        case .submitReview, .fetchUserProfile, .createUserProfile, .updateUserProfile, .updateUserType,
              .fetchBookings, .fetchBooking, .fetchRestaurantBookings,
              .createBooking, .updateBooking, .deleteBooking,
              .claimRestaurant, .updateRestaurant,
@@ -181,6 +184,9 @@ enum APIEndpoint {
             return Constants.API.Endpoints.userProfile
 
         case .updateUserProfile(let userId, _):
+            return "\(Constants.API.Endpoints.userProfile)/\(userId)"
+
+        case .updateUserType(let userId, _):
             return "\(Constants.API.Endpoints.userProfile)/\(userId)"
 
         // Bookings
@@ -247,7 +253,7 @@ enum APIEndpoint {
             return .post
 
         // PUT — updating existing resources
-        case .updateUserProfile, .updateBooking, .updateRestaurant,
+        case .updateUserProfile, .updateUserType, .updateBooking, .updateRestaurant,
              .updateMenuItem, .editChatMessage:
             return .put
 
@@ -301,6 +307,8 @@ enum APIEndpoint {
         case .createUserProfile(let request):
             return request
         case .updateUserProfile(_, let request):
+            return request
+        case .updateUserType(_, let request):
             return request
 
         // Bookings

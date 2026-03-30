@@ -8395,6 +8395,23 @@
         }
       }
     },
+    "toast_user_type_saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account type saved"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帳戶類型已儲存"
+          }
+        }
+      }
+    },
     "unavailable" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8408,6 +8425,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暫不供應"
+          }
+        }
+      }
+    },
+    "user_type_diner_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discover restaurants, make reservations, and chat with restaurant owners."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "探索餐廳、預約訂座，並與餐廳東主交流。"
+          }
+        }
+      }
+    },
+    "user_type_restaurant_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage your restaurant, handle bookings, and connect with diners."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理餐廳、處理預訂，並與食客保持聯繫。"
+          }
+        }
+      }
+    },
+    "user_type_selection_subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us how you'll be using Pour Rice."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請告訴我們您如何使用 Pour Rice。"
+          }
+        }
+      }
+    },
+    "user_type_selection_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Account Type"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇帳戶類型"
           }
         }
       }

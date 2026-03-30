@@ -376,6 +376,11 @@ struct MainTabView: View {
     /// Passed to AccountView so it can exit guest mode when the user taps "Sign In".
     @Binding var isGuest: Bool
 
+    // MARK: - Type Selection Toast
+
+    /// Set to `true` by the sheet's `onDismiss` after the user picks their account type.
+    @State private var showTypeSelectionToast = false
+
     // MARK: - Computed
 
     /// Convenience: true when the signed-in user is a restaurant owner
@@ -503,6 +508,28 @@ struct MainTabView: View {
                 }
             }
         }
+        // ── User Type Selection Sheet ─────────────────────────────────────────
+        // Shown automatically for brand-new accounts until the user picks a type.
+        // The binding is read-only (set: { _ in }) because dismissal is controlled
+        // entirely by `authService.needsTypeSelection` becoming false after the
+        // API call in UserTypeSelectionView.
+        // `.interactiveDismissDisabled(true)` inside the sheet prevents swipe-dismiss.
+        .sheet(
+            isPresented: Binding(
+                get: { authService.needsTypeSelection },
+                set: { _ in }
+            ),
+            onDismiss: {
+                showTypeSelectionToast = true
+            }
+        ) {
+            UserTypeSelectionView()
+        }
+        .toast(
+            message: String(localized: "toast_user_type_saved", bundle: L10n.bundle),
+            style: .success,
+            isPresented: $showTypeSelectionToast
+        )
     }
 }
 

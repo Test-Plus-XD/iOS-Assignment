@@ -93,7 +93,8 @@ Pour Rice/
   │   │   └── RestaurantQRView.swift     # QR code generation + sharing (CoreImage, for restaurant owners)
   │   ├── Account/
   │   │   ├── AccountView.swift          # Profile, preferences, AI assistant link, sign-out, toast
-  │   │   └── ProfileEditView.swift      # Profile edit sheet (name, phone, bio, theme, notifications)
+  │   │   ├── ProfileEditView.swift      # Profile edit sheet (name, phone, bio, theme, notifications)
+  │   │   └── UserTypeSelectionView.swift # Non-dismissable sheet for new users to choose Diner / Restaurant Owner
   │   └── Common/
   │       ├── AsyncImageView.swift       # Cached async image loader (Kingfisher)
   │       ├── StatusBadgeView.swift      # Reusable status badge (booking statuses)
@@ -340,6 +341,51 @@ Key files:
 
 Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestaurantId}"`
 
+## User Type Selection Architecture
+
+New users are prompted to choose between **Diner (食客)** and **Restaurant Owner (店主)** immediately after registering. The selection is non-dismissable and persists via `PUT /API/Users/:uid { type }`.
+
+```
+Registration / Google sign-up
+  └── AuthService.createUserProfile()
+        ├── POST /API/Users → User (type: "Diner" default)
+        ├── UserDefaults["userTypeChosen_{uid}"] = false   ← gate key
+        └── needsTypeSelection = true
+
+Auth state listener fires → AuthService.loadUserProfile()
+  └── Key exists (false) → needsTypeSelection stays true
+      Key missing (existing user on new device) → set true → needsTypeSelection = false
+
+MainTabView
+  └── .sheet(isPresented: Binding { authService.needsTypeSelection })
+        UserTypeSelectionView
+          ├── .interactiveDismissDisabled(true)   ← cannot swipe away
+          ├── UserTypeCard("Diner")    → pickType(.diner)
+          └── UserTypeCard("Restaurant Owner") → pickType(.restaurant)
+                AuthService.updateUserType(_:)
+                  ├── PUT /API/Users/:uid { type: "Diner" | "Restaurant" }
+                  ├── loadUserProfile(uid:)           ← refresh currentUser
+                  ├── UserDefaults["userTypeChosen_{uid}"] = true
+                  └── needsTypeSelection = false      ← sheet auto-dismisses
+        onDismiss → showTypeSelectionToast = true
+  └── .toast("Account type saved") shown in MainTabView
+```
+
+Key behaviours:
+- **New users**: `createUserProfile` sets `UserDefaults["userTypeChosen_{uid}"] = false` → sheet shown
+- **Existing users / new device**: `loadUserProfile` finds no key → sets it to `true` → sheet not shown
+- **On error**: card resets (no selected state, no spinner), inline error message shown; user can retry
+- **Sign-out**: `needsTypeSelection` reset to `false` in `signOut()`
+- `UpdateUserTypeRequest` — minimal `{ type: String }` Codable struct; avoids touching other profile fields
+- `APIEndpoint.updateUserType(userId:, UpdateUserTypeRequest)` — PUT, auth-required, same path as `updateUserProfile`
+
+Key files:
+- `Views/Account/UserTypeSelectionView.swift` — sheet UI + `UserTypeCard` private component
+- `Core/Services/AuthService.swift` — `needsTypeSelection` var + `updateUserType()` + gate logic in `loadUserProfile`/`createUserProfile`/`signOut`
+- `Models/User.swift` — `UpdateUserTypeRequest` struct
+- `Core/Network/APIEndpoint.swift` — `.updateUserType` case
+- `Pour_RiceApp.swift` `MainTabView` — sheet binding + `onDismiss` toast
+
 ## Code & Comments Structure
 
 ### Naming Conventions
@@ -415,7 +461,7 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 
 | File | Lines |
 |------|-------|
-| `Core/Services/AuthService.swift` | 553 |
+| `Core/Services/AuthService.swift` | ~600 |
 | `Views/Restaurant/RestaurantView.swift` | ~640 |
 | `Views/Restaurant/DirectionsView.swift` | ~230 |
 | `Models/Restaurant.swift` | 524 |
@@ -436,6 +482,7 @@ Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestauran
 | `Views/Search/SearchMapView.swift` | ~175 |
 | `Views/Common/AsyncImageView.swift` | 259 |
 | `Views/Account/AccountView.swift` | ~390 |
+| `Views/Account/UserTypeSelectionView.swift` | ~165 |
 | `Models/BilingualText.swift` | 251 |
 | `Core/Network/APIEndpoint.swift` | ~440 |
 | `Core/Network/APIClient.swift` | ~280 |
