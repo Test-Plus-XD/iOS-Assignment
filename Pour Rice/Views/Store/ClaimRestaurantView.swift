@@ -27,6 +27,7 @@ struct ClaimRestaurantView: View {
     @State private var toastMessage = ""
     @State private var toastStyle: ToastStyle = .success
     @State private var showToast = false
+    @State private var showingAddRestaurant = false
 
     // MARK: - Body
 
@@ -98,10 +99,26 @@ struct ClaimRestaurantView: View {
                 .listStyle(.plain)
             }
 
-            Spacer()
+            Divider()
+                .padding(.horizontal)
+
+            Button {
+                showingAddRestaurant = true
+            } label: {
+                Label(
+                    "store_add_button",
+                    systemImage: "plus.circle"
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 16)
         }
         .errorAlert(error: $claimError)
         .toast(message: toastMessage, style: toastStyle, isPresented: $showToast)
+        .sheet(isPresented: $showingAddRestaurant) {
+            AddRestaurantView()
+        }
     }
 
     // MARK: - Search

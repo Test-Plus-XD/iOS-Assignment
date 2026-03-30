@@ -326,6 +326,7 @@ struct UpdateUserRequest: Codable {
     let phoneNumber: String?
     let bio: String?
     let preferences: Preferences?
+    let restaurantId: String?
 
     struct Preferences: Codable {
         let language: String?
@@ -342,12 +343,14 @@ struct UpdateUserRequest: Codable {
         bio: String? = nil,
         preferredLanguage: String? = nil,
         theme: String? = nil,
-        notifications: Bool? = nil
+        notifications: Bool? = nil,
+        restaurantId: String? = nil
     ) {
         self.displayName = displayName
         self.photoURL = photoURL
         self.phoneNumber = phoneNumber
         self.bio = bio
+        self.restaurantId = restaurantId
         if preferredLanguage != nil || theme != nil || notifications != nil {
             let apiLangCode: String? = preferredLanguage.map { $0 == "zh-Hant" ? "TC" : "EN" }
             self.preferences = Preferences(language: apiLangCode, theme: theme, notifications: notifications)

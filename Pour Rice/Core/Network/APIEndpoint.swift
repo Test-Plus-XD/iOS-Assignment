@@ -106,6 +106,9 @@ enum APIEndpoint {
     /// Soft-delete a chat message (DELETE /API/Chat/Rooms/:roomId/Messages/:messageId).
     case deleteChatMessage(roomId: String, messageId: String, DeleteMessageRequest)
 
+    /// Create a new restaurant (POST /API/Restaurants). No auth required; ownerId set in body.
+    case createRestaurant(CreateRestaurantRequest)
+
     // MARK: - Gemini AI Endpoints
 
     /// Multi-turn Gemini chat (POST /API/Gemini/chat). No auth required.
@@ -135,7 +138,7 @@ enum APIEndpoint {
         case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems, .fetchReviews,
              .fetchChatRecords, .fetchChatRoom, .createChatRoom,
              .fetchChatMessages, .sendChatMessage, .editChatMessage, .deleteChatMessage,
-             .geminiChat, .geminiRestaurantDescription:
+             .geminiChat, .geminiRestaurantDescription, .createRestaurant:
             return false
         }
     }
@@ -149,6 +152,9 @@ enum APIEndpoint {
 
         case .fetchRestaurant(let id):
             return "\(Constants.API.Endpoints.restaurantDetail)/\(id)"
+
+        case .createRestaurant:
+            return Constants.API.Endpoints.restaurantDetail
 
         case .claimRestaurant(let id):
             return "\(Constants.API.Endpoints.restaurantDetail)/\(id)\(Constants.API.Endpoints.claimRestaurant)"
@@ -249,7 +255,8 @@ enum APIEndpoint {
         case .submitReview, .createUserProfile, .createBooking,
              .claimRestaurant, .createMenuItem,
              .createChatRoom, .sendChatMessage,
-             .geminiChat, .geminiGenerate, .geminiRestaurantDescription:
+             .geminiChat, .geminiGenerate, .geminiRestaurantDescription,
+             .createRestaurant:
             return .post
 
         // PUT — updating existing resources
@@ -341,6 +348,10 @@ enum APIEndpoint {
         case .geminiGenerate(let request):
             return request
         case .geminiRestaurantDescription(let request):
+            return request
+
+        // Restaurant creation
+        case .createRestaurant(let request):
             return request
 
         default:
@@ -442,4 +453,37 @@ struct ClaimRestaurantResponse: Codable, Sendable {
     let message: String?
     let restaurantId: String?
     let userId: String?
+}
+
+// MARK: - Create Restaurant Request/Response
+
+/// Request body for POST /API/Restaurants (no auth required; ownerId set in body)
+struct CreateRestaurantRequest: Codable, Sendable {
+    var Name_EN: String?
+    var Name_TC: String?
+    var Address_EN: String?
+    var Address_TC: String?
+    var District_EN: String?
+    var District_TC: String?
+    var Latitude: Double?
+    var Longitude: Double?
+    var Keyword_EN: [String]?
+    var Keyword_TC: [String]?
+    var Seats: Int?
+    var Contacts: NewRestaurantContacts?
+    var Payments: [String]?
+    var Opening_Hours: [String: String]?
+    var ownerId: String
+}
+
+/// Contact information for a new restaurant
+struct NewRestaurantContacts: Codable, Sendable {
+    var Phone: String?
+    var Email: String?
+    var Website: String?
+}
+
+/// Response from POST /API/Restaurants
+struct CreateRestaurantResponse: Codable, Sendable {
+    let id: String
 }

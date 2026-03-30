@@ -6882,6 +6882,23 @@
         }
       }
     },
+    "store_add_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't find your restaurant? Add a new one"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到你的餐廳？新增一個"
+          }
+        }
+      }
+    },
     "store_claim_description" : {
       "extractionState" : "manual",
       "localizations" : {

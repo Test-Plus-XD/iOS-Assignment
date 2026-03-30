@@ -81,7 +81,8 @@ Pour Rice/
   │   │   ├── StoreBookingsView.swift    # Restaurant booking management (accept/decline/complete)
   │   │   ├── StoreMenuManageView.swift  # Menu CRUD (add/edit/delete items)
   │   │   ├── StoreInfoEditView.swift    # Restaurant info editor + image upload
-  │   │   └── ClaimRestaurantView.swift  # Restaurant ownership claim flow
+  │   │   ├── ClaimRestaurantView.swift  # Restaurant ownership claim flow (search + "Add New Restaurant" trigger)
+  │   │   └── AddRestaurantView.swift    # Full form sheet for creating a new restaurant listing
   │   ├── Chat/
   │   │   ├── ChatListView.swift         # Chat room list with last message preview
   │   │   ├── ChatRoomView.swift         # Real-time chat with Socket.IO + REST fallback
@@ -112,7 +113,7 @@ Pour Rice/
       │   ├── ChatService.swift          # Chat REST API (rooms, messages, edit/delete)
       │   ├── SocketService.swift        # Socket.IO v4 real-time (socket.io-client-swift library)
       │   ├── GeminiService.swift        # Gemini AI chat + description generation
-      │   └── StoreService.swift         # Restaurant management (claim, update, image, menu CRUD)
+      │   └── StoreService.swift         # Restaurant management (claim, update, image, menu CRUD, createRestaurant)
       ├── Network/
       │   ├── APIClient.swift            # URLSession executor (request + requestVoid)
       │   ├── APIEndpoint.swift          # Typed endpoint enum (all routes)
@@ -146,7 +147,8 @@ Pour Rice/
 - **Bookings**: `GET/POST /API/Bookings`, `PUT/DELETE /API/Bookings/:id`, `GET /API/Bookings/restaurant/:id`
 - **Chat REST**: `GET /API/Chat/Records/:uid`, `GET/POST /API/Chat/Rooms`, `GET/POST/PUT/DELETE /API/Chat/Rooms/:roomId/Messages/:messageId`
 - **Gemini**: `POST /API/Gemini/chat` (no auth), `POST /API/Gemini/generate` (auth), `POST /API/Gemini/restaurant-description` (no auth)
-- **Restaurant**: `POST /API/Restaurants/:id/claim`, `PUT /API/Restaurants/:id`, `POST /API/Restaurants/:id/image`
+- **Restaurant**: `POST /API/Restaurants` (create, no auth, `ownerId` in body), `POST /API/Restaurants/:id/claim`, `PUT /API/Restaurants/:id`, `POST /API/Restaurants/:id/image`
+- **Add Restaurant flow**: `POST /API/Restaurants` → get `{ id }` → `PUT /API/Users/:uid { restaurantId }` (auth). `StoreService.createRestaurant(request:)` handles both steps. `AddRestaurantView` — SwiftUI Form sheet triggered from `ClaimRestaurantView` ("Can't find your restaurant? Add a new one" button). Inline data: `hkDistricts` (18), `restaurantKeywords` (114), `restaurantPayments` (10). Keywords/Payments shown only in active locale. Opening hours: `Toggle` per day + `DatePicker(.hourAndMinute)`. Location: `MapReader` + `.onTapGesture` → `proxy.convert(_:from:)` → `CLLocationCoordinate2D`. New `APIEndpoint.createRestaurant(CreateRestaurantRequest)` + `CreateRestaurantResponse`. `UpdateUserRequest` gained `restaurantId: String?` field.
 - **Menu CRUD**: `POST/PUT/DELETE /API/Menu/Items/:id`
 
 ## Chat Architecture (REST + Socket.IO)

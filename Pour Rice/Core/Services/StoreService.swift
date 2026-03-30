@@ -22,6 +22,25 @@ final class StoreService {
         self.apiClient = apiClient
     }
 
+    // MARK: - Restaurant Creation
+
+    /// Creates a new restaurant listing and returns the new restaurant's ID.
+    /// Does not require auth — ownerId is passed in the request body.
+    /// The caller must separately link the restaurant to the user profile
+    /// via PUT /API/Users/:uid { restaurantId: newId }.
+    func createRestaurant(request: CreateRestaurantRequest) async throws -> String {
+        print("🏪 Creating new restaurant")
+
+        let response = try await apiClient.request(
+            .createRestaurant(request),
+            responseType: CreateRestaurantResponse.self,
+            callerService: "StoreService"
+        )
+
+        print("✅ Created restaurant: \(response.id)")
+        return response.id
+    }
+
     // MARK: - Restaurant Ownership
 
     /// Claims ownership of a restaurant.
