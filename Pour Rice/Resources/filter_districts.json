@@ -1,0 +1,12 @@
+[
+  {"en": "Central",       "tc": "中環"},
+  {"en": "Wan Chai",      "tc": "灣仔"},
+  {"en": "Causeway Bay",  "tc": "銅鑼灣"},
+  {"en": "Mong Kok",      "tc": "旺角"},
+  {"en": "Tsim Sha Tsui", "tc": "尖沙咀"},
+  {"en": "Sham Shui Po",  "tc": "深水埗"},
+  {"en": "Sha Tin",       "tc": "沙田"},
+  {"en": "Tuen Mun",      "tc": "屯門"},
+  {"en": "Yuen Long",     "tc": "元朗"},
+  {"en": "North",         "tc": "北區"}
+]
