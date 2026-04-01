@@ -45,6 +45,9 @@ struct FilterView: View {
     /// Passed in directly so filter changes update the search screen instantly
     let viewModel: SearchViewModel
 
+    @AppStorage("preferredLanguage") private var preferredLanguage: String = "en"
+    private var isTC: Bool { preferredLanguage == "zh-Hant" }
+
     // MARK: - Body
 
     var body: some View {
@@ -55,17 +58,17 @@ struct FilterView: View {
                 // Multi-select toggle list for Hong Kong districts
 
                 Section("filter_district_title") {
-                    ForEach(SearchViewModel.availableDistricts, id: \.self) { district in
+                    ForEach(SearchViewModel.availableDistricts) { district in
                         // Toggle row — checkmark appears when district is selected
                         Button {
-                            toggleDistrict(district)
+                            toggleDistrict(district.en)
                         } label: {
                             HStack {
-                                Text(districtDisplayName(district))
+                                Text(isTC ? district.tc : district.en)
                                     .foregroundStyle(.primary)
                                 Spacer()
                                 // Checkmark if selected (like a checkbox in Flutter)
-                                if viewModel.selectedDistricts.contains(district) {
+                                if viewModel.selectedDistricts.contains(district.en) {
                                     Image(systemName: "checkmark")
                                         .foregroundStyle(.tint)
                                         .fontWeight(.semibold)
@@ -79,15 +82,15 @@ struct FilterView: View {
                 // Multi-select toggle list for cuisine/dietary keywords
 
                 Section("filter_keyword_title") {
-                    ForEach(SearchViewModel.availableKeywords, id: \.self) { keyword in
+                    ForEach(SearchViewModel.availableKeywords) { keyword in
                         Button {
-                            toggleKeyword(keyword)
+                            toggleKeyword(keyword.en)
                         } label: {
                             HStack {
-                                Text(keywordDisplayName(keyword))
+                                Text(isTC ? keyword.tc : keyword.en)
                                     .foregroundStyle(.primary)
                                 Spacer()
-                                if viewModel.selectedKeywords.contains(keyword) {
+                                if viewModel.selectedKeywords.contains(keyword.en) {
                                     Image(systemName: "checkmark")
                                         .foregroundStyle(.tint)
                                         .fontWeight(.semibold)
@@ -129,22 +132,6 @@ struct FilterView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Localisation Helpers
-
-    /// Maps an Algolia district value (English) to its localised display key
-    /// e.g. "Causeway Bay" → LocalizedStringKey("filter_district_causeway_bay")
-    private func districtDisplayName(_ district: String) -> LocalizedStringKey {
-        let key = "filter_district_\(district.lowercased().replacingOccurrences(of: " ", with: "_"))"
-        return LocalizedStringKey(key)
-    }
-
-    /// Maps an Algolia keyword value (English) to its localised display key
-    /// e.g. "Dim Sum" → LocalizedStringKey("filter_keyword_dim_sum")
-    private func keywordDisplayName(_ keyword: String) -> LocalizedStringKey {
-        let key = "filter_keyword_\(keyword.lowercased().replacingOccurrences(of: " ", with: "_"))"
-        return LocalizedStringKey(key)
     }
 
     // MARK: - Actions

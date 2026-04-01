@@ -102,6 +102,12 @@ Pour Rice/
   │       ├── EmptyStateView.swift       # Empty/no-results states
   │       ├── ErrorView.swift            # Retry error state
   │       └── LoadingView.swift          # Spinner and skeleton views
+  ├── Resources/
+  │   ├── Localizable.xcstrings          # String catalog for UI localisation (EN + TC)
+  │   ├── weekdays.json                  # 7 weekdays, Monday-first order (en/tc)
+  │   ├── districts.json                 # 18 HK administrative districts (en/tc)
+  │   ├── keywords.json                  # 90 restaurant keywords by category (en/tc)
+  │   └── payments.json                  # 10 payment methods (en/tc)
   └── Core/
       ├── Services/
       │   ├── AuthService.swift          # Firebase Auth wrapper
@@ -119,7 +125,8 @@ Pour Rice/
       │   ├── APIEndpoint.swift          # Typed endpoint enum (all routes)
       │   └── APIError.swift             # Network error types
       ├── Utilities/
-      │   └── Constants.swift            # API URLs, Socket.IO URL, endpoint paths, UI values, Map config
+      │   ├── Constants.swift            # API URLs, Socket.IO URL, endpoint paths, UI values, Map config
+      │   └── LocalDataLoader.swift      # Synchronous JSON loader for bundled bilingual data; BilingualEntry model
       └── Extensions/
           ├── View+Extensions.swift      # Services env key + shimmerEffect + haptics + cardStyle
           └── Date+Extensions.swift      # Formatting helpers
@@ -138,6 +145,7 @@ Pour Rice/
 - `Views/Search/SearchMapView.swift` — `Map(position:selection:)` with `Marker` per restaurant (tinted by `isOpenNow`); `UserAnnotation()`; auto-fit camera via `MKCoordinateRegion` bounding box over all results; `SearchMapCalloutCard` bottom overlay (`.regularMaterial` card) shown on pin tap; navigates to `RestaurantView` via `NavigationLink(value: restaurant)`
 - `Pour_RiceApp.swift` — `GeminiNavigation` struct (Hashable, wraps `Restaurant?`) for type-safe Gemini navigation
 - `Core/Utilities/Constants.swift` — `Constants.Chat.socketURL` + `messagePageSize` + `typingDebounceNs`; `Constants.Map.defaultLatitude/Longitude` (Hong Kong: 22.3193, 114.1694) + `detailSpanDelta` + `searchSpanDelta` + `detailMapHeight` + `directionsMapHeight`
+- `Core/Utilities/LocalDataLoader.swift` — `enum LocalDataLoader` (not instantiable); `BilingualEntry: Codable, Identifiable` with `id: String { en }`; private generic `load<T: Decodable>(_ filename:)` reads `Bundle.main` synchronously; public loaders: `loadWeekdays()`, `loadDistricts()`, `loadKeywords()`, `loadPayments()` — all return `[BilingualEntry]`; `#if DEBUG` prints on success (filename + count) and failure
 
 ## API Integration
 - **Base URL**: `https://vercel-express-api-alpha.vercel.app`
@@ -148,7 +156,7 @@ Pour Rice/
 - **Chat REST**: `GET /API/Chat/Records/:uid`, `GET/POST /API/Chat/Rooms`, `GET/POST/PUT/DELETE /API/Chat/Rooms/:roomId/Messages/:messageId`
 - **Gemini**: `POST /API/Gemini/chat` (no auth), `POST /API/Gemini/generate` (auth), `POST /API/Gemini/restaurant-description` (no auth)
 - **Restaurant**: `POST /API/Restaurants` (create, no auth, `ownerId` in body), `POST /API/Restaurants/:id/claim`, `PUT /API/Restaurants/:id`, `POST /API/Restaurants/:id/image`
-- **Add Restaurant flow**: `POST /API/Restaurants` → get `{ id }` → `PUT /API/Users/:uid { restaurantId }` (auth). `StoreService.createRestaurant(request:)` handles both steps. `AddRestaurantView` — SwiftUI Form sheet triggered from `ClaimRestaurantView` ("Can't find your restaurant? Add a new one" button). Inline data: `hkDistricts` (18), `restaurantKeywords` (114), `restaurantPayments` (10). Keywords/Payments shown only in active locale. Opening hours: `Toggle` per day + `DatePicker(.hourAndMinute)`. Location: `MapReader` + `.onTapGesture` → `proxy.convert(_:from:)` → `CLLocationCoordinate2D`. New `APIEndpoint.createRestaurant(CreateRestaurantRequest)` + `CreateRestaurantResponse`. `UpdateUserRequest` gained `restaurantId: String?` field.
+- **Add Restaurant flow**: `POST /API/Restaurants` → get `{ id }` → `PUT /API/Users/:uid { restaurantId }` (auth). `StoreService.createRestaurant(request:)` handles both steps. `AddRestaurantView` — SwiftUI Form sheet triggered from `ClaimRestaurantView` ("Can't find your restaurant? Add a new one" button). Bundled JSON data loaded via `LocalDataLoader`: `districts.json` (18 HK districts), `keywords.json` (90 keywords), `payments.json` (10 methods), `weekdays.json` (7 days). Keywords/Payments shown only in active locale. Opening hours: `Toggle` per day + `DatePicker(.hourAndMinute)`. Location: `MapReader` + `.onTapGesture` → `proxy.convert(_:from:)` → `CLLocationCoordinate2D`. New `APIEndpoint.createRestaurant(CreateRestaurantRequest)` + `CreateRestaurantResponse`. `UpdateUserRequest` gained `restaurantId: String?` field.
 - **Menu CRUD**: `POST/PUT/DELETE /API/Menu/Items/:id`
 
 ## Chat Architecture (REST + Socket.IO)
@@ -215,6 +223,8 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 - Algolia SDK was removed; all search traffic uses `URLSession` through the backend proxy
 - `AlgoliaHit` is a private struct inside `RestaurantService` — maps `objectID` → `Restaurant.id`
 - `SearchView` has a `showingMap: Bool` state that switches between `List` (default) and `SearchMapView`; the toggle toolbar button is disabled when results are empty
+- `SearchViewModel.availableDistricts` and `availableKeywords` are `[LocalDataLoader.BilingualEntry]` loaded from `districts.json` (18) / `keywords.json` (90); the `.en` field is passed to Algolia as the filter parameter value
+- `FilterView` displays `district.tc` / `keyword.tc` directly from JSON when TC is active — no xcstrings lookups for individual filter values (saves ~340 lines from `Localizable.xcstrings`)
 
 ## MapKit Architecture
 
@@ -474,6 +484,7 @@ Key files:
 | `Views/Home/HomeView.swift` | 376 |
 | `Pour_RiceApp.swift` | ~420 |
 | `Core/Services/RestaurantService.swift` | 370 |
+| `Core/Utilities/LocalDataLoader.swift` | ~90 |
 | `Views/Store/StoreView.swift` | ~260 |
 | `Views/Menu/MenuView.swift` | 330 |
 | `Core/Services/LocationService.swift` | 315 |
@@ -500,7 +511,8 @@ Key files:
 | `ViewModels/HomeViewModel.swift` | ~195 |
 | `Core/Utilities/Constants.swift` | ~285 |
 | `ViewModels/MenuViewModel.swift` | 169 |
-| `Views/Search/FilterView.swift` | 161 |
+| `Views/Store/AddRestaurantView.swift` | ~375 |
+| `Views/Search/FilterView.swift` | ~150 |
 | `Core/Services/BookingService.swift` | ~155 |
 | `Core/Services/GeminiService.swift` | ~120 |
 | `Core/Services/ChatService.swift` | ~130 |
@@ -530,4 +542,4 @@ Key files:
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~14,100** |
+| **Total (estimated)** | **~14,290** |

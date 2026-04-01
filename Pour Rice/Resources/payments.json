@@ -1,0 +1,12 @@
+[
+  {"en": "Cash",           "tc": "現金"},
+  {"en": "Credit Card",    "tc": "信用卡"},
+  {"en": "Debit Card",     "tc": "扣賬卡"},
+  {"en": "Octopus",        "tc": "八達通"},
+  {"en": "AliPay HK",      "tc": "支付寶香港"},
+  {"en": "WeChat Pay HK",  "tc": "微信支付香港"},
+  {"en": "PayMe",          "tc": "PayMe"},
+  {"en": "FPS",            "tc": "轉數快"},
+  {"en": "Apple Pay",      "tc": "Apple Pay"},
+  {"en": "Google Pay",     "tc": "Google Pay"}
+]

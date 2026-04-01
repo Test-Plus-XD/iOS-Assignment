@@ -12,23 +12,9 @@ import MapKit
 
 // MARK: - Data Models
 
-private struct RestaurantKeywordOption: Identifiable {
-    let id = UUID()
-    let en: String
-    let tc: String
-}
-
-private struct RestaurantPaymentOption: Identifiable {
-    let id = UUID()
-    let en: String
-    let tc: String
-}
-
-private struct HKDistrictOption: Identifiable {
-    let id = UUID()
-    let en: String
-    let tc: String
-}
+private typealias RestaurantKeywordOption = LocalDataLoader.BilingualEntry
+private typealias RestaurantPaymentOption = LocalDataLoader.BilingualEntry
+private typealias HKDistrictOption        = LocalDataLoader.BilingualEntry
 
 // MARK: - AddRestaurantView
 
@@ -364,144 +350,9 @@ struct AddRestaurantView: View {
     }
 }
 
-// MARK: - Static Data (matching Flutter/Ionic constants exactly)
+// MARK: - Static Data (loaded from bundled JSON)
 
-private let orderedDays: [(en: String, tc: String)] = [
-    ("Monday", "星期一"), ("Tuesday", "星期二"), ("Wednesday", "星期三"),
-    ("Thursday", "星期四"), ("Friday", "星期五"), ("Saturday", "星期六"), ("Sunday", "星期日")
-]
-
-private let hkDistricts: [HKDistrictOption] = [
-    HKDistrictOption(en: "Islands", tc: "離島"),
-    HKDistrictOption(en: "Kwai Tsing", tc: "葵青"),
-    HKDistrictOption(en: "North", tc: "北區"),
-    HKDistrictOption(en: "Sai Kung", tc: "西貢"),
-    HKDistrictOption(en: "Sha Tin", tc: "沙田"),
-    HKDistrictOption(en: "Tai Po", tc: "大埔"),
-    HKDistrictOption(en: "Tsuen Wan", tc: "荃灣"),
-    HKDistrictOption(en: "Tuen Mun", tc: "屯門"),
-    HKDistrictOption(en: "Yuen Long", tc: "元朗"),
-    HKDistrictOption(en: "Kowloon City", tc: "九龍城"),
-    HKDistrictOption(en: "Kwun Tong", tc: "觀塘"),
-    HKDistrictOption(en: "Sham Shui Po", tc: "深水埗"),
-    HKDistrictOption(en: "Wong Tai Sin", tc: "黃大仙"),
-    HKDistrictOption(en: "Yau Tsim Mong", tc: "油尖旺區"),
-    HKDistrictOption(en: "Central/Western", tc: "中西區"),
-    HKDistrictOption(en: "Eastern", tc: "東區"),
-    HKDistrictOption(en: "Southern", tc: "南區"),
-    HKDistrictOption(en: "Wan Chai", tc: "灣仔"),
-]
-
-private let restaurantKeywords: [RestaurantKeywordOption] = [
-    // Core vegan/plant-based
-    RestaurantKeywordOption(en: "Vegan", tc: "純素"),
-    RestaurantKeywordOption(en: "Vegetarian", tc: "素食"),
-    RestaurantKeywordOption(en: "Plant-Based", tc: "植物性"),
-    RestaurantKeywordOption(en: "Organic", tc: "有機"),
-    RestaurantKeywordOption(en: "Farm-to-Table", tc: "農場直送"),
-    RestaurantKeywordOption(en: "Sustainable", tc: "可持續"),
-    RestaurantKeywordOption(en: "Eco-Friendly", tc: "環保"),
-    RestaurantKeywordOption(en: "Whole Foods", tc: "全食物"),
-    RestaurantKeywordOption(en: "Raw Vegan", tc: "生機素食"),
-    RestaurantKeywordOption(en: "Macrobiotic", tc: "長壽飲食"),
-    // Religious
-    RestaurantKeywordOption(en: "Buddhism", tc: "佛教"),
-    RestaurantKeywordOption(en: "Buddhist Vegetarian", tc: "齋"),
-    RestaurantKeywordOption(en: "Muslim", tc: "穆斯林"),
-    RestaurantKeywordOption(en: "Halal", tc: "清真"),
-    RestaurantKeywordOption(en: "Kosher", tc: "猶太潔食"),
-    RestaurantKeywordOption(en: "Jain", tc: "耆那教"),
-    RestaurantKeywordOption(en: "Hindu", tc: "印度教"),
-    RestaurantKeywordOption(en: "Taoist", tc: "道教"),
-    // Cuisine
-    RestaurantKeywordOption(en: "Asian", tc: "亞洲菜"),
-    RestaurantKeywordOption(en: "Chinese", tc: "中菜"),
-    RestaurantKeywordOption(en: "Japanese", tc: "日本菜"),
-    RestaurantKeywordOption(en: "Korean", tc: "韓國菜"),
-    RestaurantKeywordOption(en: "Thai", tc: "泰國菜"),
-    RestaurantKeywordOption(en: "Vietnamese", tc: "越南菜"),
-    RestaurantKeywordOption(en: "Indian", tc: "印度菜"),
-    RestaurantKeywordOption(en: "Italian", tc: "意大利菜"),
-    RestaurantKeywordOption(en: "Mediterranean", tc: "地中海菜"),
-    RestaurantKeywordOption(en: "Mexican", tc: "墨西哥菜"),
-    RestaurantKeywordOption(en: "Middle Eastern", tc: "中東菜"),
-    RestaurantKeywordOption(en: "Western", tc: "西式"),
-    RestaurantKeywordOption(en: "Fusion", tc: "融合菜"),
-    RestaurantKeywordOption(en: "International", tc: "國際菜"),
-    // Restaurant types
-    RestaurantKeywordOption(en: "Fine Dining", tc: "高級餐廳"),
-    RestaurantKeywordOption(en: "Casual Dining", tc: "休閒餐廳"),
-    RestaurantKeywordOption(en: "Fast Casual", tc: "快餐店"),
-    RestaurantKeywordOption(en: "Cafe", tc: "咖啡廳"),
-    RestaurantKeywordOption(en: "Bistro", tc: "小酒館"),
-    RestaurantKeywordOption(en: "Buffet", tc: "自助餐"),
-    RestaurantKeywordOption(en: "Food Court", tc: "美食廣場"),
-    RestaurantKeywordOption(en: "Takeaway", tc: "外賣"),
-    RestaurantKeywordOption(en: "Delivery", tc: "送餐"),
-    // Meal types
-    RestaurantKeywordOption(en: "Breakfast", tc: "早餐"),
-    RestaurantKeywordOption(en: "Brunch", tc: "早午餐"),
-    RestaurantKeywordOption(en: "Lunch", tc: "午餐"),
-    RestaurantKeywordOption(en: "Dinner", tc: "晚餐"),
-    RestaurantKeywordOption(en: "All-Day Dining", tc: "全日餐飲"),
-    // Dietary
-    RestaurantKeywordOption(en: "Gluten-Free", tc: "無麩質"),
-    RestaurantKeywordOption(en: "Soy-Free", tc: "無大豆"),
-    RestaurantKeywordOption(en: "Nut-Free", tc: "無堅果"),
-    RestaurantKeywordOption(en: "Sugar-Free", tc: "無糖"),
-    RestaurantKeywordOption(en: "Oil-Free", tc: "無油"),
-    RestaurantKeywordOption(en: "Low-Carb", tc: "低碳水"),
-    RestaurantKeywordOption(en: "High-Protein", tc: "高蛋白"),
-    RestaurantKeywordOption(en: "Keto-Friendly", tc: "生酮友善"),
-    // Specialty
-    RestaurantKeywordOption(en: "Smoothie Bowls", tc: "冰沙碗"),
-    RestaurantKeywordOption(en: "Juices", tc: "果汁"),
-    RestaurantKeywordOption(en: "Coffee", tc: "咖啡"),
-    RestaurantKeywordOption(en: "Tea", tc: "茶"),
-    RestaurantKeywordOption(en: "Desserts", tc: "甜品"),
-    RestaurantKeywordOption(en: "Bakery", tc: "麵包店"),
-    RestaurantKeywordOption(en: "Noodles", tc: "麵食"),
-    RestaurantKeywordOption(en: "Rice Bowls", tc: "飯類"),
-    RestaurantKeywordOption(en: "Salads", tc: "沙律"),
-    RestaurantKeywordOption(en: "Soups", tc: "湯類"),
-    RestaurantKeywordOption(en: "Burgers", tc: "漢堡"),
-    RestaurantKeywordOption(en: "Pizza", tc: "披薩"),
-    RestaurantKeywordOption(en: "Pasta", tc: "意粉"),
-    RestaurantKeywordOption(en: "Tacos", tc: "墨西哥捲餅"),
-    RestaurantKeywordOption(en: "Sushi", tc: "壽司"),
-    RestaurantKeywordOption(en: "Ramen", tc: "拉麵"),
-    RestaurantKeywordOption(en: "Dumplings", tc: "餃子"),
-    RestaurantKeywordOption(en: "Dim Sum", tc: "點心"),
-    RestaurantKeywordOption(en: "Hot Pot", tc: "火鍋"),
-    // Ambiance
-    RestaurantKeywordOption(en: "Pet-Friendly", tc: "寵物友善"),
-    RestaurantKeywordOption(en: "Kid-Friendly", tc: "兒童友善"),
-    RestaurantKeywordOption(en: "Romantic", tc: "浪漫"),
-    RestaurantKeywordOption(en: "Business", tc: "商務"),
-    RestaurantKeywordOption(en: "Casual", tc: "休閒"),
-    RestaurantKeywordOption(en: "Cozy", tc: "舒適"),
-    RestaurantKeywordOption(en: "Modern", tc: "現代"),
-    RestaurantKeywordOption(en: "Traditional", tc: "傳統"),
-    RestaurantKeywordOption(en: "Rooftop", tc: "天台"),
-    RestaurantKeywordOption(en: "Waterfront", tc: "海濱"),
-    RestaurantKeywordOption(en: "Garden", tc: "花園"),
-    RestaurantKeywordOption(en: "Outdoor Seating", tc: "戶外座位"),
-    RestaurantKeywordOption(en: "Private Room", tc: "私人房間"),
-    RestaurantKeywordOption(en: "Bar", tc: "酒吧"),
-    RestaurantKeywordOption(en: "Live Music", tc: "現場音樂"),
-    RestaurantKeywordOption(en: "Wi-Fi", tc: "Wi-Fi"),
-    RestaurantKeywordOption(en: "Air-Conditioned", tc: "室內冷氣"),
-]
-
-private let restaurantPayments: [RestaurantPaymentOption] = [
-    RestaurantPaymentOption(en: "Cash", tc: "現金"),
-    RestaurantPaymentOption(en: "Credit Card", tc: "信用卡"),
-    RestaurantPaymentOption(en: "Debit Card", tc: "扣賬卡"),
-    RestaurantPaymentOption(en: "Octopus", tc: "八達通"),
-    RestaurantPaymentOption(en: "AliPay HK", tc: "支付寶香港"),
-    RestaurantPaymentOption(en: "WeChat Pay HK", tc: "微信支付香港"),
-    RestaurantPaymentOption(en: "PayMe", tc: "PayMe"),
-    RestaurantPaymentOption(en: "FPS", tc: "轉數快"),
-    RestaurantPaymentOption(en: "Apple Pay", tc: "Apple Pay"),
-    RestaurantPaymentOption(en: "Google Pay", tc: "Google Pay"),
-]
+private let orderedDays:        [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadWeekdays()
+private let hkDistricts:        [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadDistricts()
+private let restaurantKeywords: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadKeywords()
+private let restaurantPayments: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadPayments()

@@ -250,18 +250,11 @@ final class SearchViewModel {
     //
     // These constants define the selectable values shown in the filter sheet.
 
-    /// Available Hong Kong districts for filtering
-    static let availableDistricts = [
-        "Central", "Wan Chai", "Causeway Bay", "Mong Kok",
-        "Tsim Sha Tsui", "Sham Shui Po", "Sha Tin", "Tuen Mun",
-        "Yuen Long", "North"
-    ]
+    /// Available Hong Kong districts for filtering (loaded from districts.json)
+    static let availableDistricts: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadDistricts()
 
-    /// Available keyword tags for filtering (vegetarian cuisine focus)
-    static let availableKeywords = [
-        "Vegan", "Vegetarian", "Organic", "Dim Sum", "Hot Pot",
-        "Noodles", "Rice", "Seafood", "Healthy", "Fusion"
-    ]
+    /// Available keyword tags for filtering (loaded from keywords.json)
+    static let availableKeywords: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadKeywords()
 
     // MARK: - Private Helpers
 

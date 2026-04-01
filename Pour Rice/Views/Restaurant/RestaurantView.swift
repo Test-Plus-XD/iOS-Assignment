@@ -50,6 +50,9 @@ struct RestaurantView: View {
     @State private var showingCreateBooking = false
     @State private var showingDirections = false
 
+    @AppStorage("preferredLanguage") private var preferredLanguage: String = "en"
+    private var isTC: Bool { preferredLanguage == "zh-Hant" }
+
     // MARK: - Body
 
     var body: some View {
@@ -331,7 +334,9 @@ struct RestaurantView: View {
             // Show each day's hours
             ForEach(restaurant.openingHours, id: \.day) { hours in
                 HStack {
-                    Text(hours.day)
+                    Text(isTC
+                         ? (LocalDataLoader.loadWeekdays().first { $0.en == hours.day }?.tc ?? hours.day)
+                         : hours.day)
                         .frame(width: 100, alignment: .leading)
                         .foregroundStyle(hours.day == currentDayName ? .primary : .secondary)
                         .fontWeight(hours.day == currentDayName ? .semibold : .regular)
@@ -505,11 +510,17 @@ struct RestaurantView: View {
 
     // MARK: - Helpers
 
-    /// Returns the current day name (e.g. "Monday")
+    /// Returns the current day name in English (e.g. "Monday"), used to highlight
+    /// today's row in the opening hours section.
+    ///
+    /// Calendar weekday: 1=Sun, 2=Mon, …, 7=Sat (Sunday-first).
+    /// weekdays.json order: 0=Mon, 1=Tue, …, 6=Sun (Monday-first).
+    /// Index formula: (weekday + 5) % 7 — maps 1→6, 2→0, 3→1, …, 7→5.
     private var currentDayName: String {
-        let dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         let weekday = Calendar.current.component(.weekday, from: Date())
-        return dayNames[weekday - 1]
+        let index = (weekday + 5) % 7
+        let days = LocalDataLoader.loadWeekdays()
+        return days.isEmpty ? "" : days[index].en
     }
 }
 
