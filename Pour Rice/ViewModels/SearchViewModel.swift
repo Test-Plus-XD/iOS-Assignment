@@ -250,11 +250,11 @@ final class SearchViewModel {
     //
     // These constants define the selectable values shown in the filter sheet.
 
-    /// Available Hong Kong districts for filtering (loaded from filter_districts.json)
-    static let availableDistricts: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadFilterDistricts()
+    /// Available Hong Kong districts for filtering (loaded from districts.json)
+    static let availableDistricts: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadDistricts()
 
-    /// Available keyword tags for filtering (loaded from filter_keywords.json)
-    static let availableKeywords: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadFilterKeywords()
+    /// Available keyword tags for filtering (loaded from keywords.json)
+    static let availableKeywords: [LocalDataLoader.BilingualEntry] = LocalDataLoader.loadKeywords()
 
     // MARK: - Private Helpers
 

@@ -43,28 +43,22 @@ enum LocalDataLoader {
         var id: String { en }
     }
 
-    // MARK: - AddRestaurantView datasets
+    // MARK: - Public loaders
 
     /// 7 weekdays in Monday-first order (matches the opening-hours form).
     /// For Calendar-indexed lookups (Sunday = 1), use `(weekday + 5) % 7` as the index.
     static func loadWeekdays()   -> [BilingualEntry] { loadBilingual("weekdays")   }
 
     /// 18 Hong Kong administrative districts (Islands → Wan Chai).
+    /// Used in AddRestaurantView (full list) and as Algolia filter options in FilterView.
     static func loadDistricts()  -> [BilingualEntry] { loadBilingual("districts")  }
 
     /// 90 restaurant keywords grouped by category (Core vegan → Ambiance).
+    /// Used in AddRestaurantView (full list) and as Algolia filter options in FilterView.
     static func loadKeywords()   -> [BilingualEntry] { loadBilingual("keywords")   }
 
     /// 10 payment methods (Cash → Google Pay).
     static func loadPayments()   -> [BilingualEntry] { loadBilingual("payments")   }
-
-    // MARK: - FilterView / SearchViewModel datasets
-
-    /// 10 search-filter districts shown in FilterView (English values = Algolia filter params).
-    static func loadFilterDistricts() -> [BilingualEntry] { loadBilingual("filter_districts") }
-
-    /// 10 search-filter keywords shown in FilterView (English values = Algolia filter params).
-    static func loadFilterKeywords()  -> [BilingualEntry] { loadBilingual("filter_keywords")  }
 
     // MARK: - Private Generic Loader
 

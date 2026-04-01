@@ -107,9 +107,7 @@ Pour Rice/
   │   ├── weekdays.json                  # 7 weekdays, Monday-first order (en/tc)
   │   ├── districts.json                 # 18 HK administrative districts (en/tc)
   │   ├── keywords.json                  # 90 restaurant keywords by category (en/tc)
-  │   ├── payments.json                  # 10 payment methods (en/tc)
-  │   ├── filter_districts.json          # 10 search-filter districts; en = Algolia param (en/tc)
-  │   └── filter_keywords.json           # 10 search-filter keywords; en = Algolia param (en/tc)
+  │   └── payments.json                  # 10 payment methods (en/tc)
   └── Core/
       ├── Services/
       │   ├── AuthService.swift          # Firebase Auth wrapper
@@ -147,7 +145,7 @@ Pour Rice/
 - `Views/Search/SearchMapView.swift` — `Map(position:selection:)` with `Marker` per restaurant (tinted by `isOpenNow`); `UserAnnotation()`; auto-fit camera via `MKCoordinateRegion` bounding box over all results; `SearchMapCalloutCard` bottom overlay (`.regularMaterial` card) shown on pin tap; navigates to `RestaurantView` via `NavigationLink(value: restaurant)`
 - `Pour_RiceApp.swift` — `GeminiNavigation` struct (Hashable, wraps `Restaurant?`) for type-safe Gemini navigation
 - `Core/Utilities/Constants.swift` — `Constants.Chat.socketURL` + `messagePageSize` + `typingDebounceNs`; `Constants.Map.defaultLatitude/Longitude` (Hong Kong: 22.3193, 114.1694) + `detailSpanDelta` + `searchSpanDelta` + `detailMapHeight` + `directionsMapHeight`
-- `Core/Utilities/LocalDataLoader.swift` — `enum LocalDataLoader` (not instantiable); `BilingualEntry: Codable, Identifiable` with `id: String { en }`; private generic `load<T: Decodable>(_ filename:)` reads `Bundle.main` synchronously; public loaders: `loadWeekdays()`, `loadDistricts()`, `loadKeywords()`, `loadPayments()`, `loadFilterDistricts()`, `loadFilterKeywords()` — all return `[BilingualEntry]`; `#if DEBUG` prints on success (filename + count) and failure
+- `Core/Utilities/LocalDataLoader.swift` — `enum LocalDataLoader` (not instantiable); `BilingualEntry: Codable, Identifiable` with `id: String { en }`; private generic `load<T: Decodable>(_ filename:)` reads `Bundle.main` synchronously; public loaders: `loadWeekdays()`, `loadDistricts()`, `loadKeywords()`, `loadPayments()` — all return `[BilingualEntry]`; `#if DEBUG` prints on success (filename + count) and failure
 
 ## API Integration
 - **Base URL**: `https://vercel-express-api-alpha.vercel.app`
@@ -225,7 +223,7 @@ AI responses rendered with AttributedString(markdown:) for basic markdown suppor
 - Algolia SDK was removed; all search traffic uses `URLSession` through the backend proxy
 - `AlgoliaHit` is a private struct inside `RestaurantService` — maps `objectID` → `Restaurant.id`
 - `SearchView` has a `showingMap: Bool` state that switches between `List` (default) and `SearchMapView`; the toggle toolbar button is disabled when results are empty
-- `SearchViewModel.availableDistricts` and `availableKeywords` are `[LocalDataLoader.BilingualEntry]` loaded from `filter_districts.json` / `filter_keywords.json`; the `.en` field is passed to Algolia as the filter parameter value
+- `SearchViewModel.availableDistricts` and `availableKeywords` are `[LocalDataLoader.BilingualEntry]` loaded from `districts.json` (18) / `keywords.json` (90); the `.en` field is passed to Algolia as the filter parameter value
 - `FilterView` displays `district.tc` / `keyword.tc` directly from JSON when TC is active — no xcstrings lookups for individual filter values (saves ~340 lines from `Localizable.xcstrings`)
 
 ## MapKit Architecture
