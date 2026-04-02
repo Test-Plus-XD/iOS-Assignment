@@ -362,10 +362,24 @@ enum APIEndpoint {
 
 // MARK: - Restaurant Management Request Models
 
+/// Contacts sub-object for UpdateRestaurantRequest
+struct RestaurantContactsUpdate: Codable, Sendable {
+    var phone: String?
+    var email: String?
+    var website: String?
+    enum CodingKeys: String, CodingKey {
+        case phone   = "Phone"
+        case email   = "Email"
+        case website = "Website"
+    }
+}
+
 /// Request body for PUT /API/Restaurants/:id
 struct UpdateRestaurantRequest: Codable, Sendable {
     var nameEN: String?
     var nameTC: String?
+    var descriptionEN: String?
+    var descriptionTC: String?
     var addressEN: String?
     var addressTC: String?
     var districtEN: String?
@@ -373,21 +387,27 @@ struct UpdateRestaurantRequest: Codable, Sendable {
     var keywordEN: [String]?
     var keywordTC: [String]?
     var seats: Int?
-    var contacts: [String]?
+    var contacts: RestaurantContactsUpdate?
     var imageUrl: String?
+    var latitude: Double?
+    var longitude: Double?
 
     enum CodingKeys: String, CodingKey {
-        case nameEN = "Name_EN"
-        case nameTC = "Name_TC"
-        case addressEN = "Address_EN"
-        case addressTC = "Address_TC"
-        case districtEN = "District_EN"
-        case districtTC = "District_TC"
-        case keywordEN = "Keyword_EN"
-        case keywordTC = "Keyword_TC"
-        case seats = "Seats"
-        case contacts = "Contacts"
-        case imageUrl = "ImageUrl"
+        case nameEN        = "Name_EN"
+        case nameTC        = "Name_TC"
+        case descriptionEN = "Description_EN"
+        case descriptionTC = "Description_TC"
+        case addressEN     = "Address_EN"
+        case addressTC     = "Address_TC"
+        case districtEN    = "District_EN"
+        case districtTC    = "District_TC"
+        case keywordEN     = "Keyword_EN"
+        case keywordTC     = "Keyword_TC"
+        case seats         = "Seats"
+        case contacts      = "Contacts"
+        case imageUrl      = "ImageUrl"
+        case latitude      = "Latitude"
+        case longitude     = "Longitude"
     }
 }
 

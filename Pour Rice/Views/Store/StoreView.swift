@@ -118,9 +118,13 @@ struct StoreView: View {
                     }
                 }
                 Spacer()
-                Image(systemName: "storefront.fill")
-                    .font(.title)
-                    .foregroundStyle(.accent)
+                // Tapping the storefront icon navigates to the restaurant detail page
+                NavigationLink(value: restaurant) {
+                    Image(systemName: "storefront.fill")
+                        .font(.title)
+                        .foregroundStyle(.accent)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding()

@@ -175,6 +175,19 @@ final class StoreViewModel {
         }
     }
 
+    /// Updates an existing menu item.
+    func updateMenuItem(id: String, request: UpdateMenuItemRequest) async {
+        guard let service = storeService else { return }
+        do {
+            try await service.updateMenuItem(id: id, request: request)
+            await refreshMenu()
+            showToast(String(localized: "toast_store_menu_updated", bundle: L10n.bundle), .success)
+        } catch {
+            self.error = error
+            showToast(String(localized: "toast_store_action_failed", bundle: L10n.bundle), .error)
+        }
+    }
+
     /// Deletes a menu item.
     func deleteMenuItem(id: String) async {
         guard let service = storeService else { return }

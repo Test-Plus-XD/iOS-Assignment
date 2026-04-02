@@ -104,76 +104,65 @@ struct SearchView: View {
                 userLocation: services.locationService.currentLocation
             )
         } else {
-        List {
-            // Show results, loading, or empty/initial state
+            // ── List / State views ─────────────────────────────────────
             if vm.isLoading {
-                // Loading state — show inline spinner
                 InlineLoadingView(label: "search_loading")
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             } else if let error = vm.errorMessage {
-                // Error state
                 ErrorView(message: error) {
                     Task { vm.searchQueryChanged() }
                 }
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .frame(height: 300)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
 
             } else if vm.searchResults.isEmpty && vm.hasSearched {
-                // No results found for the query
                 EmptyStateView.noSearchResults {
                     Task { await vm.clearFilters() }
                 }
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .frame(height: 300)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 60)
 
             } else if !vm.hasSearched {
-                // Initial state — prompt the user to search
-                initialPromptView
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                ScrollView {
+                    initialPromptView
+                }
 
             } else {
-                // Search results list
-                ForEach(vm.searchResults) { restaurant in
-                    NavigationLink(value: restaurant) {
-                        SearchResultRow(
-                            restaurant: restaurant,
-                            userLocation: services.locationService.currentLocation
-                        )
-                    }
-                    .hapticFeedback(style: .light)
-                    .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars")
-                    .listRowInsets(EdgeInsets(
-                        top: Constants.UI.spacingSmall,
-                        leading: Constants.UI.spacingMedium,
-                        bottom: Constants.UI.spacingSmall,
-                        trailing: Constants.UI.spacingMedium
-                    ))
-                }
-
-                // Pagination sentinel — triggers next-page fetch when it scrolls into view
-                if vm.hasMorePages {
-                    HStack {
-                        Spacer()
-                        if vm.isFetchingNextPage {
-                            ProgressView()
-                                .padding(.vertical, Constants.UI.spacingMedium)
+                // Results as ScrollView + LazyVStack for reliable NavigationLink taps
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(vm.searchResults) { restaurant in
+                            NavigationLink(value: restaurant) {
+                                SearchResultRow(
+                                    restaurant: restaurant,
+                                    userLocation: services.locationService.currentLocation
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            })
+                            .accessibilityLabel("\(restaurant.name.localised), \(restaurant.cuisine.localised), \(restaurant.ratingDisplay) stars")
                         }
-                        Spacer()
+
+                        // Pagination sentinel
+                        if vm.hasMorePages {
+                            HStack {
+                                Spacer()
+                                if vm.isFetchingNextPage {
+                                    ProgressView()
+                                        .padding(.vertical, Constants.UI.spacingMedium)
+                                }
+                                Spacer()
+                            }
+                            .onAppear { vm.loadNextPage() }
+                        }
                     }
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                    .onAppear {
-                        vm.loadNextPage()
-                    }
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+                    .padding(.vertical, Constants.UI.spacingSmall)
                 }
             }
-        }
-        .listStyle(.plain)
         } // else (list mode)
         } // Group
         .id(preferredLanguage)

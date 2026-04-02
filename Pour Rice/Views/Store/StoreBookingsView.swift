@@ -28,7 +28,7 @@ struct StoreBookingsView: View {
         case pending, accepted, all
         var id: String { rawValue }
 
-        var label: String {
+        var label: LocalizedStringKey {
             switch self {
             case .pending:  return "store_bookings_pending"
             case .accepted: return "store_bookings_accepted"

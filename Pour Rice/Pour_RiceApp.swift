@@ -469,12 +469,21 @@ struct MainTabView: View {
                                 case .bookings:
                                     StoreBookingsView()
                                 case .reviews:
-                                    // Reviews is a read-only page accessible via restaurantId
                                     Text("store_reviews_placeholder")
                                         .navigationTitle("store_view_reviews")
                                 case .editInfo:
                                     StoreInfoEditView()
                                 }
+                            }
+                            // Restaurant detail navigation from storefront icon
+                            .navigationDestination(for: Restaurant.self) { restaurant in
+                                RestaurantView(restaurant: restaurant)
+                            }
+                            .navigationDestination(for: GeminiNavigation.self) { nav in
+                                GeminiChatView(restaurant: nav.restaurant)
+                            }
+                            .navigationDestination(for: ChatRoom.self) { room in
+                                ChatRoomView(room: room)
                             }
                     }
                 }
