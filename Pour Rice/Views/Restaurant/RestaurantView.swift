@@ -49,6 +49,7 @@ struct RestaurantView: View {
     @State private var viewModel: RestaurantViewModel?
     @State private var showingCreateBooking = false
     @State private var showingDirections = false
+    @State private var showingAllMenu = false
 
     @AppStorage("preferredLanguage") private var preferredLanguage: String = "en"
     private var isTC: Bool { preferredLanguage == "zh-Hant" }
@@ -121,9 +122,9 @@ struct RestaurantView: View {
 
                 Divider().padding(.vertical, Constants.UI.spacingMedium)
 
-                // ─── Menu Preview ───────────────────────────────────────────
+                // ─── Menu Section ──────────────────────────────────────────
                 if !vm.menuPreview.isEmpty {
-                    menuPreviewSection(items: vm.menuPreview, restaurantId: current.id)
+                    menuSection(items: vm.menuPreview, restaurantId: current.id, restaurantName: current.name.localised)
                         .padding(.horizontal, Constants.UI.spacingMedium)
 
                     Divider().padding(.vertical, Constants.UI.spacingMedium)
@@ -171,6 +172,12 @@ struct RestaurantView: View {
                 restaurant: restaurant,
                 userLocation: services.locationService.currentLocation
             )
+        }
+        // Full menu sheet
+        .sheet(isPresented: $showingAllMenu) {
+            NavigationStack {
+                MenuView(restaurantId: restaurant.id, restaurantName: restaurant.name.localised)
+            }
         }
     }
 
@@ -285,14 +292,14 @@ struct RestaurantView: View {
 
                 Spacer()
 
-                // Price range
-                Text(restaurant.priceRangeDisplay)
-                    .fontWeight(.medium)
+                // Price range (only if set)
+                if !restaurant.priceRangeDisplay.isEmpty {
+                    Text(restaurant.priceRangeDisplay)
+                        .fontWeight(.medium)
+                }
 
                 // Open/Closed badge
-                Text(restaurant.isOpenNow
-                     ? "open_now"
-                     : "closed")
+                Text(restaurant.isOpenNow ? "open_now" : "closed")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
@@ -302,22 +309,6 @@ struct RestaurantView: View {
                         in: Capsule()
                     )
                     .foregroundStyle(restaurant.isOpenNow ? .green : .red)
-            }
-
-            // Write a review button (only for authenticated users who haven't reviewed yet)
-            if !vm.userHasReviewed {
-                Button {
-                    vm.showingReviewSheet = true
-                } label: {
-                    Label(
-                        "review_write_button",
-                        systemImage: "star.bubble"
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .padding(.top, Constants.UI.spacingSmall)
-                .hapticFeedback(style: .medium)
             }
         }
     }
@@ -387,9 +378,15 @@ struct RestaurantView: View {
             }
 
             // Seats
-            Label("\(restaurant.seats) \("restaurant_seats")", systemImage: "chair")
+            if restaurant.seats > 0 {
+                Label {
+                    Text("\(restaurant.seats) ") + Text("restaurant_seats")
+                } icon: {
+                    Image(systemName: "chair")
+                }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -445,32 +442,37 @@ struct RestaurantView: View {
         }
     }
 
-    // MARK: - Menu Preview Section
+    // MARK: - Menu Section
 
+    /// Vertical menu section showing up to 10 items (~3 visible at a time) + sheet for all
     @ViewBuilder
-    private func menuPreviewSection(items: [Menu], restaurantId: String) -> some View {
+    private func menuSection(items: [Menu], restaurantId: String, restaurantName: String) -> some View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
             HStack {
                 Text("restaurant_menu_preview_title")
                     .font(.headline)
                 Spacer()
-                // NavigationLink(value:) pushes MenuView — matched by .navigationDestination
-                NavigationLink(value: restaurantId) {
+                Button {
+                    showingAllMenu = true
+                } label: {
                     Text("restaurant_see_full_menu")
                         .font(.subheadline)
                         .foregroundStyle(.tint)
                 }
             }
 
-            // Horizontal scroll of menu item thumbnails
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Constants.UI.spacingMedium) {
-                    ForEach(items) { item in
-                        MenuPreviewCard(item: item)
+            // Vertical scroll showing ~3 items at a time; up to 10 items displayed
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 10) {
+                    ForEach(items.prefix(10)) { item in
+                        MenuItemListRow(item: item)
                     }
                 }
             }
+            // Height sized for ~3 rows (~88pt each)
+            .frame(height: 276)
+            .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
         }
     }
 
@@ -486,10 +488,22 @@ struct RestaurantView: View {
 
                 Spacer()
 
-                // Review count
-                Text("\(vm.reviews.count) \("restaurant_reviews_count")")
+                // Review count — properly localised via Text concatenation
+                (Text("\(vm.reviews.count) ") + Text("restaurant_reviews_count"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+            }
+
+            // Write-a-review button (authenticated users who haven't reviewed)
+            if !vm.userHasReviewed && authService.isAuthenticated {
+                Button {
+                    vm.showingReviewSheet = true
+                } label: {
+                    Label("review_write_button", systemImage: "star.bubble")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .hapticFeedback(style: .medium)
             }
 
             if vm.isLoading {
@@ -524,27 +538,44 @@ struct RestaurantView: View {
     }
 }
 
-// MARK: - Menu Preview Card
+// MARK: - Menu Item List Row
 
-/// Small card showing a single menu item in the preview carousel
-private struct MenuPreviewCard: View {
+/// Horizontal card row for a single menu item in the vertical scroll preview
+private struct MenuItemListRow: View {
 
     let item: Menu
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 12) {
+            // Thumbnail
             MenuItemImage(urlString: item.imageURL)
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            Text(item.name.localised)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.name.localised)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+
+                if !item.description.localised.isEmpty {
+                    Text(item.description.localised)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+
+            Spacer(minLength: 4)
 
             Text(item.priceDisplay)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.tint)
         }
-        .frame(width: 80)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 

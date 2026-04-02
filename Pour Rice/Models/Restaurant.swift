@@ -238,43 +238,78 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
     // @JsonKey(name: 'restaurantId') String id;
 
     /// Maps API response field names to Swift property names.
-    ///
-    /// The backend returns a FLAT structure with separate _EN / _TC fields for
-    /// bilingual text (e.g. Name_EN, Name_TC) and a single ImageUrl string rather
-    /// than a nested object or an array.  The custom init(from:) below assembles
-    /// these flat keys into the richer Swift types used throughout the app.
-    ///
-    /// Fields absent from the API response (priceRange, rating, reviewCount,
-    /// openingHours, phoneNumber, email, website, description, cuisine) are
-    /// assigned safe defaults inside init(from:).
     enum CodingKeys: String, CodingKey {
-        case id                           // API key: "id"  (was incorrectly "restaurantId")
+        case id
 
-        // Flat bilingual name fields
         case nameEN      = "Name_EN"
         case nameTC      = "Name_TC"
 
-        // Flat bilingual address fields
+        case descriptionEN = "Description_EN"
+        case descriptionTC = "Description_TC"
+
         case addressEN   = "Address_EN"
         case addressTC   = "Address_TC"
 
-        // Flat bilingual district fields
         case districtEN  = "District_EN"
         case districtTC  = "District_TC"
 
-        // Flat keyword arrays (paired by index)
+        case cuisineEN   = "Cuisine_EN"
+        case cuisineTC   = "Cuisine_TC"
+
         case keywordEN   = "Keyword_EN"
         case keywordTC   = "Keyword_TC"
 
-        // Single image URL string (API does NOT return an array)
         case imageUrl    = "ImageUrl"
 
-        // Location coordinates at the top level
         case latitude    = "Latitude"
         case longitude   = "Longitude"
 
-        // Seating capacity
         case seats       = "Seats"
+
+        // Opening hours dict: { "Monday": "11:30-21:30", ... }
+        case openingHoursDict = "Opening_Hours"
+
+        // Contacts nested object: { "Phone": "...", "Email": "...", "Website": "..." }
+        case contacts = "Contacts"
+
+        // Price range, rating, review count
+        case priceRange   = "PriceRange"
+        case rating       = "Rating"
+        case reviewCount  = "ReviewCount"
+    }
+
+    // MARK: - Private Contacts Decoder
+
+    private struct APIContacts: Decodable {
+        let phone: String?
+        let email: String?
+        let website: String?
+        enum CodingKeys: String, CodingKey {
+            case phone = "Phone"
+            case email = "Email"
+            case website = "Website"
+        }
+    }
+
+    // MARK: - Time Range Parser
+
+    /// Parses "HH:MM-HH:MM" or first range of "HH:MM-HH:MM, HH:MM-HH:MM"
+    private static func parseFirstTimeRange(_ hoursStr: String) -> (open: String, close: String)? {
+        let firstSegment = hoursStr.components(separatedBy: ",").first?
+            .trimmingCharacters(in: .whitespaces) ?? ""
+        guard !firstSegment.isEmpty else { return nil }
+        // Find the dash that is the time-range separator (after exactly one colon)
+        var colonCount = 0
+        for (i, char) in firstSegment.enumerated() {
+            if char == ":" { colonCount += 1 }
+            if char == "-" && colonCount == 1 {
+                let open  = String(firstSegment.prefix(i)).trimmingCharacters(in: .whitespaces)
+                let close = String(firstSegment.suffix(firstSegment.count - i - 1))
+                    .trimmingCharacters(in: .whitespaces)
+                return (open, close)
+            }
+        }
+        return nil
     }
 
     /// Custom decoder that maps the API's flat field structure to this model.
@@ -295,15 +330,16 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // ── Unique identifier ─────────────────────────────────────────────
         id = try container.decode(String.self, forKey: .id)
 
-        // ── Bilingual fields: build BilingualText from flat EN + TC keys ──
-        // 'try?' gracefully handles responses that omit the TC variant (falls
-        // back to the EN string so the UI always has something to display).
+        // ── Bilingual text fields ──────────────────────────────────────────
         let nameEN  = (try? container.decode(String.self, forKey: .nameEN))    ?? ""
         let nameTC  = (try? container.decode(String.self, forKey: .nameTC))    ?? nameEN
         name        = BilingualText(en: nameEN, tc: nameTC)
+
+        let descEN  = (try? container.decode(String.self, forKey: .descriptionEN)) ?? ""
+        let descTC  = (try? container.decode(String.self, forKey: .descriptionTC)) ?? descEN
+        description = BilingualText(en: descEN, tc: descTC)
 
         let addrEN  = (try? container.decode(String.self, forKey: .addressEN)) ?? ""
         let addrTC  = (try? container.decode(String.self, forKey: .addressTC)) ?? addrEN
@@ -313,18 +349,22 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
         let distTC  = (try? container.decode(String.self, forKey: .districtTC)) ?? distEN
         district    = BilingualText(en: distEN, tc: distTC)
 
-        // ── Keywords: zip Keyword_EN[i] with Keyword_TC[i] ───────────────
+        let cuisEN  = (try? container.decode(String.self, forKey: .cuisineEN)) ?? ""
+        let cuisTC  = (try? container.decode(String.self, forKey: .cuisineTC)) ?? cuisEN
+        cuisine     = BilingualText(en: cuisEN, tc: cuisTC)
+
+        // ── Keywords ──────────────────────────────────────────────────────
         let kwEN = (try? container.decode([String].self, forKey: .keywordEN)) ?? []
         let kwTC = (try? container.decode([String].self, forKey: .keywordTC)) ?? []
         keywords = kwEN.enumerated().map { idx, en in
             BilingualText(en: en, tc: idx < kwTC.count ? kwTC[idx] : en)
         }
 
-        // ── Image: API returns a single URL string; wrap it in an array ──
+        // ── Image ─────────────────────────────────────────────────────────
         let imageUrlStr = try? container.decode(String.self, forKey: .imageUrl)
         imageURLs       = imageUrlStr.map { [$0] } ?? []
 
-        // ── Location: flat Latitude / Longitude at the top level ─────────
+        // ── Location ──────────────────────────────────────────────────────
         let lat  = (try? container.decode(Double.self, forKey: .latitude))  ?? 0.0
         let lng  = (try? container.decode(Double.self, forKey: .longitude)) ?? 0.0
         location = Location(latitude: lat, longitude: lng)
@@ -332,47 +372,61 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
         // ── Seats ─────────────────────────────────────────────────────────
         seats = (try? container.decode(Int.self, forKey: .seats)) ?? 0
 
-        // ── Fields not returned by the API — safe defaults ────────────────
-        // These are absent from both the list and detail endpoints.
-        // If the API is extended to return them, add the CodingKeys above
-        // and replace the defaults with proper decode calls.
-        description  = BilingualText(uniform: "")
-        cuisine      = BilingualText(uniform: "")
-        priceRange   = ""
-        rating       = 0.0
-        reviewCount  = 0
-        openingHours = []
-        phoneNumber  = ""
-        email        = nil
-        website      = nil
+        // ── Rating / ReviewCount / PriceRange ─────────────────────────────
+        rating      = (try? container.decode(Double.self, forKey: .rating))     ?? 0.0
+        reviewCount = (try? container.decode(Int.self,    forKey: .reviewCount)) ?? 0
+        priceRange  = (try? container.decode(String.self, forKey: .priceRange)) ?? ""
+
+        // ── Opening Hours: decode {"Monday": "11:30-21:30", ...} ──────────
+        let hoursDict = (try? container.decode([String: String].self, forKey: .openingHoursDict)) ?? [:]
+        openingHours = hoursDict.compactMap { day, hoursStr -> OpeningHour? in
+            let trimmed = hoursStr.trimmingCharacters(in: .whitespaces).lowercased()
+            if trimmed == "closed" || trimmed.isEmpty {
+                return OpeningHour(day: day, open: "", close: "", isClosed: true)
+            }
+            if let (open, close) = Restaurant.parseFirstTimeRange(hoursStr) {
+                return OpeningHour(day: day, open: open, close: close, isClosed: false)
+            }
+            // Fallback: store raw string as open, empty close
+            return OpeningHour(day: day, open: hoursStr, close: "", isClosed: false)
+        }.sorted { lhs, rhs in
+            // Sort by standard weekday order (Monday first)
+            let order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+            let li = order.firstIndex(of: lhs.day) ?? 99
+            let ri = order.firstIndex(of: rhs.day) ?? 99
+            return li < ri
+        }
+
+        // ── Contacts ──────────────────────────────────────────────────────
+        let apiContacts = try? container.decode(APIContacts.self, forKey: .contacts)
+        phoneNumber = apiContacts?.phone ?? ""
+        email       = apiContacts?.email
+        website     = apiContacts?.website
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         try container.encode(id, forKey: .id)
-
         try container.encode(name.en, forKey: .nameEN)
         try container.encode(name.tc, forKey: .nameTC)
-
+        try container.encodeIfPresent(description.en.isEmpty ? nil : description.en, forKey: .descriptionEN)
+        try container.encodeIfPresent(description.tc.isEmpty ? nil : description.tc, forKey: .descriptionTC)
         try container.encode(address.en, forKey: .addressEN)
         try container.encode(address.tc, forKey: .addressTC)
-
         try container.encode(district.en, forKey: .districtEN)
         try container.encode(district.tc, forKey: .districtTC)
-
+        try container.encodeIfPresent(cuisine.en.isEmpty ? nil : cuisine.en, forKey: .cuisineEN)
+        try container.encodeIfPresent(cuisine.tc.isEmpty ? nil : cuisine.tc, forKey: .cuisineTC)
         let kwEN = keywords.map { $0.en }
         let kwTC = keywords.map { $0.tc }
         try container.encode(kwEN, forKey: .keywordEN)
         try container.encode(kwTC, forKey: .keywordTC)
-
         if let firstImage = imageURLs.first {
             try container.encode(firstImage, forKey: .imageUrl)
         }
-
         try container.encode(location.latitude, forKey: .latitude)
         try container.encode(location.longitude, forKey: .longitude)
-
         try container.encode(seats, forKey: .seats)
     }
 }
@@ -484,13 +538,12 @@ struct OpeningHour: Codable, Hashable, Sendable {
     // - Returns: "Closed" if isClosed is true, otherwise "HH:mm - HH:mm"
     var displayText: String {
         if isClosed {
-            // String(localized:) automatically selects English or Chinese
-            // based on user's device language setting
             return String(localized: "closed", bundle: L10n.bundle)
         }
-        // String interpolation: \(variable) inserts the variable's value
-        // Similar to "$open - $close" in Dart or "${open} - ${close}" in Kotlin
-        return "\(open) - \(close)"
+        if close.isEmpty {
+            return open  // raw hours string stored in open
+        }
+        return "\(open) – \(close)"
     }
 }
 

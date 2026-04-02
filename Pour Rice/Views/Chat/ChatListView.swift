@@ -79,9 +79,15 @@ struct ChatListView: View {
 
             // Name and preview
             VStack(alignment: .leading, spacing: 4) {
-                Text(room.roomName ?? "chat_unnamed_room")
-                    .font(.headline)
-                    .lineLimit(1)
+                Group {
+                    if let name = room.roomName {
+                        Text(name)
+                    } else {
+                        Text("chat_unnamed_room")
+                    }
+                }
+                .font(.headline)
+                .lineLimit(1)
 
                 if let lastMessage = room.lastMessage {
                     Text(lastMessage)
