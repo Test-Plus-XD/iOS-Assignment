@@ -177,10 +177,11 @@ struct ChatRoomView: View {
                 Task { await viewModel.sendMessage() }
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.title2)
+                    .font(.title)
                     .foregroundStyle(isSendEnabled ? Color.accentColor : Color.secondary)
             }
             .disabled(!isSendEnabled)
+            .frame(minHeight: 44)
         }
         .padding(.horizontal)
         .padding(.vertical, 12)

@@ -1287,7 +1287,21 @@
       }
     },
     "Continue with Google" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Google"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 Google 繼續"
+          }
+        }
+      }
     },
     "continue_as_guest" : {
       "extractionState" : "manual",
