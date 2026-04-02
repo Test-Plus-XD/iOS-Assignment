@@ -37,6 +37,17 @@ struct MessageBubbleView: View {
                         .frame(maxWidth: 240)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
+                        // For image-only messages the text bubble branch is skipped,
+                        // so the delete action must live here on the rendered image.
+                        .contextMenu {
+                            if isCurrentUser && message.message.isEmpty {
+                                Button(role: .destructive) {
+                                    onDelete?()
+                                } label: {
+                                    Label("chat_delete", systemImage: "trash")
+                                }
+                            }
+                        }
                 }
 
                 // Text bubble (hidden for image-only messages)
@@ -81,18 +92,6 @@ struct MessageBubbleView: View {
                                 : Color(.secondarySystemBackground),
                             in: bubbleShape
                         )
-                } else if message.imageUrl != nil {
-                    // Image-only message: no text bubble, but allow delete via context menu on image
-                    EmptyView()
-                        .contextMenu {
-                            if isCurrentUser {
-                                Button(role: .destructive) {
-                                    onDelete?()
-                                } label: {
-                                    Label("chat_delete", systemImage: "trash")
-                                }
-                            }
-                        }
                 }
 
                 // Metadata row
