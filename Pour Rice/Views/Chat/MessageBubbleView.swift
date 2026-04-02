@@ -3,12 +3,12 @@
 //  Pour Rice
 //
 //  Individual chat message bubble component
-//  Supports user/other alignment, edit/delete context menus
+//  Supports user/other alignment, edit/delete context menus, and image attachments
 //
 
 import SwiftUI
 
-/// A single chat message bubble with sender info, content, and timestamp
+/// A single chat message bubble with sender info, optional image, content, and timestamp
 struct MessageBubbleView: View {
 
     let message: ChatMessage
@@ -31,34 +31,69 @@ struct MessageBubbleView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Message bubble
-                Text(message.displayText)
-                    .font(.body)
-                    .foregroundStyle(isCurrentUser ? .white : .primary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        isCurrentUser
-                            ? Color.accentColor
-                            : Color(.secondarySystemBackground),
-                        in: bubbleShape
-                    )
-                    .contextMenu {
-                        if isCurrentUser && !message.deleted {
-                            Button {
-                                editText = message.message
-                                showEditSheet = true
-                            } label: {
-                                Label("chat_edit", systemImage: "pencil")
-                            }
+                // Image attachment (shown above text bubble when present)
+                if let imageUrl = message.imageUrl, !message.deleted {
+                    AsyncImageView(url: imageUrl, contentMode: .fill)
+                        .frame(maxWidth: 240)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
 
-                            Button(role: .destructive) {
-                                onDelete?()
-                            } label: {
-                                Label("chat_delete", systemImage: "trash")
+                // Text bubble (hidden for image-only messages)
+                if !message.deleted && !message.message.isEmpty {
+                    Text(message.message)
+                        .font(.body)
+                        .foregroundStyle(isCurrentUser ? .white : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            isCurrentUser
+                                ? Color.accentColor
+                                : Color(.secondarySystemBackground),
+                            in: bubbleShape
+                        )
+                        .contextMenu {
+                            if isCurrentUser {
+                                Button {
+                                    editText = message.message
+                                    showEditSheet = true
+                                } label: {
+                                    Label("chat_edit", systemImage: "pencil")
+                                }
+
+                                Button(role: .destructive) {
+                                    onDelete?()
+                                } label: {
+                                    Label("chat_delete", systemImage: "trash")
+                                }
                             }
                         }
-                    }
+                } else if message.deleted {
+                    // Deleted message placeholder
+                    Text(message.displayText)
+                        .font(.body)
+                        .foregroundStyle(isCurrentUser ? .white : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            isCurrentUser
+                                ? Color.accentColor
+                                : Color(.secondarySystemBackground),
+                            in: bubbleShape
+                        )
+                } else if message.imageUrl != nil {
+                    // Image-only message: no text bubble, but allow delete via context menu on image
+                    EmptyView()
+                        .contextMenu {
+                            if isCurrentUser {
+                                Button(role: .destructive) {
+                                    onDelete?()
+                                } label: {
+                                    Label("chat_delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                }
 
                 // Metadata row
                 HStack(spacing: 4) {
