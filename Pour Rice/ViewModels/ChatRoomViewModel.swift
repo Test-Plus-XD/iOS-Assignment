@@ -479,8 +479,10 @@ final class ChatRoomViewModel {
                 }
             }
 
-            // Clear attachment strip after successful socket send
-            pendingAttachments.removeAll()
+            // Remove only the attachments that were actually sent;
+            // attachments still uploading or failed remain in the strip.
+            let sentIds = Set(readyAttachments.map(\.id))
+            pendingAttachments.removeAll { sentIds.contains($0.id) }
 
         } else {
             // REST fallback — text only (images already blocked above if present)
@@ -586,15 +588,24 @@ final class ChatRoomViewModel {
         }
     }
 
-    /// Deletes successfully uploaded attachments that were never sent.
+    /// Deletes uploaded attachments that were never sent.
+    /// Snapshots and clears `pendingAttachments` immediately, then waits for any
+    /// still-uploading entries to settle before issuing their delete requests,
+    /// so no orphaned files are left on the server.
     /// Called from `stop()` via a fire-and-forget Task.
     private func deleteUnsentAttachments() async {
-        let toDelete = pendingAttachments.filter { $0.filePath != nil }
-        for attachment in toDelete {
-            guard let filePath = attachment.filePath else { continue }
-            await imageUploadService?.deleteImage(filePath: filePath)
-        }
+        let snapshot = pendingAttachments
         pendingAttachments.removeAll()
+
+        for attachment in snapshot {
+            // Wait for an in-flight upload to complete or fail before trying to delete.
+            while attachment.isUploading {
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100 ms
+            }
+            if let filePath = attachment.filePath {
+                await imageUploadService?.deleteImage(filePath: filePath)
+            }
+        }
     }
 
     /// Triggers a toast notification with the given message and style.
