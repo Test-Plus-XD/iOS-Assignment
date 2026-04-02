@@ -4,6 +4,7 @@
 //
 //  ViewModel for an individual chat room conversation
 //  Uses Socket.IO for real-time messaging with REST polling as fallback
+//  Supports image attachments with live upload-progress tracking
 //
 //  ============================================================================
 //  FOR FLUTTER/ANDROID DEVELOPERS:
@@ -25,6 +26,42 @@
 //
 
 import Foundation
+import UIKit
+
+// MARK: - PendingAttachment
+
+/// Represents an image selected by the user that is being (or has been) uploaded.
+/// Held in `ChatRoomViewModel.pendingAttachments` until the message is sent or the room is exited.
+@MainActor @Observable
+final class PendingAttachment: Identifiable {
+
+    /// Stable identity for SwiftUI `ForEach`
+    let id = UUID()
+
+    /// Thumbnail shown in the attachment strip (full resolution not needed)
+    let thumbnail: UIImage
+
+    /// Upload progress 0.0–1.0 (only meaningful while `isUploading`)
+    var progress: Double = 0
+
+    /// Public CDN URL set once the upload completes successfully
+    var imageUrl: String?
+
+    /// Server-side file path returned alongside `imageUrl`, used for deletion on exit
+    var filePath: String?
+
+    /// Set to true if the upload failed (allows user to cancel and re-attach)
+    var failed = false
+
+    /// True while the upload is still in flight (no URL yet and not failed)
+    var isUploading: Bool { imageUrl == nil && !failed }
+
+    init(thumbnail: UIImage) {
+        self.thumbnail = thumbnail
+    }
+}
+
+// MARK: - ChatRoomViewModel
 
 /// ViewModel for ChatRoomView — manages messages via Socket.IO with REST fallback
 @MainActor @Observable
@@ -50,6 +87,12 @@ final class ChatRoomViewModel {
     /// Whether the real-time socket is active (false = using REST polling fallback)
     private(set) var isUsingSocket = false
 
+    // MARK: - Image Attachments
+
+    /// Images selected by the user, ordered by selection time.
+    /// Each entry progresses through: uploading → ready (imageUrl set) → sent (removed)
+    var pendingAttachments: [PendingAttachment] = []
+
     // MARK: - Toast
 
     /// Toast message to display
@@ -65,6 +108,7 @@ final class ChatRoomViewModel {
 
     private var chatService: ChatService?
     private var socketService: SocketService?
+    private var imageUploadService: ImageUploadService?
     private var roomId: String?
     private var currentUserId: String?
     private var currentDisplayName: String?
@@ -117,7 +161,8 @@ final class ChatRoomViewModel {
         displayName: String,
         authToken: String,
         chatService: ChatService,
-        socketService: SocketService
+        socketService: SocketService,
+        imageUploadService: ImageUploadService
     ) async {
         self.roomId = roomId
         self.currentUserId = userId
@@ -125,6 +170,7 @@ final class ChatRoomViewModel {
         self.authToken = authToken
         self.chatService = chatService
         self.socketService = socketService
+        self.imageUploadService = imageUploadService
 
         // Load initial message history via REST (reliable baseline)
         isLoading = true
@@ -169,7 +215,8 @@ final class ChatRoomViewModel {
         startConnectionListener()
     }
 
-    /// Stops all listeners, leaves the room, and disconnects the socket.
+    /// Stops all listeners, leaves the room, disconnects the socket,
+    /// and schedules cleanup of any unsent uploaded images.
     func stop() {
         // Cancel all background tasks
         pollingTask?.cancel()
@@ -194,6 +241,31 @@ final class ChatRoomViewModel {
             socketService?.leaveRoom(roomId: roomId, userId: userId)
         }
         socketService?.disconnect()
+
+        // Delete any uploaded-but-unsent attachments (fire-and-forget)
+        Task { await self.deleteUnsentAttachments() }
+    }
+
+    // MARK: - Image Attachments
+
+    /// Compresses each image to JPEG, creates a PendingAttachment, and begins uploading concurrently.
+    func addImages(_ images: [UIImage]) async {
+        for image in images {
+            let attachment = PendingAttachment(thumbnail: image)
+            pendingAttachments.append(attachment)
+
+            // Start upload in a detached task so all images upload concurrently
+            Task {
+                await uploadAttachment(attachment, image: image)
+            }
+        }
+    }
+
+    /// Removes the attachment from the strip. The already-uploaded file is intentionally
+    /// left on the server — the user may re-attach it without re-uploading.
+    /// Definitive cleanup happens in `deleteUnsentAttachments()` on room exit.
+    func cancelAttachment(_ attachment: PendingAttachment) {
+        pendingAttachments.removeAll { $0.id == attachment.id }
     }
 
     // MARK: - Socket Listeners
@@ -348,13 +420,26 @@ final class ChatRoomViewModel {
 
     // MARK: - Actions
 
-    /// Sends the current message text via Socket.IO (preferred) or REST (fallback).
+    /// Sends the current message text (and any ready image attachments) via Socket.IO.
+    /// Images require an active socket connection — they cannot be sent via the REST fallback.
     func sendMessage() async {
         let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty,
+        let readyAttachments = pendingAttachments.filter { $0.imageUrl != nil && !$0.failed }
+
+        guard !text.isEmpty || !readyAttachments.isEmpty,
               let roomId = roomId,
               let userId = currentUserId,
               let displayName = currentDisplayName else { return }
+
+        // Images can only be sent via socket (no imageUrl field in SendMessageRequest)
+        if !readyAttachments.isEmpty && socketService?.isConnected != true {
+            showToast(
+                String(localized: "toast_chat_images_require_connection", bundle: L10n.bundle),
+                .info
+            )
+            // Still allow sending the text portion via REST if there is text
+            if text.isEmpty { return }
+        }
 
         messageText = ""
 
@@ -366,12 +451,39 @@ final class ChatRoomViewModel {
         }
 
         if socketService?.isConnected == true {
-            // Real-time path: send via socket
+            // Real-time path — send via socket
             // Server broadcasts new-message back to all participants (including sender),
             // which our socketListenerTask picks up and appends to messages.
-            socketService?.sendMessage(roomId: roomId, userId: userId, displayName: displayName, message: text)
+
+            if readyAttachments.isEmpty {
+                // Text-only message (unchanged path)
+                socketService?.sendMessage(roomId: roomId, userId: userId, displayName: displayName, message: text)
+            } else {
+                // First message carries the text + first image
+                socketService?.sendMessage(
+                    roomId: roomId,
+                    userId: userId,
+                    displayName: displayName,
+                    message: text,
+                    imageUrl: readyAttachments[0].imageUrl
+                )
+                // Each additional image is a separate message with empty text
+                for attachment in readyAttachments.dropFirst() {
+                    socketService?.sendMessage(
+                        roomId: roomId,
+                        userId: userId,
+                        displayName: displayName,
+                        message: "",
+                        imageUrl: attachment.imageUrl
+                    )
+                }
+            }
+
+            // Clear attachment strip after successful socket send
+            pendingAttachments.removeAll()
+
         } else {
-            // REST fallback
+            // REST fallback — text only (images already blocked above if present)
             do {
                 let request = SendMessageRequest(message: text, userId: userId, displayName: displayName)
                 _ = try await chatService?.sendMessage(roomId: roomId, request: request)
@@ -446,6 +558,44 @@ final class ChatRoomViewModel {
     }
 
     // MARK: - Private Helpers
+
+    /// Compresses and uploads a single image attachment, updating its progress live.
+    private func uploadAttachment(_ attachment: PendingAttachment, image: UIImage) async {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            attachment.failed = true
+            return
+        }
+
+        let filename = "chat_\(UUID().uuidString).jpg"
+
+        do {
+            let result = try await imageUploadService?.uploadChatImage(
+                imageData,
+                mimeType: "image/jpeg",
+                filename: filename
+            ) { [weak attachment] progress in
+                attachment?.progress = progress
+            }
+            attachment.imageUrl = result?.imageUrl
+            attachment.filePath = result?.filePath
+            attachment.progress = 1.0
+            print("📸 ChatRoomViewModel: Uploaded attachment \(filename)")
+        } catch {
+            attachment.failed = true
+            print("❌ ChatRoomViewModel: Upload failed for \(filename): \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes successfully uploaded attachments that were never sent.
+    /// Called from `stop()` via a fire-and-forget Task.
+    private func deleteUnsentAttachments() async {
+        let toDelete = pendingAttachments.filter { $0.filePath != nil }
+        for attachment in toDelete {
+            guard let filePath = attachment.filePath else { continue }
+            await imageUploadService?.deleteImage(filePath: filePath)
+        }
+        pendingAttachments.removeAll()
+    }
 
     /// Triggers a toast notification with the given message and style.
     private func showToast(_ message: String, _ style: ToastStyle) {

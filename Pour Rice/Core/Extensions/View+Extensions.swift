@@ -119,6 +119,9 @@ class Services {
     /// Store/restaurant management service
     let storeService: StoreService
 
+    /// Image upload service for chat attachments
+    let imageUploadService: ImageUploadService
+
     // MARK: - Initialisation
 
     /// Creates a new services container with all dependencies
@@ -143,6 +146,7 @@ class Services {
         self.socketService = SocketService()
         self.geminiService = GeminiService(apiClient: client)
         self.storeService = StoreService(apiClient: client)
+        self.imageUploadService = ImageUploadService()
 
         print("✅ Services container initialised")
     }
