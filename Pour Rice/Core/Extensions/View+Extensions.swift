@@ -122,6 +122,12 @@ class Services {
     /// Image upload service for chat attachments
     let imageUploadService: ImageUploadService
 
+    /// Advertisement CRUD service (Firestore Advertisements collection)
+    let advertisementService: AdvertisementService
+
+    /// DocuPipe AI document extraction service (menu bulk import)
+    let docuPipeService: DocuPipeService
+
     // MARK: - Initialisation
 
     /// Creates a new services container with all dependencies
@@ -147,6 +153,8 @@ class Services {
         self.geminiService = GeminiService(apiClient: client)
         self.storeService = StoreService(apiClient: client)
         self.imageUploadService = ImageUploadService()
+        self.advertisementService = AdvertisementService(apiClient: client)
+        self.docuPipeService = DocuPipeService()
 
         print("✅ Services container initialised")
     }

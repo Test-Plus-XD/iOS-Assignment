@@ -38,7 +38,8 @@ Pour Rice/
   ├── Models/
   │   ├── Restaurant.swift               # Core restaurant model (Decodable + memberwise init)
   │   ├── Menu.swift                     # Menu item and category models
-  │   ├── Review.swift                   # User review model
+  │   ├── Advertisement.swift            # Advertisement model + UpdateAdvertisementRequest (all-nil defaults) + CreateAdvertisementRequest
+  │   ├── Review.swift                   # User review model; ReviewRequest has custom encode(to:) mapping photoURLs.first → "imageUrl"
   │   ├── User.swift                     # User profile model (restaurantId, phoneNumber, bio, theme, notifications)
   │   ├── Booking.swift                  # Booking + BookingStatus + BookingDiner + request models
   │   ├── ChatRoom.swift                 # ChatRoom + ChatMessage + request/response models
@@ -77,10 +78,12 @@ Pour Rice/
   │   │   ├── BookingCardView.swift      # Individual booking card with status badge
   │   │   └── CreateBookingView.swift    # Booking creation sheet (date, guests, requests)
   │   ├── Store/
-  │   │   ├── StoreView.swift            # Restaurant owner dashboard (stats + quick actions)
+  │   │   ├── StoreView.swift            # Restaurant owner dashboard (stats + 6 quick actions grid)
   │   │   ├── StoreBookingsView.swift    # Restaurant booking management (accept/decline/complete)
-  │   │   ├── StoreMenuManageView.swift  # Menu CRUD (add/edit/delete items)
+  │   │   ├── StoreMenuManageView.swift  # Menu CRUD + Liquid Glass toolbar with bulk-import button
   │   │   ├── StoreInfoEditView.swift    # Restaurant info editor + image upload
+  │   │   ├── StoreAdsView.swift         # Advertisement list/create/toggle/delete + Stripe checkout via SafariView
+  │   │   ├── BulkMenuImportView.swift   # DocuPipe bulk import: file picker → review extracted items → import
   │   │   ├── ClaimRestaurantView.swift  # Restaurant ownership claim flow (search + "Add New Restaurant" trigger)
   │   │   └── AddRestaurantView.swift    # Full form sheet for creating a new restaurant listing
   │   ├── Chat/
@@ -98,6 +101,7 @@ Pour Rice/
   │   │   └── UserTypeSelectionView.swift # Non-dismissable sheet for new users to choose Diner / Restaurant Owner
   │   └── Common/
   │       ├── AsyncImageView.swift       # Cached async image loader (Kingfisher)
+  │       ├── SafariView.swift           # UIViewControllerRepresentable wrapping SFSafariViewController (Stripe checkout)
   │       ├── StatusBadgeView.swift      # Reusable status badge (booking statuses)
   │       ├── EmptyStateView.swift       # Empty/no-results states
   │       ├── ErrorView.swift            # Retry error state
@@ -118,7 +122,10 @@ Pour Rice/
       │   ├── BookingService.swift       # Booking CRUD (diner + restaurant owner perspectives)
       │   ├── ChatService.swift          # Chat REST API (rooms, messages, edit/delete)
       │   ├── SocketService.swift        # Socket.IO v4 real-time (socket.io-client-swift library)
-      │   ├── GeminiService.swift        # Gemini AI chat + description generation
+      │   ├── GeminiService.swift        # Gemini AI chat + description generation + generateAdvertisement()
+      │   ├── AdvertisementService.swift # Advertisement CRUD + createStripeCheckoutSession()
+      │   ├── ImageUploadService.swift   # Chat image upload (progress KVO) + generic uploadImage(folder:authToken:)
+      │   ├── DocuPipeService.swift      # DocuPipe menu extraction — multipart POST, returns [ExtractedMenuItem]
       │   └── StoreService.swift         # Restaurant management (claim, update, image, menu CRUD, createRestaurant)
       ├── Network/
       │   ├── APIClient.swift            # URLSession executor (request + requestVoid)
@@ -134,7 +141,7 @@ Pour Rice/
 
 ## Key Files
 - `Pour_RiceApp.swift` — Adaptive tab bar (`if isDiner`/`if isRestaurantOwner` conditions); registers `NavigationDestination` for `Restaurant`, `MenuNavigation`, `GeminiNavigation`, `ChatRoom`, `StoreDestination`; `private static let sharedServices` guarantees single Firebase init
-- `Core/Extensions/View+Extensions.swift` — `Services` container (all 11 services); `shimmerEffect()` modifier; `hapticFeedback()`, `cardStyle()`, `errorAlert()`, `loadingOverlay()`, `toast(message:style:isPresented:)` modifier; `L10n.bundle` helper for locale-aware strings in non-view contexts
+- `Core/Extensions/View+Extensions.swift` — `Services` container (13 services: adds `advertisementService: AdvertisementService`, `docuPipeService: DocuPipeService`); `shimmerEffect()` modifier; `hapticFeedback()`, `cardStyle()`, `errorAlert()`, `loadingOverlay()`, `toast(message:style:isPresented:)` modifier; `L10n.bundle` helper for locale-aware strings in non-view contexts
 - `Models/Booking.swift` — `BookingStatus` enum with `.colour` and `.label`; `BookingDiner` for restaurant-side enrichment; `canCancel`, `isUpcoming`, `isPast` computed properties
 - `Models/ChatRoom.swift` — `ChatRoom.placeholder(roomId:name:)` factory for navigation values; `ChatMessage.displayText` renders "[Message deleted]" for soft-deletes
 - `Core/Services/SocketService.swift` — Socket.IO v4 via `socket.io-client-swift` (`SocketManager` + `SocketIOClient`); `isConnected` and `isRegistered` state gates; `incomingMessages`, `typingIndicators`, and `connectionStateChanges` as `AsyncStream`; `reconnect()` with stored credentials
@@ -158,6 +165,10 @@ Pour Rice/
 - **Restaurant**: `POST /API/Restaurants` (create, no auth, `ownerId` in body), `POST /API/Restaurants/:id/claim`, `PUT /API/Restaurants/:id`, `POST /API/Restaurants/:id/image`
 - **Add Restaurant flow**: `POST /API/Restaurants` → get `{ id }` → `PUT /API/Users/:uid { restaurantId }` (auth). `StoreService.createRestaurant(request:)` handles both steps. `AddRestaurantView` — SwiftUI Form sheet triggered from `ClaimRestaurantView` ("Can't find your restaurant? Add a new one" button). Bundled JSON data loaded via `LocalDataLoader`: `districts.json` (18 HK districts), `keywords.json` (90 keywords), `payments.json` (10 methods), `weekdays.json` (7 days). Keywords/Payments shown only in active locale. Opening hours: `Toggle` per day + `DatePicker(.hourAndMinute)`. Location: `MapReader` + `.onTapGesture` → `proxy.convert(_:from:)` → `CLLocationCoordinate2D`. New `APIEndpoint.createRestaurant(CreateRestaurantRequest)` + `CreateRestaurantResponse`. `UpdateUserRequest` gained `restaurantId: String?` field.
 - **Menu CRUD**: `POST/PUT/DELETE /API/Menu/Items/:id`
+- **Advertisements**: `GET /API/Advertisements?restaurantId=X`, `POST/PUT/DELETE /API/Advertisements/:id` (auth required for CUD)
+- **Stripe**: `POST /API/Stripe/create-ad-checkout-session` (auth required) → `{ sessionId, url }` — open `url` in `SafariView`; on `SafariView.onDismiss` advance to ad creation form
+- **DocuPipe**: `POST /API/DocuPipe/extract-menu` (multipart, no auth) → `{ menu_items: [{ Name_EN, Name_TC, Description_EN, Description_TC, price }] }`
+- **Gemini ad copy**: `POST /API/Gemini/restaurant-advertisement` (auth required) → `AdvertisementGenerationResponse` with `Title_EN/TC`, `Content_EN/TC`
 
 ## Chat Architecture (REST + Socket.IO)
 ```
@@ -533,7 +544,7 @@ Key files:
 | `Models/Booking.swift` | ~300 |
 | `Models/GeminiMessage.swift` | ~200 |
 | `ViewModels/AccountViewModel.swift` | ~235 |
-| `Models/Review.swift` | 130 |
+| `Models/Review.swift` | ~260 |
 | `Core/Services/ReviewService.swift` | 126 |
 | `App/AppDelegate.swift` | 62 |
 | `Views/QR/QRScannerView.swift` | ~185 |
@@ -543,3 +554,48 @@ Key files:
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
 | **Total (estimated)** | **~14,290** |
+
+---
+
+## Change Log
+
+### 2026-04-06 — Rating Field & Half-Star Detail Display
+
+**`Models/Restaurant.swift`**:
+- `rating: Double` — decodes from lowercase `"rating"` JSON key (CodingKey was previously `"Rating"` — now fixed to `"rating"`)
+- `reviewCount: Int` — decodes from `"ReviewCount"`; defaults to `0` since the API does not return this field directly (stats come from the review stats endpoint)
+- `ratingDisplay` computed property: returns `"New"` when `rating == 0`, otherwise `String(format: "%.1f", rating)`
+
+**`Views/Restaurant/RestaurantView.swift`**:
+- Added `starSymbol(for:rating:)` private helper method — rounds to nearest 0.5 via `(rating * 2).rounded() / 2`, then maps each of 5 star indices to `"star.fill"`, `"star.leadinghalf.filled"`, or `"star"` SF Symbol names
+- Replaced `Label(restaurant.ratingDisplay, systemImage: "star.fill")` + `Text("(\(restaurant.reviewCount))")` in `infoSection` with:
+  - `HStack` containing a 5-star icon row (`ForEach(0..<5)` using `starSymbol`) + `Text(restaurant.ratingDisplay)` (orange, medium weight) + `Text("(\(restaurant.reviewCount))")` (secondary colour)
+  - `.accessibilityLabel` set to `"\(ratingDisplay) out of 5 stars, \(reviewCount) reviews"`
+
+**Last Updated**: 2026-04-06
+
+### 2026-04-06 — Cross-Platform Feature Parity (Ads, DocuPipe, Review Images)
+
+**Advertisement Management:**
+- Added `Models/Advertisement.swift` — `Advertisement`, `CreateAdvertisementRequest`, `UpdateAdvertisementRequest` (all properties default to `nil` for convenience inits like `UpdateAdvertisementRequest(status: "active")`)
+- Added `Core/Services/AdvertisementService.swift` — CRUD methods + `createStripeCheckoutSession(restaurantId:successURL:cancelURL:) async throws -> (sessionId: String, url: URL)`
+- Added `Views/Common/SafariView.swift` — `UIViewControllerRepresentable` wrapping `SFSafariViewController` for in-app Stripe checkout flow
+- Added `Views/Store/StoreAdsView.swift`:
+  - `StoreAdsViewModel` (`@MainActor @Observable`) — `load/refresh/toggleStatus/delete`
+  - `AdRowView` — thumbnail, bilingual title, Active/Inactive status pill, play/pause toggle button
+  - `StoreAdCreationSheet` (private two-step): `.payment` step shows HK$10 pricing + "Pay with Stripe" (calls `AdvertisementService.createStripeCheckoutSession` → presents `SafariView`; `onDismiss` → `.form` step); `.form` step presents `StoreAdFormView`
+  - `StoreAdFormView` (public) — EN/TC title + content fields, "Generate with AI" calls `services.geminiService.generateAdvertisement()`, Save calls `services.advertisementService.createAdvertisement()`
+- `Views/Store/StoreView.swift` — added 6th quick action card (megaphone icon, pink, `StoreDestination.advertisements`); `StoreDestination` enum gains `.advertisements` case
+- `Pour_RiceApp.swift` `navigationDestination` — added `.advertisements` case routing to `StoreAdsView(restaurantId:)`
+
+**Bulk Menu Import:**
+- Added `Core/Services/DocuPipeService.swift` — manual multipart `URLRequest` (boundary `PourRiceBoundary-{UUID}`), `x-api-passcode` injected, 120s timeout; `ExtractedMenuItem` struct (`id: UUID`, `nameEN`, `nameTC?`, `descriptionEN?`, `descriptionTC?`, `price?`, `isSelected: Bool = true`); `extractMenu(fileData:mimeType:fileName:) async throws -> [ExtractedMenuItem]`
+- Added `Views/Store/BulkMenuImportView.swift` — three-step enum (`.pick / .review / .done`); `.pick`: `fileImporter` for `.pdf/.jpeg/.png/public.webp`; `.review`: `List` of `ExtractedItemRow` with `isSelected` toggle + "Import X Items" toolbar button calling `services.storeService.createMenuItem`; `.done`: success screen
+- `Views/Store/StoreMenuManageView.swift` — bulk import button (`doc.badge.arrow.up`, purple) added to Liquid Glass toolbar cluster; presents `BulkMenuImportView` via `.sheet`
+- `Core/Extensions/View+Extensions.swift` — `Services` container gains `docuPipeService: DocuPipeService` (now 13 services total)
+
+**Review Image Upload:**
+- `Core/Services/ImageUploadService.swift` — added `uploadImage(_:mimeType:filename:folder:authToken:) async throws -> String` (no progress callback; used for `Reviews` folder uploads)
+- `Models/Review.swift` — `ReviewRequest` gained custom `encode(to:)` with explicit `CodingKeys` (`case imageUrl`) mapping `photoURLs.first → "imageUrl"` API key; previously Swift's synthesised encoder wrote the backend-unrecognised `"photoURLs"` array key
+- `ViewModels/RestaurantViewModel.swift` — `submitReview` extended with `imageURL: String? = nil`; builds `ReviewRequest(photoURLs: imageURL.map { [$0] })`
+- `Views/Restaurant/RestaurantView.swift` (`ReviewSubmissionView`) — `PhotosPicker` section (`import PhotosUI`) with image preview + remove button; `loadSelectedPhoto(_:)` decodes JPEG `Data`; `submit()` uploads to `Reviews` folder via `ImageUploadService.uploadImage` then passes URL to `viewModel.submitReview`

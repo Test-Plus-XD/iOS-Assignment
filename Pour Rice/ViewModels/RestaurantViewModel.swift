@@ -169,14 +169,15 @@ final class RestaurantViewModel {
     ///   - restaurantId: ID of the restaurant being reviewed
     ///   - rating: Star rating (1-5)
     ///   - comment: Written review text
+    ///   - imageURL: Optional pre-uploaded image URL (from /API/Images/upload)
     /// - Returns: true if submission succeeded
     @discardableResult
-    func submitReview(restaurantId: String, rating: Int, comment: String) async -> Bool {
+    func submitReview(restaurantId: String, rating: Int, comment: String, imageURL: String? = nil) async -> Bool {
         let request = ReviewRequest(
             restaurantId: restaurantId,
             rating: rating,
             comment: comment,
-            photoURLs: nil
+            photoURLs: imageURL.map { [$0] }
         )
 
         // Validate the review before submitting

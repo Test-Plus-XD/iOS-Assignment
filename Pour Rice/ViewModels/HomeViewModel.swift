@@ -60,6 +60,10 @@ final class HomeViewModel {
     /// Nearby restaurants based on the user's current location
     var nearbyRestaurants: [Restaurant] = []
 
+    /// Active advertisements fetched from the Advertisements collection.
+    /// Shown as a "Featured Offers" horizontal scroll section on the home screen.
+    var advertisements: [Advertisement] = []
+
     /// Whether a data load is currently in progress
     /// Used to show loading indicators in the view
     var isLoading = false
@@ -89,15 +93,23 @@ final class HomeViewModel {
     /// Service for accessing the user's location
     private let locationService: LocationService
 
+    /// Service for fetching active advertisements
+    private let advertisementService: AdvertisementService
+
     // MARK: - Initialisation
 
     /// Creates a new HomeViewModel with required service dependencies
     /// - Parameters:
     ///   - restaurantService: Service for restaurant API calls
     ///   - locationService: Service for the device's location
-    init(restaurantService: RestaurantService, locationService: LocationService) {
+    init(
+        restaurantService: RestaurantService,
+        locationService: LocationService,
+        advertisementService: AdvertisementService
+    ) {
         self.restaurantService = restaurantService
         self.locationService = locationService
+        self.advertisementService = advertisementService
     }
 
     // MARK: - Data Loading
@@ -120,15 +132,16 @@ final class HomeViewModel {
             let latitude = locationService.currentLocation?.coordinate.latitude ?? 22.3193
             let longitude = locationService.currentLocation?.coordinate.longitude ?? 114.1694
 
-            // Fetch nearby restaurants
-            //
-            // FLUTTER EQUIVALENT:
-            // final nearby = await restaurantService.fetchNearbyRestaurants(lat, lng);
-            let nearby = try await restaurantService.fetchNearbyRestaurants(
+            // Fetch restaurants and advertisements in parallel using async let
+            // This avoids waiting for one call to finish before starting the other
+            async let nearbyTask = restaurantService.fetchNearbyRestaurants(
                 latitude: latitude,
                 longitude: longitude,
                 radius: Constants.Location.defaultRadius
             )
+            async let adsTask = advertisementService.fetchAdvertisements(restaurantId: nil)
+
+            let (nearby, allAds) = try await (nearbyTask, adsTask)
 
             // Update state with fetched data, capped to the nearest N restaurants
             // @Observable automatically notifies views of these changes
@@ -137,6 +150,9 @@ final class HomeViewModel {
             // Derive featured restaurants as a random sample from the nearby list
             // No separate API call needed — matches the Flutter reference app behaviour
             featuredRestaurants = Array(nearby.shuffled().prefix(5))
+
+            // Only show active advertisements
+            advertisements = allAds.filter { $0.isActive }
 
         } catch {
             // Store the error message for display in the view
@@ -158,6 +174,7 @@ final class HomeViewModel {
         // Clear existing data so UI shows loading state
         featuredRestaurants = []
         nearbyRestaurants = []
+        advertisements = []
         hasLoadedOnce = false
 
         // Reload all data

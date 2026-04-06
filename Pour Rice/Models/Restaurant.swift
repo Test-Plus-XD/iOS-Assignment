@@ -274,7 +274,7 @@ struct Restaurant: Codable, Identifiable, Hashable, Sendable {
 
         // Price range, rating, review count
         case priceRange   = "PriceRange"
-        case rating       = "Rating"
+        case rating       = "rating"
         case reviewCount  = "ReviewCount"
     }
 

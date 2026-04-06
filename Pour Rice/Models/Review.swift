@@ -172,8 +172,7 @@ struct ReviewRequest: Codable {
     let dateTime: Date
 
     /// URLs of photos to attach (optional).
-    /// Note: the API does not currently process this field on submission.
-    /// Photo uploads should use POST /API/Images/upload separately.
+    /// The API accepts a single "imageUrl" string; photoURLs.first is sent as "imageUrl".
     let photoURLs: [String]?
 
     // MARK: - Initialisation
@@ -184,7 +183,7 @@ struct ReviewRequest: Codable {
     ///   - rating: Star rating from 1 to 5
     ///   - comment: Written comment (minimum 10 characters)
     ///   - dateTime: Date and time of the dining visit (defaults to now)
-    ///   - photoURLs: Optional photo URLs (not currently processed by the API)
+    ///   - photoURLs: Optional uploaded image URLs (first URL sent as "imageUrl")
     init(
         restaurantId: String,
         rating: Int,
@@ -197,6 +196,30 @@ struct ReviewRequest: Codable {
         self.comment      = comment
         self.dateTime     = dateTime
         self.photoURLs    = photoURLs
+    }
+
+    // MARK: - Custom Encoding
+
+    /// Maps photoURLs.first → the API's "imageUrl" single-string field.
+    /// Swift's synthesised encoder would write a "photoURLs" array key which
+    /// the backend does not recognise.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(restaurantId, forKey: .restaurantId)
+        try container.encode(rating,       forKey: .rating)
+        try container.encode(comment,      forKey: .comment)
+        try container.encode(dateTime,     forKey: .dateTime)
+        if let imageUrl = photoURLs?.first {
+            try container.encode(imageUrl, forKey: .imageUrl)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case restaurantId
+        case rating
+        case comment
+        case dateTime
+        case imageUrl      // API field name for the review image
     }
 
     // MARK: - Validation

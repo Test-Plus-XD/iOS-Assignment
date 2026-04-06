@@ -83,6 +83,48 @@ final class GeminiService {
         return response.result
     }
 
+    // MARK: - Advertisement Generation
+
+    /// Generates bilingual (EN/TC) advertisement content for a restaurant using Gemini AI.
+    /// The server fetches the restaurant's menu from Firestore and uses it to craft
+    /// compelling ad copy.  Returns structured title + content in both languages.
+    ///
+    /// Corresponds to POST /API/Gemini/restaurant-advertisement (auth required).
+    ///
+    /// - Parameters:
+    ///   - restaurantId: The restaurant's Firestore document ID
+    ///   - name: Display name of the restaurant (used as context for the model)
+    ///   - district: Optional district (e.g. "Central") for localised ad copy
+    ///   - keywords: Optional cuisine/style keywords for targeted generation
+    ///   - message: Optional custom instruction from the user (e.g. "focus on our dim sum")
+    /// - Returns: An AdvertisementGenerationResponse with Title_EN/TC and Content_EN/TC
+    func generateAdvertisement(
+        restaurantId: String,
+        name: String,
+        district: String? = nil,
+        keywords: [String]? = nil,
+        message: String? = nil
+    ) async throws -> AdvertisementGenerationResponse {
+        print("🤖 GeminiService: Generating advertisement for restaurant: \(name)")
+
+        let request = GeminiAdvertisementRequest(
+            restaurantId: restaurantId,
+            name: name,
+            district: district,
+            keywords: keywords,
+            message: message
+        )
+
+        let response = try await apiClient.request(
+            .geminiAdvertisement(request),
+            responseType: AdvertisementGenerationResponse.self,
+            callerService: "GeminiService"
+        )
+
+        print("✅ GeminiService: Advertisement generated for \(name)")
+        return response
+    }
+
     // MARK: - Restaurant-Specific
 
     /// Generates an AI marketing description for a restaurant.

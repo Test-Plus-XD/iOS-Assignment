@@ -120,6 +120,28 @@ enum APIEndpoint {
     /// Generate AI restaurant description (POST /API/Gemini/restaurant-description). No auth required.
     case geminiRestaurantDescription(GeminiRestaurantDescriptionRequest)
 
+    /// Generate bilingual ad content (POST /API/Gemini/restaurant-advertisement). Auth required.
+    case geminiAdvertisement(GeminiAdvertisementRequest)
+
+    // MARK: - Advertisement Endpoints
+
+    /// Fetch all ads, optionally filtered by restaurant (GET /API/Advertisements). No auth.
+    case fetchAdvertisements(restaurantId: String?)
+
+    /// Create a new advertisement (POST /API/Advertisements). Auth required.
+    case createAdvertisement(CreateAdvertisementRequest)
+
+    /// Update an advertisement (PUT /API/Advertisements/:id). Auth required.
+    case updateAdvertisement(id: String, UpdateAdvertisementRequest)
+
+    /// Delete an advertisement (DELETE /API/Advertisements/:id). Auth required.
+    case deleteAdvertisement(id: String)
+
+    // MARK: - Stripe Endpoints
+
+    /// Create a Stripe Checkout session for an ad payment (POST /API/Stripe/create-ad-checkout-session). Auth required.
+    case createStripeCheckoutSession(StripeCheckoutRequest)
+
     // MARK: - Endpoint Properties
 
     /// Whether this endpoint requires a Firebase ID token in the Authorization header.
@@ -131,14 +153,18 @@ enum APIEndpoint {
              .createBooking, .updateBooking, .deleteBooking,
              .claimRestaurant, .updateRestaurant,
              .createMenuItem, .updateMenuItem, .deleteMenuItem,
-             .geminiGenerate:
+             .geminiGenerate,
+             .geminiAdvertisement,
+             .createAdvertisement, .updateAdvertisement, .deleteAdvertisement,
+             .createStripeCheckoutSession:
             return true
 
         // Public/no-auth endpoints
         case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems, .fetchReviews,
              .fetchChatRecords, .fetchChatRoom, .createChatRoom,
              .fetchChatMessages, .sendChatMessage, .editChatMessage, .deleteChatMessage,
-             .geminiChat, .geminiRestaurantDescription, .createRestaurant:
+             .geminiChat, .geminiRestaurantDescription, .createRestaurant,
+             .fetchAdvertisements:
             return false
         }
     }
@@ -245,6 +271,26 @@ enum APIEndpoint {
 
         case .geminiRestaurantDescription:
             return Constants.API.Endpoints.geminiRestaurantDescription
+
+        case .geminiAdvertisement:
+            return "/API/Gemini/restaurant-advertisement"
+
+        // Advertisements
+        case .fetchAdvertisements:
+            return "/API/Advertisements"
+
+        case .createAdvertisement:
+            return "/API/Advertisements"
+
+        case .updateAdvertisement(let id, _):
+            return "/API/Advertisements/\(id)"
+
+        case .deleteAdvertisement(let id):
+            return "/API/Advertisements/\(id)"
+
+        // Stripe
+        case .createStripeCheckoutSession:
+            return "/API/Stripe/create-ad-checkout-session"
         }
     }
 
@@ -256,16 +302,21 @@ enum APIEndpoint {
              .claimRestaurant, .createMenuItem,
              .createChatRoom, .sendChatMessage,
              .geminiChat, .geminiGenerate, .geminiRestaurantDescription,
-             .createRestaurant:
+             .geminiAdvertisement,
+             .createRestaurant,
+             .createAdvertisement,
+             .createStripeCheckoutSession:
             return .post
 
         // PUT — updating existing resources
         case .updateUserProfile, .updateUserType, .updateBooking, .updateRestaurant,
-             .updateMenuItem, .editChatMessage:
+             .updateMenuItem, .editChatMessage,
+             .updateAdvertisement:
             return .put
 
         // DELETE — removing resources
-        case .deleteBooking, .deleteMenuItem, .deleteChatMessage:
+        case .deleteBooking, .deleteMenuItem, .deleteChatMessage,
+             .deleteAdvertisement:
             return .delete
 
         // GET — safe, read-only operations
@@ -297,6 +348,11 @@ enum APIEndpoint {
         case .fetchChatMessages(_, let limit):
             guard let limit = limit else { return nil }
             return [URLQueryItem(name: "limit", value: String(limit))]
+
+        // Optional restaurantId filter for advertisement list
+        case .fetchAdvertisements(let restaurantId):
+            guard let restaurantId = restaurantId else { return nil }
+            return [URLQueryItem(name: "restaurantId", value: restaurantId)]
 
         default:
             return nil
@@ -349,9 +405,21 @@ enum APIEndpoint {
             return request
         case .geminiRestaurantDescription(let request):
             return request
+        case .geminiAdvertisement(let request):
+            return request
 
         // Restaurant creation
         case .createRestaurant(let request):
+            return request
+
+        // Advertisements
+        case .createAdvertisement(let request):
+            return request
+        case .updateAdvertisement(_, let request):
+            return request
+
+        // Stripe
+        case .createStripeCheckoutSession(let request):
             return request
 
         default:

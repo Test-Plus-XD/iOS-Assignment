@@ -473,6 +473,10 @@ struct MainTabView: View {
                                         .navigationTitle("store_view_reviews")
                                 case .editInfo:
                                     StoreInfoEditView()
+                                case .advertisements:
+                                    if let restaurantId = authService.currentUser?.restaurantId {
+                                        StoreAdsView(restaurantId: restaurantId)
+                                    }
                                 }
                             }
                             // Restaurant detail navigation from storefront icon

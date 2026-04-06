@@ -27,6 +27,7 @@ struct StoreMenuManageView: View {
     @State private var isSelecting = false
     @State private var selectedIds = Set<String>()
     @State private var showDeleteConfirm = false
+    @State private var showBulkImport = false
 
     @Namespace private var glassNamespace
 
@@ -61,6 +62,20 @@ struct StoreMenuManageView: View {
         .sheet(item: $editingItem) { item in
             EditMenuItemSheet(viewModel: viewModel, item: item)
         }
+        .sheet(isPresented: $showBulkImport) {
+            if let restaurantId = authService.currentUser?.restaurantId {
+                BulkMenuImportView(restaurantId: restaurantId) {
+                    Task {
+                        await viewModel.loadDashboard(
+                            restaurantId: restaurantId,
+                            storeService: services.storeService,
+                            bookingService: services.bookingService,
+                            menuService: services.menuService
+                        )
+                    }
+                }
+            }
+        }
         .confirmationDialog(
             "store_menu_delete_confirm_title",
             isPresented: $showDeleteConfirm,
@@ -86,7 +101,7 @@ struct StoreMenuManageView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            // Liquid Glass button cluster: [bin] [+]
+            // Liquid Glass button cluster: [bin] [import] [+]
             GlassEffectContainer(spacing: 8) {
                 // Bulk delete (bin) — only shown in normal mode; tapping enters selection
                 if !isSelecting {
@@ -101,6 +116,16 @@ struct StoreMenuManageView: View {
                     }
                     .glassEffect(.regular.interactive(), in: Circle())
                     .glassEffectID("bin", in: glassNamespace)
+
+                    // Bulk import from PDF/image via DocuPipe AI
+                    Button {
+                        showBulkImport = true
+                    } label: {
+                        Image(systemName: "doc.badge.arrow.up")
+                            .foregroundStyle(.purple)
+                    }
+                    .glassEffect(.regular.interactive(), in: Circle())
+                    .glassEffectID("import", in: glassNamespace)
                 }
 
                 // Add item button

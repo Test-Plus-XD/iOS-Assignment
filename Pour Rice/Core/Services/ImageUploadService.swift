@@ -115,6 +115,66 @@ final class ImageUploadService {
         }
     }
 
+    // MARK: - Generic Upload
+
+    /// Uploads image data to a specified folder on the backend.
+    /// A simpler variant of `uploadChatImage` — no progress callback, optional auth token.
+    /// Used for review images and other non-chat uploads.
+    ///
+    /// - Parameters:
+    ///   - data: JPEG or PNG image bytes
+    ///   - mimeType: e.g. "image/jpeg"
+    ///   - filename: e.g. "review.jpg"
+    ///   - folder: Backend storage folder (e.g. "Reviews")
+    ///   - authToken: Firebase ID token if the endpoint requires auth
+    /// - Returns: Public imageUrl string
+    func uploadImage(
+        _ data: Data,
+        mimeType: String,
+        filename: String,
+        folder: String,
+        authToken: String?
+    ) async throws -> String {
+        let urlString = "\(Constants.API.baseURL)/API/Images/upload?folder=\(folder)"
+        guard let url = URL(string: urlString) else {
+            throw APIError.invalidURL
+        }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(
+            "multipart/form-data; boundary=\(boundary)",
+            forHTTPHeaderField: Constants.API.Headers.contentType
+        )
+        request.setValue(Constants.API.passcode, forHTTPHeaderField: Constants.API.Headers.apiPasscode)
+        if let token = authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: Constants.API.Headers.authorization)
+        }
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 500
+            throw APIError.serverError(code)
+        }
+
+        struct UploadResponse: Decodable { let imageUrl: String }
+        let decoded = try JSONDecoder().decode(UploadResponse.self, from: responseData)
+        print("📸 ImageUploadService: Uploaded \(filename) to \(folder)")
+        return decoded.imageUrl
+    }
+
     // MARK: - Delete
 
     /// Deletes a previously uploaded image by its server-side file path.

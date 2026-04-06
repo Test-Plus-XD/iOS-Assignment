@@ -160,10 +160,9 @@ struct StoreView: View {
 
     private var quickActionsGrid: some View {
         // 2-column flexible grid.
-        // With 5 items, SwiftUI fills rows left-to-right: [Manage Menu | Manage Bookings]
+        // With 6 items, SwiftUI fills rows left-to-right: [Manage Menu | Manage Bookings]
         //                                                   [View Reviews | Edit Info   ]
-        //                                                   [QR Code      |             ]
-        // The lone 5th card sits left-aligned — a common iOS pattern (see App Store, Settings).
+        //                                                   [Ads          | QR Code     ]
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             NavigationLink(value: StoreDestination.manageMenu) {
                 QuickActionCard(title: "store_manage_menu", icon: "menucard", colour: .purple)
@@ -179,6 +178,10 @@ struct StoreView: View {
 
             NavigationLink(value: StoreDestination.editInfo) {
                 QuickActionCard(title: "store_edit_info", icon: "pencil.circle", colour: .blue)
+            }
+
+            NavigationLink(value: StoreDestination.advertisements) {
+                QuickActionCard(title: "store_ads", icon: "megaphone", colour: .pink)
             }
 
             // QR Code card — opens a sheet showing the restaurant's menu QR code.
@@ -258,6 +261,7 @@ enum StoreDestination: Hashable {
     case bookings
     case reviews
     case editInfo
+    case advertisements
 }
 
 // MARK: - Stat Card

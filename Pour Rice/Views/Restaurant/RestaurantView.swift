@@ -19,6 +19,7 @@
 
 import SwiftUI
 import MapKit
+import PhotosUI
 
 // MARK: - Restaurant View
 
@@ -260,6 +261,20 @@ struct RestaurantView: View {
         .indexViewStyle(.page(backgroundDisplayMode: .always))
     }
 
+    // MARK: - Star Rating Helper
+
+    /// Returns the SF Symbol name for a star position given a rating.
+    /// Rounds the rating to the nearest 0.5 before determining full/half/empty.
+    /// e.g. rating=3.7 → rounded=3.5 → positions 0,1,2 are "star.fill", position 3 is "star.leadinghalf.filled", position 4 is "star"
+    private func starSymbol(for index: Int, rating: Double) -> String {
+        let rounded = (rating * 2).rounded() / 2
+        let full = Int(rounded)
+        let hasHalf = rounded - Double(full) > 0
+        if index < full { return "star.fill" }
+        if index == full && hasHalf { return "star.leadinghalf.filled" }
+        return "star"
+    }
+
     // MARK: - Info Section
 
     /// Restaurant name, cuisine, rating, price, and open status
@@ -280,15 +295,22 @@ struct RestaurantView: View {
             // Rating, price range, open status row
             HStack(spacing: Constants.UI.spacingMedium) {
 
-                // Star rating
-                Label(restaurant.ratingDisplay, systemImage: "star.fill")
-                    .foregroundStyle(.orange)
-                    .fontWeight(.medium)
-                    .accessibilityLabel("\(restaurant.ratingDisplay) stars out of 5")
-
-                Text("(\(restaurant.reviewCount))")
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("\(restaurant.reviewCount) reviews")
+                // Half-star row + numeric rating + review count
+                HStack(spacing: 4) {
+                    HStack(spacing: 1) {
+                        ForEach(0..<5, id: \.self) { i in
+                            Image(systemName: starSymbol(for: i, rating: restaurant.rating))
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                        }
+                    }
+                    Text(restaurant.ratingDisplay)
+                        .foregroundStyle(.orange)
+                        .fontWeight(.medium)
+                    Text("(\(restaurant.reviewCount))")
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel("\(restaurant.ratingDisplay) out of 5 stars, \(restaurant.reviewCount) reviews")
 
                 Spacer()
 
@@ -635,10 +657,19 @@ struct ReviewSubmissionView: View {
     let viewModel: RestaurantViewModel
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.services) private var services
+    @Environment(\.authService) private var authService
 
     @State private var rating = 3
     @State private var comment = ""
     @State private var isSubmitting = false
+
+    /// Selected photo from the Photos library
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    /// Local preview of the selected photo
+    @State private var selectedPhotoImage: Image?
+    /// Raw data of the selected photo (used for upload)
+    @State private var selectedPhotoData: Data?
 
     // MARK: - Body
 
@@ -669,6 +700,41 @@ struct ReviewSubmissionView: View {
                     TextEditor(text: $comment)
                         .frame(minHeight: 100)
                 }
+
+                // Optional photo attachment
+                Section("review_photo_label") {
+                    PhotosPicker(
+                        selection: $selectedPhotoItem,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ) {
+                        if let image = selectedPhotoImage {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 160)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        } else {
+                            Label("review_photo_add", systemImage: "photo.badge.plus")
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                        }
+                    }
+                    .onChange(of: selectedPhotoItem) { _, newItem in
+                        Task { await loadSelectedPhoto(newItem) }
+                    }
+
+                    if selectedPhotoImage != nil {
+                        Button(role: .destructive) {
+                            selectedPhotoItem = nil
+                            selectedPhotoImage = nil
+                            selectedPhotoData = nil
+                        } label: {
+                            Label("review_photo_remove", systemImage: "trash")
+                        }
+                    }
+                }
             }
             .navigationTitle("review_sheet_title")
             .navigationBarTitleDisplayMode(.inline)
@@ -678,15 +744,7 @@ struct ReviewSubmissionView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("review_submit_button") {
-                        Task {
-                            isSubmitting = true
-                            _ = await viewModel.submitReview(
-                                restaurantId: restaurantId,
-                                rating: rating,
-                                comment: comment
-                            )
-                            isSubmitting = false
-                        }
+                        Task { await submit() }
                     }
                     .disabled(isSubmitting || comment.count < 10)
                 }
@@ -695,6 +753,55 @@ struct ReviewSubmissionView: View {
                 if isSubmitting { LoadingView() }
             }
         }
+    }
+
+    // MARK: - Photo Loading
+
+    private func loadSelectedPhoto(_ item: PhotosPickerItem?) async {
+        guard let item else { return }
+        do {
+            if let data = try await item.loadTransferable(type: Data.self) {
+                selectedPhotoData = data
+                if let uiImage = UIImage(data: data) {
+                    selectedPhotoImage = Image(uiImage: uiImage)
+                }
+            }
+        } catch {
+            print("⚠️ ReviewSubmissionView: Failed to load photo: \(error)")
+        }
+    }
+
+    // MARK: - Submit
+
+    private func submit() async {
+        isSubmitting = true
+
+        // Upload photo first if one was selected, then submit the review.
+        var uploadedImageURL: String?
+        if let photoData = selectedPhotoData {
+            do {
+                let token = try await authService.getIDToken()
+                uploadedImageURL = try await services.imageUploadService.uploadImage(
+                    photoData,
+                    mimeType: "image/jpeg",
+                    filename: "review_\(UUID().uuidString).jpg",
+                    folder: "Reviews",
+                    authToken: token
+                )
+            } catch {
+                // Non-fatal: submit review without image if upload fails
+                print("⚠️ ReviewSubmissionView: Image upload failed: \(error)")
+            }
+        }
+
+        _ = await viewModel.submitReview(
+            restaurantId: restaurantId,
+            rating: rating,
+            comment: comment,
+            imageURL: uploadedImageURL
+        )
+
+        isSubmitting = false
     }
 }
 

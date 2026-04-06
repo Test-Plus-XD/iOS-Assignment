@@ -78,7 +78,8 @@ struct HomeView: View {
             if viewModel == nil {
                 let vm = HomeViewModel(
                     restaurantService: services.restaurantService,
-                    locationService: services.locationService
+                    locationService: services.locationService,
+                    advertisementService: services.advertisementService
                 )
                 viewModel = vm
                 await vm.loadData()
@@ -113,6 +114,12 @@ struct HomeView: View {
                     // ─── Featured Restaurants Carousel ───────────────────
                     if !vm.featuredRestaurants.isEmpty {
                         featuredSection(restaurants: vm.featuredRestaurants)
+                    }
+
+                    // ─── Featured Offers (Advertisements) ────────────────
+                    // Only shown when there are active advertisements to display
+                    if !vm.advertisements.isEmpty {
+                        featuredOffersSection(ads: vm.advertisements)
                     }
 
                     // ─── Nearby Restaurants List ──────────────────────────
@@ -179,6 +186,38 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Featured Offers Section
+
+    /// Horizontal scrolling carousel of active restaurant advertisements.
+    /// Each card shows the bilingual ad image + title and navigates to the
+    /// associated restaurant page when tapped.
+    @ViewBuilder
+    private func featuredOffersSection(ads: [Advertisement]) -> some View {
+        VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
+
+            // Section header — "Featured Offers" / "甄選優惠"
+            Text("home_offers_title")
+                .font(.title2)
+                .fontWeight(.bold)
+                .padding(.horizontal, Constants.UI.spacingMedium)
+                .padding(.top, Constants.UI.spacingMedium)
+
+            // Horizontal scroll of ad cards
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Constants.UI.spacingMedium) {
+                    ForEach(ads) { ad in
+                        // Each ad may link to a restaurant — only wrap in NavigationLink
+                        // when a restaurantId is present
+                        AdOfferCard(ad: ad)
+                            .frame(width: 260, height: 160)
+                    }
+                }
+                .padding(.horizontal, Constants.UI.spacingMedium)
+                .padding(.bottom, Constants.UI.spacingMedium)
+            }
+        }
+    }
+
     // MARK: - Nearby Section
 
     /// Vertical list of nearby restaurants
@@ -224,6 +263,59 @@ struct HomeView: View {
             }
         }
         .padding(.bottom, Constants.UI.spacingLarge)
+    }
+}
+
+// MARK: - Ad Offer Card
+
+/// A card displaying a single active advertisement in the Featured Offers carousel.
+/// Shows the bilingual hero image with a gradient overlay and the ad title.
+private struct AdOfferCard: View {
+
+    let ad: Advertisement
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            // Background hero image (language-appropriate)
+            if let url = ad.localizedImageURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure, .empty:
+                        // Placeholder colour when image is unavailable
+                        Color(.systemGray5)
+                    @unknown default:
+                        Color(.systemGray5)
+                    }
+                }
+                .clipped()
+            } else {
+                Color(.systemGray5)
+            }
+
+            // Gradient overlay so title text is readable over any image
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.65)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            // Ad title (bilingual)
+            if !ad.localizedTitle.isEmpty {
+                Text(ad.localizedTitle)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
+            }
+        }
+        .cornerRadius(Constants.UI.cornerRadiusMedium)
+        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
     }
 }
 
