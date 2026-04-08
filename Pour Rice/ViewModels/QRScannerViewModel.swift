@@ -90,20 +90,22 @@ final class QRScannerViewModel {
             // Step 1: Decode QR payloads from image bytes.
             // Core Image may find multiple codes, so we intentionally take the first.
             let payloads = try frameProcessor.extractPayloads(from: imageData)
-            guard let firstPayload = payloads.first else {
-                // Defensive guard: extractPayloads already throws when empty,
-                // but this keeps behaviour explicit and future-proof.
-                scannerState = .error(String(localized: "qr_error_invalid_format", bundle: L10n.bundle))
-                presentError("qr_error_invalid_format")
-                return
-            }
+            let firstPayload = payloads[0]
 
             // Step 2: Reuse the exact same payload-processing path as live camera scanning.
             // This guarantees format validation and API-fetch behaviour remain identical.
             await processPayload(firstPayload)
+        } catch let frameError as QRFrameProcessingError {
+            switch frameError {
+            case .invalidImageData, .detectorInitializationFailed:
+                scannerState = .error(frameError.localizedDescription)
+                presentError("qr_error_invalid_image")
+            case .noQRCodeDetected:
+                scannerState = .error(frameError.localizedDescription)
+                presentError("qr_error_no_qr_code")
+            }
         } catch {
-            // Any failure here means we could not obtain a valid QR payload
-            // from the selected image, so surface the same invalid-format message.
+            // Fallback branch for unexpected non-frame-processing errors.
             scannerState = .error(error.localizedDescription)
             presentError("qr_error_invalid_format")
         }
@@ -157,6 +159,13 @@ final class QRScannerViewModel {
     /// Shows a localised error toast using the shared toast system.
     private func presentError(_ key: String) {
         toastMessage = String(localized: String.LocalizationValue(key), bundle: L10n.bundle)
+        toastStyle = .error
+        showToast = true
+    }
+
+    /// Presents a dedicated toast for image import/load failures.
+    func presentImageLoadError() {
+        toastMessage = String(localized: "qr_error_image_load", bundle: L10n.bundle)
         toastStyle = .error
         showToast = true
     }

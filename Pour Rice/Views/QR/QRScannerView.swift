@@ -255,11 +255,9 @@ struct QRScannerView: View {
         defer { isProcessingImage = false }
 
         guard let data = try? await item.loadTransferable(type: Data.self) else {
-            // Image import failure is surfaced as toast to match existing scanner feedback pattern.
-            vm.showToast = false
-            vm.toastMessage = "Unable to read the selected image."
-            vm.toastStyle = .error
-            vm.showToast = true
+            // Defer toast state mutation to the ViewModel so presentation state
+            // remains centralised in one layer.
+            vm.presentImageLoadError()
             return
         }
 

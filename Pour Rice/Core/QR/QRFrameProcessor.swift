@@ -13,12 +13,26 @@ internal import CoreImage
 // MARK: - Frame Processing Error
 
 /// Errors thrown while extracting QR strings from frame/image data.
-enum QRFrameProcessingError: Error {
+enum QRFrameProcessingError: LocalizedError {
     /// The raw binary data could not be interpreted as an image.
     case invalidImageData
 
+    /// Core Image could not create the QR detector instance.
+    case detectorInitializationFailed
+
     /// The image decoded correctly but no QR code payload was found.
     case noQRCodeDetected
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidImageData:
+            return "The selected file is not a valid image."
+        case .detectorInitializationFailed:
+            return "The QR detector could not be initialised."
+        case .noQRCodeDetected:
+            return "No QR code was detected in the selected image."
+        }
+    }
 }
 
 // MARK: - Processor Protocol
@@ -40,22 +54,21 @@ protocol QRFrameProcessing {
 ///
 /// Uses `CIDetector` with `CIDetectorTypeQRCode`, which is available on both
 /// iOS-family platforms and macOS, making it suitable for shared logic.
-struct CoreImageQRFrameProcessor: QRFrameProcessing {
-
-    /// Shared detector instance to avoid repeated detector construction overhead.
-    private let detector = CIDetector(
-        ofType: CIDetectorTypeQRCode,
-        context: nil,
-        options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]
-    )
+struct CoreImageQRFrameProcessor: QRFrameProcessing, Sendable {
 
     func extractPayloads(from imageData: Data) throws -> [String] {
         guard let ciImage = CIImage(data: imageData) else {
             throw QRFrameProcessingError.invalidImageData
         }
 
+        let detector = CIDetector(
+            ofType: CIDetectorTypeQRCode,
+            context: nil,
+            options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]
+        )
+
         guard let detector else {
-            throw QRFrameProcessingError.noQRCodeDetected
+            throw QRFrameProcessingError.detectorInitializationFailed
         }
 
         let features = detector.features(in: ciImage)

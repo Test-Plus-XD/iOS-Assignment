@@ -33,12 +33,21 @@ struct QRDetection {
 ///
 /// The ViewModel maps these errors into localisation keys for user-facing toasts,
 /// keeping presentation concerns outside this reusable logic layer.
-enum QRDetectionError: Error {
+enum QRDetectionError: LocalizedError {
     /// The payload could not be parsed as a valid URL.
     case invalidURL
 
     /// The URL does not match the app's required deep-link format.
     case invalidFormat
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "The QR code does not contain a valid URL."
+        case .invalidFormat:
+            return "The QR code format is invalid. Expected pourrice://menu/{restaurantId}."
+        }
+    }
 }
 
 // MARK: - Detector
