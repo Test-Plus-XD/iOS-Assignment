@@ -87,10 +87,17 @@ final class QRScannerViewModel {
     /// without a physical iPhone camera.
     func handleScannedImageData(_ imageData: Data) async {
         do {
-            // Step 1: Decode QR payloads from image bytes.
-            // Core Image may find multiple codes, so we intentionally take the first.
-            let payloads = try frameProcessor.extractPayloads(from: imageData)
-            let firstPayload = payloads[0]
+            // Step 1: Decode QR payloads off-main to avoid blocking SwiftUI rendering.
+            //
+            // Why Task.detached:
+            // - this ViewModel is @MainActor, so direct synchronous extraction would run
+            //   Core Image work on the UI thread and can freeze large-image imports.
+            // - detached task executes on a background executor, then we await the result.
+            let firstPayload = try await Task.detached(priority: .userInitiated) { [frameProcessor] in
+                // Core Image may find multiple codes, so we intentionally take the first.
+                let payloads = try frameProcessor.extractPayloads(from: imageData)
+                return payloads[0]
+            }.value
 
             // Step 2: Reuse the exact same payload-processing path as live camera scanning.
             // This guarantees format validation and API-fetch behaviour remain identical.

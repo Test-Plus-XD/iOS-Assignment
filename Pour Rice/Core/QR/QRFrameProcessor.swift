@@ -41,7 +41,7 @@ enum QRFrameProcessingError: LocalizedError {
 ///
 /// Keeping this behind a protocol allows easy replacement in tests
 /// (for example, a fake processor that returns deterministic payloads).
-protocol QRFrameProcessing {
+protocol QRFrameProcessing: Sendable {
     /// Extracts one or more decoded QR payload strings from image data.
     /// - Parameter imageData: Encoded image bytes (PNG/JPEG/etc.).
     /// - Returns: Ordered payload list as detected by Core Image.
