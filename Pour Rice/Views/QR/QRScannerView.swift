@@ -25,6 +25,13 @@ import AVFoundation
 // MARK: - QR Scanner View
 
 struct QRScannerView: View {
+    /// Explains why live camera scanning is not being shown.
+    private enum FallbackReason {
+        /// Camera scanner cannot run on this platform/hardware (e.g. macOS, simulator).
+        case unsupportedPlatform
+        /// Camera scanner is supported, but currently unavailable (usually permissions).
+        case cameraUnavailable
+    }
 
     // MARK: - Environment
 
@@ -99,16 +106,21 @@ struct QRScannerView: View {
     @ViewBuilder
     private func scannerContent(vm: QRScannerViewModel) -> some View {
         #if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
-        if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
-            // Primary path for physical iPhone/iPad devices with camera access.
-            iosCameraScannerView(vm: vm)
+        if DataScannerViewController.isSupported {
+            if DataScannerViewController.isAvailable {
+                // Primary path for physical iPhone/iPad devices with camera access.
+                iosCameraScannerView(vm: vm)
+            } else {
+                // Supported device, but camera access/session is currently unavailable.
+                fallbackScannerView(vm: vm, reason: .cameraUnavailable)
+            }
         } else {
-            // Falls back on simulator or when camera scanning is unavailable/denied.
-            fallbackScannerView(vm: vm)
+            // Unsupported runtime (commonly simulator).
+            fallbackScannerView(vm: vm, reason: .unsupportedPlatform)
         }
         #else
         // Native macOS build path always uses fallback scanner.
-        fallbackScannerView(vm: vm)
+        fallbackScannerView(vm: vm, reason: .unsupportedPlatform)
         #endif
     }
 
@@ -180,15 +192,15 @@ struct QRScannerView: View {
     /// This allows full feature validation without a physical iPhone by:
     /// 1) importing a QR image file, or
     /// 2) pasting a deep-link payload directly.
-    private func fallbackScannerView(vm: QRScannerViewModel) -> some View {
+    private func fallbackScannerView(vm: QRScannerViewModel, reason: FallbackReason) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Constants.UI.spacingLarge) {
                 VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
-                    Text("Camera scanner unavailable on this device.")
+                    Text(fallbackTitle(for: reason))
                         .font(.title3)
                         .fontWeight(.semibold)
 
-                    Text("Use a QR image or paste a payload to test the exact same QR logic flow on macOS or simulator.")
+                    Text(fallbackMessage(for: reason))
                         .foregroundStyle(.secondary)
                 }
 
@@ -272,6 +284,26 @@ struct QRScannerView: View {
         #else
         return Color(.systemBackground)
         #endif
+    }
+
+    /// Reason-specific heading so users understand why live camera scanning is absent.
+    private func fallbackTitle(for reason: FallbackReason) -> String {
+        switch reason {
+        case .unsupportedPlatform:
+            return "Camera scanner unavailable on this device."
+        case .cameraUnavailable:
+            return "Camera access is currently unavailable."
+        }
+    }
+
+    /// Reason-specific guidance for unsupported platform vs permission issues.
+    private func fallbackMessage(for reason: FallbackReason) -> String {
+        switch reason {
+        case .unsupportedPlatform:
+            return "Use a QR image or paste a payload to test the exact same QR logic flow on macOS or simulator."
+        case .cameraUnavailable:
+            return "Enable Camera access for Pour Rice in Settings, then reopen this screen. You can still test via QR image import or pasted payload below."
+        }
     }
 }
 

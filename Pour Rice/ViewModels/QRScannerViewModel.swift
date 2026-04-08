@@ -93,15 +93,26 @@ final class QRScannerViewModel {
             // - this ViewModel is @MainActor, so direct synchronous extraction would run
             //   Core Image work on the UI thread and can freeze large-image imports.
             // - detached task executes on a background executor, then we await the result.
-            let firstPayload = try await Task.detached(priority: .userInitiated) { [frameProcessor] in
-                // Core Image may find multiple codes, so we intentionally take the first.
+            let firstValidPayload = try await Task.detached(priority: .userInitiated) { [frameProcessor] in
                 let payloads = try frameProcessor.extractPayloads(from: imageData)
-                return payloads[0]
+                let detector = QRPayloadDetector()
+
+                // If multiple QR payloads exist in one image, use the first payload
+                // that matches Pour Rice's deep-link format.
+                return payloads.first { payload in
+                    (try? detector.detect(from: payload)) != nil
+                }
             }.value
+
+            guard let firstValidPayload else {
+                scannerState = .error(String(localized: "qr_error_invalid_format", bundle: L10n.bundle))
+                presentError("qr_error_invalid_format")
+                return
+            }
 
             // Step 2: Reuse the exact same payload-processing path as live camera scanning.
             // This guarantees format validation and API-fetch behaviour remain identical.
-            await processPayload(firstPayload)
+            await processPayload(firstValidPayload)
         } catch let frameError as QRFrameProcessingError {
             switch frameError {
             case .invalidImageData, .detectorInitializationFailed:
@@ -148,9 +159,13 @@ final class QRScannerViewModel {
             isPaused = false
         } catch {
             // Non-validation failures are generally fetch-time issues
-            // (e.g. network error, not found), so show not-found style messaging.
+            // (e.g. network/server issues). Show not-found only for true 404s.
             scannerState = .error(error.localizedDescription)
-            presentError("qr_error_restaurant_not_found")
+            if isRestaurantNotFound(error) {
+                presentError("qr_error_restaurant_not_found")
+            } else {
+                presentError("qr_error_service_unavailable")
+            }
             isPaused = false
         }
     }
@@ -175,5 +190,15 @@ final class QRScannerViewModel {
         toastMessage = String(localized: "qr_error_image_load", bundle: L10n.bundle)
         toastStyle = .error
         showToast = true
+    }
+
+    /// Detects whether a fetch failure represents a true restaurant-not-found condition.
+    private func isRestaurantNotFound(_ error: Error) -> Bool {
+        if let apiError = error as? APIError,
+           case .clientError(let statusCode) = apiError,
+           statusCode == 404 {
+            return true
+        }
+        return false
     }
 }
