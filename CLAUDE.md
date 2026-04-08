@@ -93,7 +93,7 @@ Pour Rice/
   │   ├── Gemini/
   │   │   └── GeminiChatView.swift       # Gemini AI chat with markdown rendering + suggestion chips
   │   ├── QR/
-  │   │   ├── QRScannerView.swift        # Full-screen camera scanner (VisionKit DataScannerViewController)
+  │   │   ├── QRScannerView.swift        # Cross-platform scanner: iOS live camera (VisionKit) + macOS/simulator fallback (PhotosPicker + manual payload)
   │   │   └── RestaurantQRView.swift     # QR code generation + sharing (CoreImage, for restaurant owners)
   │   ├── Account/
   │   │   ├── AccountView.swift          # Profile, preferences, AI assistant link, sign-out, toast
@@ -127,6 +127,10 @@ Pour Rice/
       │   ├── ImageUploadService.swift   # Chat image upload (progress KVO) + generic uploadImage(folder:authToken:)
       │   ├── DocuPipeService.swift      # DocuPipe menu extraction — multipart POST, returns [ExtractedMenuItem]
       │   └── StoreService.swift         # Restaurant management (claim, update, image, menu CRUD, createRestaurant)
+      ├── QR/
+      │   ├── QRPayloadDetector.swift    # Platform-agnostic deep-link validator → QRDetection / QRDetectionError
+      │   ├── QRFrameProcessor.swift     # Core Image QR extraction from image bytes (iOS + macOS); QRFrameProcessing protocol + CoreImageQRFrameProcessor
+      │   └── QRDataHandler.swift        # Shared coordinator: detector + fetch closure injection → handlePayload(_:)
       ├── Network/
       │   ├── APIClient.swift            # URLSession executor (request + requestVoid)
       │   ├── APIEndpoint.swift          # Typed endpoint enum (all routes)
@@ -341,16 +345,29 @@ QR Generation (restaurant owners):
 QR Scanning (all users — guests, diners, owners):
   SearchView toolbar → camera.viewfinder button
     → .fullScreenCover { NavigationStack { QRScannerView() } }
-        DataScannerRepresentable (UIViewControllerRepresentable)
-          DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])])
-          Coordinator.dataScanner(_:didAdd:allItems:)
-            → Task { @MainActor in vm.handleScannedString(payload) }
-        QRScannerViewModel.handleScannedString(_:)
-          1. Validate scheme == "pourrice", host == "menu"
-          2. Extract restaurantId from pathComponents.dropFirst().first
-          3. RestaurantService.fetchRestaurant(id:)  ← GET /API/Restaurants/{id}, no auth
-          4. scannerState = .success(restaurant)
-        .navigationDestination(isPresented:) → MenuView(restaurantId:restaurantName:)
+
+  Shared logic layers (platform-neutral, all in Core/QR/):
+    QRPayloadDetector.detect(from:)        # validates scheme/host/path → QRDetection
+    QRFrameProcessor.extractPayloads(:)    # Core Image CIDetector → [String] payloads from image data
+    QRDataHandler.handlePayload(_:)        # composes detector + injected fetch closure
+
+  iOS path (physical device with camera):
+    DataScannerRepresentable (UIViewControllerRepresentable)
+      DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])])
+      Coordinator.dataScanner(_:didAdd:allItems:)
+        → Task { @MainActor in vm.handleScannedString(payload) }
+          → QRDataHandler.handlePayload(_:) → scannerState = .success(restaurant)
+    Torch toggle: vm.isTorchOn synced via AVCaptureDevice in updateUIViewController
+
+  macOS / simulator fallback path (QRScannerView.fallbackScannerView):
+    Option A – PhotosPicker: loadTransferable(Data) → vm.handleScannedImageData(_:)
+      → Task.detached { CoreImageQRFrameProcessor.extractPayloads } (off main actor)
+      → first valid payload → QRDataHandler.handlePayload(_:)
+    Option B – Manual text field: vm.handleScannedString(trimmedPayload)
+      → QRDataHandler.handlePayload(_:)
+
+  Both paths converge on QRScannerViewModel.processPayload(_:) then:
+    .navigationDestination(isPresented:) → MenuView(restaurantId:restaurantName:)
 
 OS-level deep link (app opened from pourrice:// URL):
   Info.plist CFBundleURLTypes → scheme "pourrice" registered
@@ -367,9 +384,12 @@ OS-level deep link (app opened from pourrice:// URL):
 ```
 
 Key files:
-- `Views/QR/QRScannerView.swift` — VisionKit scanner + DataScannerRepresentable + Coordinator
-- `Views/QR/RestaurantQRView.swift` — CoreImage QR generation + ShareLink
-- `ViewModels/QRScannerViewModel.swift` — ScannerState enum + URL validation + fetch
+- `Core/QR/QRPayloadDetector.swift` — `QRDetection` result type + `QRDetectionError` + `QRPayloadDetector.detect(from:)`
+- `Core/QR/QRFrameProcessor.swift` — `QRFrameProcessing` protocol + `CoreImageQRFrameProcessor` (CIDetector, iOS + macOS) + `QRFrameProcessingError`
+- `Core/QR/QRDataHandler.swift` — composes detector + injected `fetchRestaurant` closure; UI-independent
+- `Views/QR/QRScannerView.swift` — `FallbackReason` enum; iOS camera path (`#if canImport(VisionKit)`); macOS/simulator fallback (PhotosPicker + manual payload field); `DataScannerRepresentable` + `Coordinator`
+- `Views/QR/RestaurantQRView.swift` — CoreImage QR generation + ShareLink + `UIImage: @retroactive Transferable`
+- `ViewModels/QRScannerViewModel.swift` — `ScannerState` enum; `init(services:)`; `handleScannedString(_:)`, `handleScannedImageData(_:)`, `processPayload(_:)`; `isPaused` re-entrancy guard; `isTorchOn`
 - `Core/Utilities/Constants.swift` — `Constants.DeepLink.scheme` + `.menuHost`
 - `Pour Rice/Info.plist` — `pourrice` URL scheme + `NSCameraUsageDescription`
 - `Pour_RiceApp.swift` `RootView` — `onOpenURL` + `.onChange` + deep link sheet
@@ -559,17 +579,44 @@ Key files:
 | `Models/Review.swift` | ~260 |
 | `Core/Services/ReviewService.swift` | 126 |
 | `App/AppDelegate.swift` | 62 |
-| `Views/QR/QRScannerView.swift` | ~185 |
+| `Core/QR/QRPayloadDetector.swift` | ~100 |
+| `Core/QR/QRFrameProcessor.swift` | ~85 |
+| `Core/QR/QRDataHandler.swift` | ~55 |
+| `Views/QR/QRScannerView.swift` | ~395 |
 | `Views/QR/RestaurantQRView.swift` | 237 |
-| `ViewModels/QRScannerViewModel.swift` | ~85 |
+| `ViewModels/QRScannerViewModel.swift` | ~205 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~14,290** |
+| **Total (estimated)** | **~14,820** |
 
 ---
 
 ## Change Log
+
+### 2026-04-08 — Cross-Platform QR Scanning + macOS Fallback (PR #5)
+
+**New `Core/QR/` layer** — platform-neutral QR logic extracted from the ViewModel into three reusable types:
+- `QRPayloadDetector` — validates `pourrice://menu/{restaurantId}` deep-link format; produces `QRDetection` (restaurantId + canonicalURL) or throws `QRDetectionError` (.invalidURL / .invalidFormat); requires path to have exactly one non-empty segment
+- `QRFrameProcessor` (`QRFrameProcessing` protocol + `CoreImageQRFrameProcessor`) — uses `CIDetector(ofType: CIDetectorTypeQRCode)` to extract QR payload strings from raw image `Data`; throws `QRFrameProcessingError` (.invalidImageData / .detectorInitializationFailed / .noQRCodeDetected); available on iOS and macOS via `CoreImage`
+- `QRDataHandler` — thin coordinator struct; takes an injected `fetchRestaurant` closure (decouples from `Services`); `handlePayload(_:)` runs detector then fetch in sequence
+
+**`Views/QR/QRScannerView.swift`** — rewritten as a cross-platform scanner:
+- `FallbackReason` enum (`.unsupportedPlatform` / `.cameraUnavailable`) drives reason-specific heading and message
+- iOS camera path guarded by `#if canImport(VisionKit) && canImport(UIKit) && !os(macOS)` + `DataScannerViewController.isSupported/isAvailable` checks
+- Torch toggle button (`vm.isTorchOn`) in iOS camera overlay; synced to `AVCaptureDevice` in `updateUIViewController`
+- macOS/simulator `fallbackScannerView`: `PhotosPicker` (image import) + manual payload `TextField`; separate `isProcessingImage` / `isFetchingRestaurant` progress indicators
+- ViewModel created lazily inside `.task {}` so `@Environment` values are guaranteed before injection
+- `backgroundColour` helper returns `Color(nsColor: .windowBackgroundColor)` on macOS, `.systemBackground` on iOS
+
+**`ViewModels/QRScannerViewModel.swift`** — refactored:
+- `init(services: Services)` — instantiates `CoreImageQRFrameProcessor` and `QRDataHandler` with a `RestaurantService` fetch closure
+- `handleScannedImageData(_:)` — new method for macOS/simulator image path; decodes payloads via `Task.detached` (off main actor to avoid UI stalls), picks first valid Pour Rice payload, then calls `processPayload(_:)`
+- `processPayload(_:)` — shared re-entrancy-guarded flow (`isPaused` gate) used by both camera and fallback paths; differentiates `QRDetectionError` (format toast) from fetch errors (404 → not-found toast, other → service-unavailable toast)
+- `presentImageLoadError()` — new public method called by view when `PhotosPickerItem` data load fails
+- `isTorchOn: Bool` — observable property synced to device torch by `DataScannerRepresentable.updateUIViewController`
+
+**Last Updated**: 2026-04-08
 
 ### 2026-04-06 — Rating Field & Half-Star Detail Display
 
