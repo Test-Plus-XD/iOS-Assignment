@@ -2,38 +2,36 @@
 //  QRScannerView.swift
 //  Pour Rice
 //
-//  Full-screen QR code scanner presented from the Search tab toolbar.
-//  Validates pourrice://menu/{restaurantId} codes and navigates to MenuView on success.
+//  Cross-platform QR scanner entry view.
+//  - iOS: live camera scanning via VisionKit DataScannerViewController
+//  - macOS/simulator fallback: image import + manual payload testing
 //
 //  ============= FOR FLUTTER/ANDROID DEVELOPERS: =============
-//  Android equivalent: lib/pages/qr_scanner_page.dart using the mobile_scanner package.
-//
-//  iOS uses VisionKit's DataScannerViewController (built-in, no package needed):
-//    - UIViewControllerRepresentable bridges it into SwiftUI (= PlatformViewFactory in Flutter)
-//    - DataScannerViewControllerDelegate = callback listener (= BarcodeCapture callback)
-//    - Coordinator pattern = the Listener/Observer class in Android
-//
-//  iOS advantage: DataScannerViewController provides built-in:
-//    - Scanning guidance text ("Point camera at a QR code")
-//    - Highlight rectangles around detected codes
-//    - Pinch-to-zoom
-//  The Android app implements these manually via custom painter + MobileScannerController.
+//  Think of this as one screen with two scanner providers:
+//    1) camera provider (mobile native API)
+//    2) file/manual provider (desktop + simulator fallback)
+//  Both providers call the same ViewModel methods, so business logic stays shared.
 //  =============================================================
 //
 
 import SwiftUI
-import VisionKit       // DataScannerViewController — Apple's high-level barcode scanner (iOS 16+)
-import AVFoundation    // AVCaptureDevice — needed to control the torch separately
-internal import Vision
+import PhotosUI
+
+#if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
+import VisionKit
+import AVFoundation
+#endif
 
 // MARK: - QR Scanner View
 
-/// Full-screen QR scanner presented as a .fullScreenCover from SearchView.
-///
-/// This view MUST be wrapped in a NavigationStack at the call site:
-///   .fullScreenCover { NavigationStack { QRScannerView() } }
-/// The NavigationStack is required so .navigationDestination works for post-scan navigation.
 struct QRScannerView: View {
+    /// Explains why live camera scanning is not being shown.
+    private enum FallbackReason {
+        /// Camera scanner cannot run on this platform/hardware (e.g. macOS, simulator).
+        case unsupportedPlatform
+        /// Camera scanner is supported, but currently unavailable (usually permissions).
+        case cameraUnavailable
+    }
 
     // MARK: - Environment
 
@@ -42,27 +40,29 @@ struct QRScannerView: View {
 
     // MARK: - State
 
-    /// ViewModel is created lazily inside .task so services are available at init time.
-    /// (ViewModels that need @Environment values cannot be created in the struct initialiser.)
     @State private var viewModel: QRScannerViewModel?
+    @State private var selectedQRImageItem: PhotosPickerItem?
+    @State private var manualPayload = ""
+    /// Tracks asynchronous image decoding/extraction only.
+    @State private var isProcessingImage = false
+    /// Tracks restaurant lookup after payload extraction succeeds.
+    @State private var isFetchingRestaurant = false
 
     // MARK: - Body
 
     var body: some View {
         Group {
             if let vm = viewModel {
-                // ViewModel ready — render the scanner or unsupported fallback
+                // ViewModel is ready, render platform-appropriate scanner UI.
                 scannerBody(vm: vm)
             } else {
-                // Brief black flash while the .task initialises the ViewModel
+                // Temporary placeholder while dependencies are injected from environment.
                 Color.black.ignoresSafeArea()
             }
         }
         .task {
-            // Initialise ViewModel once, injecting services from the environment.
-            // Using .task (not .onAppear) ensures the async context is available
-            // and the task is cancelled automatically when the view disappears.
             if viewModel == nil {
+                // Delay creation until .task so @Environment values are guaranteed available.
                 viewModel = QRScannerViewModel(services: services)
             }
         }
@@ -70,108 +70,24 @@ struct QRScannerView: View {
 
     // MARK: - Scanner Body
 
-    /// Main scanner UI — guards DataScannerViewController availability first.
     @ViewBuilder
     private func scannerBody(vm: QRScannerViewModel) -> some View {
-        if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
-            // ---------------------------------------------------------------
-            // SUPPORTED PATH — physical device with a camera
-            // DataScannerViewController.isSupported  = hardware + OS check (iOS 16+)
-            // DataScannerViewController.isAvailable  = camera permission granted
-            //   (will prompt the user if not yet granted, then become true)
-            // ---------------------------------------------------------------
-            ZStack {
-                // ── Camera layer ──────────────────────────────────────────
-                // DataScannerRepresentable fills the full screen behind all overlays.
-                // Its Coordinator notifies the ViewModel when a QR code is detected.
-                DataScannerRepresentable(viewModel: vm)
-                    .ignoresSafeArea()
-
-                // ── Overlay UI ────────────────────────────────────────────
-                // Floats over the camera feed:
-                //   • Top:    dismiss button (left) + torch toggle (right)
-                //   • Middle: loading spinner while fetching restaurant
-                //   • Bottom: instruction label (glass capsule)
-                VStack {
-
-                    // Top controls bar
-                    HStack {
-                        // Dismiss button — exits the full-screen scanner
-                        Button {
-                            dismiss()
-                        } label: {
-                            // xmark.circle.fill provides a clear tap target over any background
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                                .foregroundStyle(.white)
-                                .shadow(color: .black.opacity(0.4), radius: 4)
-                        }
-                        .accessibilityLabel(Text("qr_scanner_dismiss"))
-
-                        Spacer()
-
-                        // Torch toggle — illuminates low-light menus on physical tables
-                        // The actual torch state is applied in DataScannerRepresentable.updateUIViewController
-                        Button {
-                            vm.isTorchOn.toggle()
-                        } label: {
-                            Image(systemName: vm.isTorchOn
-                                  ? "flashlight.on.fill"   // Filled = torch is on
-                                  : "flashlight.off.fill") // Outlined = torch is off
-                                .font(.title)
-                                .foregroundStyle(.white)
-                                .shadow(color: .black.opacity(0.4), radius: 4)
-                        }
-                        .accessibilityLabel(Text("qr_scanner_torch"))
-                    }
-                    .padding(.horizontal, Constants.UI.spacingMedium)
-                    .padding(.top, Constants.UI.spacingMedium)
-
-                    Spacer()
-
-                    // Loading spinner — shown while the API call is in flight
-                    // Displayed over the camera feed so the user knows a scan was detected
-                    if case .loading = vm.scannerState {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                            .tint(.white)
-                            .padding(Constants.UI.spacingLarge)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
-                            .padding(.bottom, Constants.UI.spacingMedium)
-                    }
-
-                    // Bottom instruction label (Liquid Glass–style capsule)
-                    Text("qr_scanner_instruction")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, Constants.UI.spacingLarge)
-                        .padding(.vertical, Constants.UI.spacingSmall + 2)
-                        // ultraThinMaterial gives the frosted-glass look consistent with iOS 26 design
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .padding(.bottom, Constants.UI.spacingExtraLarge)
-                }
-            }
-            // ── Post-scan navigation ─────────────────────────────────────
-            // When scannerState becomes .success(restaurant), push MenuView
-            // onto the NavigationStack that wraps this view (created in SearchView's fullScreenCover).
-            //
-            // ANDROID EQUIVALENT:
-            //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RestaurantMenuPage(...)))
+        // Shared wrapper applies navigation + toast behaviour regardless of scanner source
+        // (camera, imported image, or manual payload text field).
+        scannerContent(vm: vm)
+            .navigationTitle("qr_scanner_title")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: Binding(
-                // isPresented == true when state is .success (regardless of associated value)
                 get: {
+                    // Present destination whenever scanner state transitions to success.
                     if case .success = vm.scannerState { return true }
                     return false
                 },
-                // When the user pops back from MenuView (isPresented set to false),
-                // reset the ViewModel so they can scan another code
                 set: { presented in
+                    // When destination is dismissed, reset scanner so users can run another test.
                     if !presented { vm.reset() }
                 }
             )) {
-                // Destination: only rendered when state is actually .success
-                // Extract the associated Restaurant value safely
                 if case .success(let restaurant) = vm.scannerState {
                     MenuView(
                         restaurantId: restaurant.id,
@@ -179,7 +95,6 @@ struct QRScannerView: View {
                     )
                 }
             }
-            // Toast for invalid QR or restaurant-not-found errors
             .toast(
                 message: vm.toastMessage,
                 style: vm.toastStyle,
@@ -188,185 +103,290 @@ struct QRScannerView: View {
                     set: { vm.showToast = $0 }
                 )
             )
+            .onChange(of: vm.scannerState) { _, newState in
+                switch newState {
+                case .loading:
+                    // Once lookup starts, stop image-analysis indicator.
+                    isProcessingImage = false
+                    isFetchingRestaurant = true
+                case .idle, .success, .error:
+                    isFetchingRestaurant = false
+                }
+            }
+    }
 
+    @ViewBuilder
+    private func scannerContent(vm: QRScannerViewModel) -> some View {
+        #if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
+        if DataScannerViewController.isSupported {
+            if DataScannerViewController.isAvailable {
+                // Primary path for physical iPhone/iPad devices with camera access.
+                iosCameraScannerView(vm: vm)
+            } else {
+                // Supported device, but camera access/session is currently unavailable.
+                fallbackScannerView(vm: vm, reason: .cameraUnavailable)
+            }
         } else {
-            // ---------------------------------------------------------------
-            // UNSUPPORTED PATH — simulator or device without camera
-            // DataScannerViewController.isSupported is false on simulators.
-            // Presenting a meaningful fallback prevents a blank/crashed screen.
-            // ---------------------------------------------------------------
-            unsupportedView
+            // Unsupported runtime (commonly simulator).
+            fallbackScannerView(vm: vm, reason: .unsupportedPlatform)
+        }
+        #else
+        // Native macOS build path always uses fallback scanner.
+        fallbackScannerView(vm: vm, reason: .unsupportedPlatform)
+        #endif
+    }
+
+    // MARK: - iOS Camera Scanner
+
+    #if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
+    private func iosCameraScannerView(vm: QRScannerViewModel) -> some View {
+        ZStack {
+            // Live camera feed + QR detection bridge.
+            DataScannerRepresentable(viewModel: vm)
+                .ignoresSafeArea()
+
+            VStack {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.4), radius: 4)
+                    }
+                    .accessibilityLabel(Text("qr_scanner_dismiss"))
+
+                    Spacer()
+
+                    Button {
+                        // Toggle is reflected in updateUIViewController where torch hardware is set.
+                        vm.isTorchOn.toggle()
+                    } label: {
+                        Image(systemName: vm.isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.4), radius: 4)
+                    }
+                    .accessibilityLabel(Text("qr_scanner_torch"))
+                }
+                .padding(.horizontal, Constants.UI.spacingMedium)
+                .padding(.top, Constants.UI.spacingMedium)
+
+                Spacer()
+
+                if case .loading = vm.scannerState {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(.white)
+                        .padding(Constants.UI.spacingLarge)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
+                        .padding(.bottom, Constants.UI.spacingMedium)
+                }
+
+                Text("qr_scanner_instruction")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, Constants.UI.spacingLarge)
+                    .padding(.vertical, Constants.UI.spacingSmall + 2)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.bottom, Constants.UI.spacingExtraLarge)
+            }
+        }
+    }
+    #endif
+
+    // MARK: - Fallback Scanner (macOS / Simulator)
+
+    /// Desktop/simulator QR test harness.
+    ///
+    /// This allows full feature validation without a physical iPhone by:
+    /// 1) importing a QR image file, or
+    /// 2) pasting a deep-link payload directly.
+    private func fallbackScannerView(vm: QRScannerViewModel, reason: FallbackReason) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Constants.UI.spacingLarge) {
+                VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
+                    Text(fallbackTitle(for: reason))
+                        .font(.title3)
+                        .fontWeight(.semibold)
+
+                    Text(fallbackMessage(for: reason))
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
+                    Text("qr_scanner_fallback_import_step")
+                        .font(.headline)
+
+                    PhotosPicker(selection: $selectedQRImageItem, matching: .images) {
+                        Label("qr_scanner_fallback_choose_image", systemImage: "photo")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(vm.isPaused)
+                    .onChange(of: selectedQRImageItem) { _, newItem in
+                        guard let newItem else { return }
+                        guard !vm.isPaused else { return }
+                        Task {
+                            await processImportedImage(item: newItem, vm: vm)
+                        }
+                    }
+
+                    if isProcessingImage {
+                        // British English wording kept intentionally per project request.
+                        ProgressView("qr_scanner_fallback_analysing")
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
+                    Text("qr_scanner_fallback_paste_step")
+                        .font(.headline)
+
+                    TextField("qr_scanner_fallback_payload_placeholder", text: $manualPayload, axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button {
+                        guard !vm.isPaused else { return }
+                        Task {
+                            // Manual payload testing still runs through ViewModel validation/fetch flow.
+                            await vm.handleScannedString(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines))
+                        }
+                    } label: {
+                        Label("qr_scanner_fallback_validate_payload", systemImage: "qrcode.viewfinder")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isPaused)
+                }
+
+                if isFetchingRestaurant {
+                    // Shown after extraction completes and restaurant fetch is in-flight.
+                    ProgressView("qr_scanner_fallback_loading_restaurant")
+                }
+
+                Button("qr_scanner_dismiss_button") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(Constants.UI.spacingLarge)
+        }
+        .background(backgroundColour)
+    }
+
+    // MARK: - Private Helpers
+
+    /// Loads selected image data and forwards it into shared frame processing logic.
+    private func processImportedImage(item: PhotosPickerItem, vm: QRScannerViewModel) async {
+        guard !vm.isPaused else { return }
+        isProcessingImage = true
+
+        guard let data = try? await item.loadTransferable(type: Data.self) else {
+            isProcessingImage = false
+            // Defer toast state mutation to the ViewModel so presentation state
+            // remains centralised in one layer.
+            vm.presentImageLoadError()
+            return
+        }
+
+        // Forward raw bytes into reusable frame-processing/data-handling pipeline.
+        await vm.handleScannedImageData(data)
+        isProcessingImage = false
+    }
+
+    /// Platform-specific semantic background colour.
+    private var backgroundColour: Color {
+        #if os(macOS)
+        return Color(nsColor: .windowBackgroundColor)
+        #else
+        return Color(.systemBackground)
+        #endif
+    }
+
+    /// Reason-specific heading so users understand why live camera scanning is absent.
+    private func fallbackTitle(for reason: FallbackReason) -> String {
+        switch reason {
+        case .unsupportedPlatform:
+            return String(localized: "qr_scanner_fallback_unsupported_title")
+        case .cameraUnavailable:
+            return String(localized: "qr_scanner_fallback_permission_title")
         }
     }
 
-    // MARK: - Unsupported Device View
-
-    /// Shown on the iOS Simulator (no camera) or when camera permission is permanently denied.
-    private var unsupportedView: some View {
-        VStack(spacing: Constants.UI.spacingMedium) {
-            // Large camera icon to make the state visually clear
-            Image(systemName: "camera.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.secondary)
-
-            Text("qr_scanner_unavailable")
-                .font(.title2)
-                .fontWeight(.semibold)
-
-            Text("qr_scanner_unavailable_message")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-
-            Button("qr_scanner_dismiss_button") {
-                dismiss()
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, Constants.UI.spacingSmall)
+    /// Reason-specific guidance for unsupported platform vs permission issues.
+    private func fallbackMessage(for reason: FallbackReason) -> String {
+        switch reason {
+        case .unsupportedPlatform:
+            return String(localized: "qr_scanner_fallback_unsupported_message")
+        case .cameraUnavailable:
+            return String(localized: "qr_scanner_fallback_permission_message")
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .navigationTitle("qr_scanner_title")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
+#if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
 // MARK: - DataScanner Representable
 
-/// Bridges VisionKit's UIKit-based DataScannerViewController into SwiftUI.
-///
-/// ============= FOR FLUTTER/ANDROID DEVELOPERS: =============
-/// UIViewControllerRepresentable = Flutter's PlatformViewFactory / AndroidView widget.
-///
-/// Three required methods mirror the platform view lifecycle:
-///   makeUIViewController   = createPlatformView() — create and configure
-///   updateUIViewController = update in response to parent state changes
-///   makeCoordinator        = create the delegate/listener object
-///
-/// The Coordinator holds delegate callbacks (= Listener in Android).
-/// =============================================================
 private struct DataScannerRepresentable: UIViewControllerRepresentable {
 
-    // The ViewModel that receives scan results — passed in from QRScannerView
     let viewModel: QRScannerViewModel
 
-    // MARK: - UIViewControllerRepresentable
-
-    /// Creates and starts the DataScannerViewController.
-    /// Called once when the SwiftUI view first appears.
     func makeUIViewController(context: Context) -> DataScannerViewController {
+        // DataScanner configured strictly for QR symbols to minimise false positives
+        // and keep parity with Android scanner expectations.
         let scanner = DataScannerViewController(
-            // Only recognise QR codes — ignore barcodes, Data Matrix, etc.
-            // Matches Android: formats: [BarcodeFormat.qrCode]
             recognizedDataTypes: [.barcode(symbologies: [.qr])],
-
-            // .balanced is the default; provides a good mix of accuracy and performance.
-            // Use .accurate only if missing scans becomes an issue.
             qualityLevel: .balanced,
-
-            // Stop after detecting the first QR code.
-            // Multiple-item recognition would require extra deduplication logic.
             recognizesMultipleItems: false,
-
-            // Disable 120fps tracking — unnecessary for static QR codes on tables
             isHighFrameRateTrackingEnabled: false,
-
-            // Pinch-to-zoom lets users focus on small or distant QR codes
             isPinchToZoomEnabled: true,
-
-            // Apple's built-in scanning instruction text shown when no code is in frame
             isGuidanceEnabled: true,
-
-            // Blue highlight rectangle drawn over a detected QR code before it is processed
             isHighlightingEnabled: true
         )
 
-        // Wire up the delegate — Coordinator receives barcode events
         scanner.delegate = context.coordinator
-
-        // Begin capturing immediately.
-        // try? suppresses the AVFoundation error if the session is already running
-        // (can happen on fast device orientation changes)
+        // Start capture immediately so the scanner is interactive on presentation.
         try? scanner.startScanning()
 
         return scanner
     }
 
-    /// Called whenever SwiftUI re-renders this representable due to state changes.
-    /// Used here to sync the ViewModel's torch toggle with the camera hardware.
     func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
-        // Torch control via AVCaptureDevice.
-        //
-        // DataScannerViewController does NOT expose a torch API directly,
-        // so we access the back camera device and set torchMode manually.
-        //
-        // try? silences errors on devices without a torch (rare) or when
-        // another app holds the camera session.
         if let device = AVCaptureDevice.default(for: .video), device.hasTorch {
+            // DataScanner itself has no direct torch API, so we sync against AVCaptureDevice.
             try? device.lockForConfiguration()
             device.torchMode = viewModel.isTorchOn ? .on : .off
             device.unlockForConfiguration()
         }
     }
 
-    /// Creates the Coordinator (delegate) object.
-    /// Called once by SwiftUI before makeUIViewController.
     func makeCoordinator() -> Coordinator {
         Coordinator(viewModel: viewModel)
     }
 
-    // MARK: - Coordinator
-
-    /// Receives DataScannerViewController delegate callbacks and forwards them to the ViewModel.
-    ///
-    /// The Coordinator inherits from NSObject because UIKit delegates require Objective-C
-    /// compatibility. This is boilerplate in UIViewControllerRepresentable.
-    ///
-    /// FLUTTER EQUIVALENT:
-    /// The anonymous BarcodeCapture callback in MobileScannerController(onDetect: ...)
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
-
-        // Weak reference not needed — DataScannerViewController does not retain its delegate
-        // (delegates in UIKit are unowned/weak by convention, checked in practice here
-        // because QRScannerViewModel is @MainActor and stays alive as long as the view does)
         let viewModel: QRScannerViewModel
 
         init(viewModel: QRScannerViewModel) {
             self.viewModel = viewModel
         }
 
-        /// Called by DataScannerViewController when new barcodes enter the camera frame.
-        ///
-        /// - Parameters:
-        ///   - dataScanner: The controller that detected the items
-        ///   - addedItems: Newly detected items (we only care about the first one)
-        ///   - allItems: All currently tracked items in frame
         func dataScanner(
             _ dataScanner: DataScannerViewController,
             didAdd addedItems: [RecognizedItem],
             allItems: [RecognizedItem]
         ) {
-            // We configured recognizesMultipleItems: false, so addedItems has at most 1 element.
-            // Guard against an empty array just in case.
+            // We only care about the first newly detected QR payload for this flow.
             guard let item = addedItems.first,
-                  case .barcode(let barcode) = item,           // Ensure it is a barcode (not text)
-                  let payload = barcode.payloadStringValue      // Extract the raw string payload
+                  case .barcode(let barcode) = item,
+                  let payload = barcode.payloadStringValue
             else { return }
 
-            // Bridge the UIKit delegate callback to the @MainActor ViewModel.
-            //
-            // WHY Task { @MainActor in }:
-            // DataScannerViewControllerDelegate methods are called on the main thread by VisionKit,
-            // but Swift 6 strict concurrency still requires an explicit actor hop when calling
-            // @MainActor methods from a non-isolated context (the Coordinator class).
-            // The Task is cheap — it resolves synchronously on the main run loop.
-            //
-            // FLUTTER EQUIVALENT:
-            // setState(() { ... }) or ChangeNotifier.notifyListeners() from BarcodeCapture callback
             Task { @MainActor in
+                // Actor hop keeps Swift 6 strict-concurrency rules satisfied.
                 await viewModel.handleScannedString(payload)
             }
         }
     }
 }
+#endif

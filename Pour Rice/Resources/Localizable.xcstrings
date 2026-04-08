@@ -5737,6 +5737,40 @@
         }
       }
     },
+    "qr_error_invalid_image" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected image is invalid. Please choose another image."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選圖片無效，請選擇其他圖片。"
+          }
+        }
+      }
+    },
+    "qr_error_no_qr_code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No QR code was found in the selected image."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選圖片中找不到二維碼。"
+          }
+        }
+      }
+    },
     "qr_error_restaurant_not_found" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5750,6 +5784,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "找不到餐廳，請再試一次。"
+          }
+        }
+      }
+    },
+    "qr_error_service_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Service is temporarily unavailable. Please try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服務暫時不可用，請稍後再試。"
+          }
+        }
+      }
+    },
+    "qr_error_image_load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to load the selected image. Please try another file."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入所選圖片，請嘗試其他檔案。"
           }
         }
       }
@@ -5886,6 +5954,193 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "二維碼掃描需要帶有相機的實體裝置。"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_unsupported_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera scanner unavailable on this device."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此裝置無法使用相機掃描。"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_unsupported_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a QR image or paste a payload to test the same QR logic flow on macOS or simulator."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你可使用二維碼圖片或貼上內容，在 macOS 或模擬器測試相同的二維碼流程。"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_permission_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera access is currently unavailable."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前無法使用相機權限。"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_permission_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Camera access for Pour Rice in Settings, then reopen this screen. You can still test via QR image import or pasted payload below."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在「設定」中為 Pour Rice 啟用相機權限，然後重新開啟此畫面。你仍可使用下方的二維碼圖片匯入或貼上內容測試。"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_import_step" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1) Import QR image"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1）匯入二維碼圖片"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_choose_image" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose QR image"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇二維碼圖片"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_analysing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysing QR image…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在分析二維碼圖片…"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_paste_step" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2) Paste QR payload"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2）貼上二維碼內容"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_payload_placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pourrice://menu/{restaurantId}"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pourrice://menu/{restaurantId}"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_validate_payload" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Validate payload"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "驗證內容"
+          }
+        }
+      }
+    },
+    "qr_scanner_fallback_loading_restaurant" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading restaurant…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在載入餐廳…"
           }
         }
       }
