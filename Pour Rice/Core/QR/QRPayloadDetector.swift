@@ -76,7 +76,14 @@ struct QRPayloadDetector {
             throw QRDetectionError.invalidFormat
         }
 
-        guard let restaurantId = url.pathComponents.dropFirst().first,
+        let pathSegments = url.pathComponents.dropFirst()
+
+        // Require exactly one non-empty segment:
+        //   ✅ pourrice://menu/{restaurantId}
+        //   ❌ pourrice://menu/{restaurantId}/extra
+        //   ❌ pourrice://menu/
+        guard pathSegments.count == 1,
+              let restaurantId = pathSegments.first,
               !restaurantId.isEmpty
         else {
             throw QRDetectionError.invalidFormat

@@ -43,8 +43,10 @@ struct QRScannerView: View {
     @State private var viewModel: QRScannerViewModel?
     @State private var selectedQRImageItem: PhotosPickerItem?
     @State private var manualPayload = ""
-    /// Tracks asynchronous image decoding/extraction so fallback UI can show progress.
+    /// Tracks asynchronous image decoding/extraction only.
     @State private var isProcessingImage = false
+    /// Tracks restaurant lookup after payload extraction succeeds.
+    @State private var isFetchingRestaurant = false
 
     // MARK: - Body
 
@@ -101,6 +103,16 @@ struct QRScannerView: View {
                     set: { vm.showToast = $0 }
                 )
             )
+            .onChange(of: vm.scannerState) { _, newState in
+                switch newState {
+                case .loading:
+                    // Once lookup starts, stop image-analysis indicator.
+                    isProcessingImage = false
+                    isFetchingRestaurant = true
+                case .idle, .success, .error:
+                    isFetchingRestaurant = false
+                }
+            }
     }
 
     @ViewBuilder
@@ -212,8 +224,10 @@ struct QRScannerView: View {
                         Label("qr_scanner_fallback_choose_image", systemImage: "photo")
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(vm.isPaused)
                     .onChange(of: selectedQRImageItem) { _, newItem in
                         guard let newItem else { return }
+                        guard !vm.isPaused else { return }
                         Task {
                             await processImportedImage(item: newItem, vm: vm)
                         }
@@ -233,6 +247,7 @@ struct QRScannerView: View {
                         .textFieldStyle(.roundedBorder)
 
                     Button {
+                        guard !vm.isPaused else { return }
                         Task {
                             // Manual payload testing still runs through ViewModel validation/fetch flow.
                             await vm.handleScannedString(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -241,11 +256,11 @@ struct QRScannerView: View {
                         Label("qr_scanner_fallback_validate_payload", systemImage: "qrcode.viewfinder")
                     }
                     .buttonStyle(.bordered)
-                    .disabled(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isPaused)
                 }
 
-                if case .loading = vm.scannerState {
-                    // Shared loading indicator while RestaurantService fetches matched restaurant.
+                if isFetchingRestaurant {
+                    // Shown after extraction completes and restaurant fetch is in-flight.
                     ProgressView("qr_scanner_fallback_loading_restaurant")
                 }
 
@@ -263,10 +278,11 @@ struct QRScannerView: View {
 
     /// Loads selected image data and forwards it into shared frame processing logic.
     private func processImportedImage(item: PhotosPickerItem, vm: QRScannerViewModel) async {
+        guard !vm.isPaused else { return }
         isProcessingImage = true
-        defer { isProcessingImage = false }
 
         guard let data = try? await item.loadTransferable(type: Data.self) else {
+            isProcessingImage = false
             // Defer toast state mutation to the ViewModel so presentation state
             // remains centralised in one layer.
             vm.presentImageLoadError()
@@ -275,6 +291,7 @@ struct QRScannerView: View {
 
         // Forward raw bytes into reusable frame-processing/data-handling pipeline.
         await vm.handleScannedImageData(data)
+        isProcessingImage = false
     }
 
     /// Platform-specific semantic background colour.
