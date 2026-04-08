@@ -221,8 +221,20 @@ GeminiChatView(restaurant: Restaurant?)
 
 GeminiService
   ├── conversationHistory: [GeminiHistoryEntry]   # maintained across turns
-  ├── chat(message:) → POST /API/Gemini/chat       # no auth required
-  └── generateRestaurantDescription(...)           # POST /API/Gemini/restaurant-description
+  ├── chat(message:restaurantId:)                 # routes by restaurantId presence:
+  │     ├── restaurantId != nil → POST /API/Gemini/restaurant-description (chat mode)
+  │     │     Server fetches restaurant info + menu from Firestore, injects as [CONTEXT: ... END OF CONTEXT]
+  │     └── restaurantId == nil → POST /API/Gemini/chat (general chat)
+  └── generateRestaurantDescription(...)           # POST /API/Gemini/restaurant-description (description mode)
+
+GeminiViewModel.sendMessage()
+  └── service.chat(message: text, restaurantId: restaurantContext?.id)
+        # No manual context building — server handles Firestore lookup automatically
+
+POST /API/Gemini/restaurant-description supports two modes (2026-04-04):
+  - Description mode: { restaurantId, name, district, keywords, language } → { description, restaurant, menu }
+  - Chat mode: { restaurantId, message, history?, model? } → { result, model, history, ... }
+    Chat mode is detected server-side by the presence of the `message` field.
 
 AI responses rendered with AttributedString(markdown:) for basic markdown support.
 ```
@@ -303,7 +315,7 @@ Key behaviours:
 - `TransportMode` is a local `Hashable` enum bridging `MKDirectionsTransportType` (which is not `Hashable`)
 - Re-fetches on `.onChange(of: viewModel.selectedMode)`
 - Transit routing may be unavailable for some HK locations — error shows inline, not a crash
-- `MKPlacemark` used for compatibility; iOS 26 deprecation warnings are informational only (API still functional)
+- `MKMapItem(location:address:)` used for route source/destination; requires `import Contacts` for `CNPostalAddress` (passed as `nil`)
 
 Key files:
 - `Views/Search/SearchMapView.swift` — `SearchMapView` + private `SearchMapCalloutCard`
@@ -451,7 +463,7 @@ Key files:
 - **Liquid Glass**: `.glassEffect(_:in:)` for glass styling; `.glassEffectID(_:in:)` for morphing transitions (requires `@Namespace`)
 - **ShapeStyle**: Use `.tint` for standalone accent-coloured styles; use `Color.accentColor` in ternaries with `.primary`
 - **AsyncImageView**: `ContentMode` is qualified as `SwiftUI.ContentMode` to avoid ambiguity with UIKit
-- **MapKit**: `Map(initialPosition:)` used for static embedded maps; `Map(position:selection:)` for interactive maps with pin selection; `MKPlacemark` raises iOS 26 deprecation warnings (use `init(location:address:)` in a future pass when the new `MKMapItem` APIs are stable)
+- **MapKit**: `Map(initialPosition:)` used for static embedded maps; `Map(position:selection:)` for interactive maps with pin selection; `MKMapItem` uses `init(location:address:)` (iOS 26 — replaces deprecated `init(placemark:)`)
 
 ### Guest Mode
 - Users can browse without signing in by tapping "Continue as Guest" on `LoginView`
@@ -599,3 +611,12 @@ Key files:
 - `Models/Review.swift` — `ReviewRequest` gained custom `encode(to:)` with explicit `CodingKeys` (`case imageUrl`) mapping `photoURLs.first → "imageUrl"` API key; previously Swift's synthesised encoder wrote the backend-unrecognised `"photoURLs"` array key
 - `ViewModels/RestaurantViewModel.swift` — `submitReview` extended with `imageURL: String? = nil`; builds `ReviewRequest(photoURLs: imageURL.map { [$0] })`
 - `Views/Restaurant/RestaurantView.swift` (`ReviewSubmissionView`) — `PhotosPicker` section (`import PhotosUI`) with image preview + remove button; `loadSelectedPhoto(_:)` decodes JPEG `Data`; `submit()` uploads to `Reviews` folder via `ImageUploadService.uploadImage` then passes URL to `viewModel.submitReview`
+
+### 2026-04-07 — Bug Fixes (APIEndpoint Exhaustiveness, MKMapItem Deprecations)
+
+**`Core/Network/APIEndpoint.swift`**:
+- Added `.fetchAdvertisements` to the `method` switch's GET case — was missing, causing a "switch must be exhaustive" compile error
+
+**`Views/Restaurant/DirectionsView.swift`**:
+- Replaced all `MKMapItem(placemark: MKPlacemark(coordinate:))` calls with `MKMapItem(location:address:)` (iOS 26 API) — removes 6 deprecation warnings
+- Added `import Contacts` required for `CNPostalAddress` parameter type (passed as `nil`)

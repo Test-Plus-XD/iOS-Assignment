@@ -30,21 +30,41 @@ final class GeminiService {
 
     /// Sends a message in a multi-turn conversation.
     /// Automatically manages conversation history.
-    /// - Parameter message: The user's message text
+    /// - Parameters:
+    ///   - message: The user's message text
+    ///   - restaurantId: When non-nil, routes to the restaurant-description endpoint (chat mode).
+    ///     The server fetches restaurant info + menu from Firestore and injects them as context automatically.
+    ///     When nil, uses the general `/chat` endpoint.
     /// - Returns: The AI's response text
-    func chat(message: String) async throws -> String {
+    func chat(message: String, restaurantId: String? = nil) async throws -> String {
         print("🤖 Gemini chat: \(message.prefix(50))...")
 
-        let request = GeminiChatRequest(
-            message: message,
-            history: conversationHistory.isEmpty ? nil : conversationHistory
-        )
+        let response: GeminiChatResponse
 
-        let response = try await apiClient.request(
-            .geminiChat(request),
-            responseType: GeminiChatResponse.self,
-            callerService: "GeminiService"
-        )
+        if let restaurantId {
+            // Restaurant-specific chat: server fetches context from Firestore automatically
+            let request = GeminiRestaurantChatRequest(
+                restaurantId: restaurantId,
+                message: message,
+                history: conversationHistory.isEmpty ? nil : conversationHistory
+            )
+            response = try await apiClient.request(
+                .geminiRestaurantChat(request),
+                responseType: GeminiChatResponse.self,
+                callerService: "GeminiService"
+            )
+        } else {
+            // General chat: no restaurant context
+            let request = GeminiChatRequest(
+                message: message,
+                history: conversationHistory.isEmpty ? nil : conversationHistory
+            )
+            response = try await apiClient.request(
+                .geminiChat(request),
+                responseType: GeminiChatResponse.self,
+                callerService: "GeminiService"
+            )
+        }
 
         // Update history from API response (includes the latest turn)
         if let updatedHistory = response.history {

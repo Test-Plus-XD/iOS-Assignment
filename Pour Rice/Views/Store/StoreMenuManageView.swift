@@ -155,7 +155,7 @@ struct StoreMenuManageView: View {
                     if !selectedIds.isEmpty { showDeleteConfirm = true }
                 } label: {
                     Text("store_menu_delete_selected")
-                        .foregroundStyle(selectedIds.isEmpty ? .secondary : .red)
+                        .foregroundStyle(selectedIds.isEmpty ? Color.secondary : Color.red)
                 }
                 .disabled(selectedIds.isEmpty)
             }
@@ -198,7 +198,7 @@ struct StoreMenuManageView: View {
                 Image(systemName: selectedIds.contains(item.id)
                       ? "checkmark.circle.fill"
                       : "circle")
-                    .foregroundStyle(selectedIds.contains(item.id) ? .tint : .secondary)
+                    .foregroundStyle(selectedIds.contains(item.id) ? Color.accentColor : Color.secondary)
                     .font(.title3)
                     .animation(.spring(duration: 0.2), value: selectedIds.contains(item.id))
             }
@@ -423,3 +423,4 @@ private struct EditMenuItemSheet: View {
         dismiss()
     }
 }
+

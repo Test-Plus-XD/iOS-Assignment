@@ -197,6 +197,20 @@ struct ReviewRequest: Codable {
         self.dateTime     = dateTime
         self.photoURLs    = photoURLs
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.restaurantId = try container.decode(String.self, forKey: .restaurantId)
+        self.rating       = try container.decode(Int.self,    forKey: .rating)
+        self.comment      = try container.decode(String.self, forKey: .comment)
+        self.dateTime     = try container.decode(Date.self,   forKey: .dateTime)
+        // The API returns a single optional imageUrl; map it to photoURLs array
+        if let imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl) {
+            self.photoURLs = [imageUrl]
+        } else {
+            self.photoURLs = nil
+        }
+    }
 
     // MARK: - Custom Encoding
 
@@ -257,3 +271,4 @@ struct ReviewListResponse: Codable {
         case totalCount = "count"   // API key: "count"
     }
 }
+

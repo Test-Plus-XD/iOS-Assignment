@@ -99,21 +99,8 @@ final class GeminiViewModel {
         error = nil
 
         do {
-            // Build context-aware prompt if we have restaurant context
-            let prompt: String
-            if let restaurant = restaurantContext {
-                prompt = """
-                [Context: The user is asking about "\(restaurant.name.en)" restaurant \
-                in \(restaurant.description.en). \
-                Please answer in the context of this restaurant.]
-
-                \(text)
-                """
-            } else {
-                prompt = text
-            }
-
-            let response = try await service.chat(message: prompt)
+            // Pass restaurantId when available — the server fetches context from Firestore automatically
+            let response = try await service.chat(message: text, restaurantId: restaurantContext?.id)
             messages.append(GeminiMessage(role: .model, content: response))
         } catch {
             self.error = error

@@ -52,11 +52,9 @@ struct CreateBookingView: View {
 
                 // Number of guests
                 Section("booking_guests_section") {
-                    Stepper(
-                        "\(viewModel.numberOfGuests) \("booking_guests_label")",
-                        value: $viewModel.numberOfGuests,
-                        in: 1...20
-                    )
+                    Stepper(value: $viewModel.numberOfGuests, in: 1...20) {
+                        Text("\(viewModel.numberOfGuests) \(Text("booking_guests_label"))")
+                    }
                 }
 
                 // Special requests

@@ -74,7 +74,7 @@ struct LoadingView: View {
             // Only show message if one was provided
             // .map { } transforms optional into view if non-nil
             if let message = message {
-                Text(message)
+                Text(LocalizedStringKey(message))
                     .font(.subheadline)         // Smaller than body text, suitable for status
                     .foregroundStyle(.secondary) // Secondary colour (grey)
                     .multilineTextAlignment(.center) // Centre multi-line text

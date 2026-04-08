@@ -116,34 +116,20 @@ final class RestaurantViewModel {
         errorMessage = nil
 
         do {
-            if restaurant == nil {
-                // Restaurant not passed via navigation — fetch it
-                // async let starts this fetch concurrently with others below
-                async let restaurantTask = restaurantService.fetchRestaurant(id: restaurantId)
-                async let reviewsTask = reviewService.fetchReviews(restaurantId: restaurantId, limit: 20)
-                async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId)
+            // Always fetch the full restaurant to ensure all fields (Opening_Hours, Contacts, etc.)
+            // are populated — navigation restaurants from Algolia search may have incomplete data
+            async let restaurantTask = restaurantService.fetchRestaurant(id: restaurantId)
+            async let reviewsTask = reviewService.fetchReviews(restaurantId: restaurantId, limit: 20)
+            async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId)
 
-                // Wait for all three in parallel
-                let (fetchedRestaurant, fetchedReviews, fetchedMenu) = try await (
-                    restaurantTask, reviewsTask, menuTask
-                )
+            let (fetchedRestaurant, fetchedReviews, fetchedMenu) = try await (
+                restaurantTask, reviewsTask, menuTask
+            )
 
-                restaurant = fetchedRestaurant
-                reviews = fetchedReviews
-                menuPreview = Array(fetchedMenu.prefix(6))  // Show max 6 items preview
+            restaurant = fetchedRestaurant
+            reviews = fetchedReviews
+            menuPreview = Array(fetchedMenu.prefix(6))
 
-            } else {
-                // Restaurant already available — only fetch reviews and menu
-                async let reviewsTask = reviewService.fetchReviews(restaurantId: restaurantId, limit: 20)
-                async let menuTask = menuService.fetchMenuItems(restaurantId: restaurantId)
-
-                let (fetchedReviews, fetchedMenu) = try await (reviewsTask, menuTask)
-
-                reviews = fetchedReviews
-                menuPreview = Array(fetchedMenu.prefix(6))
-            }
-
-            // Check if current user has already reviewed this restaurant
             checkIfUserHasReviewed(restaurantId: restaurantId)
 
         } catch {

@@ -17,6 +17,7 @@
 import SwiftUI
 import MapKit
 import CoreLocation
+import Contacts
 
 // MARK: - Transport Mode
 
@@ -110,12 +111,14 @@ final class DirectionsViewModel {
         route = nil
 
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(
-            coordinate: userLocation.coordinate
-        ))
-        request.destination = MKMapItem(placemark: MKPlacemark(
-            coordinate: restaurantCoordinate
-        ))
+        request.source = MKMapItem(location: userLocation, address: nil)
+        request.destination = MKMapItem(
+            location: CLLocation(
+                latitude: restaurantCoordinate.latitude,
+                longitude: restaurantCoordinate.longitude
+            ),
+            address: nil
+        )
         request.transportType = selectedMode.transportType
 
         do {
@@ -131,9 +134,13 @@ final class DirectionsViewModel {
 
     /// Opens Apple Maps with turn-by-turn navigation to the restaurant
     func openInAppleMaps() {
-        let destination = MKMapItem(placemark: MKPlacemark(
-            coordinate: restaurantCoordinate
-        ))
+        let destination = MKMapItem(
+            location: CLLocation(
+                latitude: restaurantCoordinate.latitude,
+                longitude: restaurantCoordinate.longitude
+            ),
+            address: nil
+        )
         destination.name = restaurant.name.localised
         destination.openInMaps(launchOptions: [
             MKLaunchOptionsDirectionsModeKey: selectedMode.launchDirectionsMode

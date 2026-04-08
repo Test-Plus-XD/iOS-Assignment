@@ -402,7 +402,7 @@ struct RestaurantView: View {
             // Seats
             if restaurant.seats > 0 {
                 Label {
-                    Text("\(restaurant.seats) ") + Text("restaurant_seats")
+                    Text("\(restaurant.seats) \(Text("restaurant_seats"))")
                 } icon: {
                     Image(systemName: "chair")
                 }
@@ -510,8 +510,7 @@ struct RestaurantView: View {
 
                 Spacer()
 
-                // Review count — properly localised via Text concatenation
-                (Text("\(vm.reviews.count) ") + Text("restaurant_reviews_count"))
+                Text("\(vm.reviews.count) \(Text("restaurant_reviews_count"))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

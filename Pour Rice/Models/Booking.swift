@@ -145,14 +145,39 @@ struct Booking: Codable, Identifiable, Hashable, Sendable {
         userId           = try c.decode(String.self, forKey: .userId)
         restaurantId     = try c.decode(String.self, forKey: .restaurantId)
         restaurantName   = try c.decodeIfPresent(String.self, forKey: .restaurantName) ?? ""
-        dateTime         = try c.decode(Date.self, forKey: .dateTime)
+        dateTime         = Booking.decodeDate(from: c, forKey: .dateTime) ?? Date()
         numberOfGuests   = try c.decode(Int.self, forKey: .numberOfGuests)
         status           = try c.decode(BookingStatus.self, forKey: .status)
         specialRequests  = try c.decodeIfPresent(String.self, forKey: .specialRequests)
         declineMessage   = try c.decodeIfPresent(String.self, forKey: .declineMessage)
         diner            = try c.decodeIfPresent(BookingDiner.self, forKey: .diner)
-        createdAt        = (try? c.decode(Date.self, forKey: .createdAt)) ?? Date()
-        modifiedAt       = try? c.decode(Date.self, forKey: .modifiedAt)
+        createdAt        = Booking.decodeDate(from: c, forKey: .createdAt) ?? Date()
+        modifiedAt       = Booking.decodeDate(from: c, forKey: .modifiedAt)
+    }
+
+    // MARK: - Private Decoding Helpers
+
+    /// Decodes a Date from either an ISO 8601 string or a Double (seconds since reference date Jan 1 2001).
+    /// Newly created bookings may arrive as a raw number if the server stored them without ISO conversion.
+    private static func decodeDate(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys
+    ) -> Date? {
+        // Try ISO 8601 string first (standard format for existing bookings)
+        if let str = try? container.decode(String.self, forKey: key) {
+            let isoFull = ISO8601DateFormatter()
+            isoFull.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = isoFull.date(from: str) { return date }
+            // Fallback: without fractional seconds
+            let isoBasic = ISO8601DateFormatter()
+            if let date = isoBasic.date(from: str) { return date }
+            return nil
+        }
+        // Fallback: raw Double (seconds since Jan 1 2001 reference date — legacy server format)
+        if let ts = try? container.decode(Double.self, forKey: key) {
+            return Date(timeIntervalSinceReferenceDate: ts)
+        }
+        return nil
     }
 
     // MARK: - Memberwise Init

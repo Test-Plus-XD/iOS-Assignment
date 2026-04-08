@@ -47,10 +47,10 @@ struct ErrorView: View {
     // MARK: - Properties
 
     /// Title for the error state (defaults to "Something Went Wrong")
-    let title: String
+    let title: LocalizedStringKey
 
     /// Descriptive error message shown below the title
-    let message: String
+    let message: LocalizedStringKey
 
     /// Optional closure called when the user taps "Try Again"
     /// Set to nil to hide the retry button (for non-recoverable errors)

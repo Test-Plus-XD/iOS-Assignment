@@ -123,6 +123,23 @@ struct GeminiRestaurantDescriptionRequest: Codable, Sendable {
     }
 }
 
+/// Request body for POST /API/Gemini/restaurant-description (chat mode)
+/// Used when the user is chatting about a specific restaurant — the server fetches
+/// restaurant info and menu from Firestore and injects them as context automatically.
+struct GeminiRestaurantChatRequest: Codable, Sendable {
+    let restaurantId: String
+    let message: String
+    let history: [GeminiHistoryEntry]?
+    let model: String?
+
+    init(restaurantId: String, message: String, history: [GeminiHistoryEntry]? = nil, model: String? = nil) {
+        self.restaurantId = restaurantId
+        self.message = message
+        self.history = history
+        self.model = model
+    }
+}
+
 // MARK: - API Response Models
 
 /// Response from POST /API/Gemini/chat

@@ -155,7 +155,9 @@ final class DefaultAPIClient: APIClient {
 
         // Add request body if present (for POST/PUT requests)
         if let body = endpoint.body {
-            request.httpBody = try JSONEncoder().encode(body)
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            request.httpBody = try encoder.encode(body)
             request.setValue("application/json", forHTTPHeaderField: Constants.API.Headers.contentType)
         }
 

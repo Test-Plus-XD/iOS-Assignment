@@ -120,6 +120,9 @@ enum APIEndpoint {
     /// Generate AI restaurant description (POST /API/Gemini/restaurant-description). No auth required.
     case geminiRestaurantDescription(GeminiRestaurantDescriptionRequest)
 
+    /// Multi-turn restaurant-specific chat (POST /API/Gemini/restaurant-description, chat mode). No auth required.
+    case geminiRestaurantChat(GeminiRestaurantChatRequest)
+
     /// Generate bilingual ad content (POST /API/Gemini/restaurant-advertisement). Auth required.
     case geminiAdvertisement(GeminiAdvertisementRequest)
 
@@ -163,7 +166,7 @@ enum APIEndpoint {
         case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems, .fetchReviews,
              .fetchChatRecords, .fetchChatRoom, .createChatRoom,
              .fetchChatMessages, .sendChatMessage, .editChatMessage, .deleteChatMessage,
-             .geminiChat, .geminiRestaurantDescription, .createRestaurant,
+             .geminiChat, .geminiRestaurantDescription, .geminiRestaurantChat, .createRestaurant,
              .fetchAdvertisements:
             return false
         }
@@ -272,6 +275,9 @@ enum APIEndpoint {
         case .geminiRestaurantDescription:
             return Constants.API.Endpoints.geminiRestaurantDescription
 
+        case .geminiRestaurantChat:
+            return Constants.API.Endpoints.geminiRestaurantDescription
+
         case .geminiAdvertisement:
             return "/API/Gemini/restaurant-advertisement"
 
@@ -301,7 +307,7 @@ enum APIEndpoint {
         case .submitReview, .createUserProfile, .createBooking,
              .claimRestaurant, .createMenuItem,
              .createChatRoom, .sendChatMessage,
-             .geminiChat, .geminiGenerate, .geminiRestaurantDescription,
+             .geminiChat, .geminiGenerate, .geminiRestaurantDescription, .geminiRestaurantChat,
              .geminiAdvertisement,
              .createRestaurant,
              .createAdvertisement,
@@ -323,7 +329,8 @@ enum APIEndpoint {
         case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems,
              .fetchReviews, .fetchUserProfile,
              .fetchBookings, .fetchBooking, .fetchRestaurantBookings,
-             .fetchChatRecords, .fetchChatRoom, .fetchChatMessages:
+             .fetchChatRecords, .fetchChatRoom, .fetchChatMessages,
+             .fetchAdvertisements:
             return .get
         }
     }
@@ -404,6 +411,8 @@ enum APIEndpoint {
         case .geminiGenerate(let request):
             return request
         case .geminiRestaurantDescription(let request):
+            return request
+        case .geminiRestaurantChat(let request):
             return request
         case .geminiAdvertisement(let request):
             return request
