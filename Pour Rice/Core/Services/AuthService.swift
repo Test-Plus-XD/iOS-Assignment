@@ -549,10 +549,12 @@ final class AuthService {
             callerService: "AuthService"
         )
 
-        // Sync language preference to UserDefaults so the language toggle in AccountView
-        // and BilingualText both reflect this user's saved preference on sign-in.
-        if let lang = currentUser?.preferredLanguage {
-            UserDefaults.standard.set(lang, forKey: "preferredLanguage")
+        // Sync user preferences to UserDefaults so app-level @AppStorage values
+        // (locale/theme) and preference-backed UI reflect the signed-in user.
+        if let user = currentUser {
+            UserDefaults.standard.set(user.preferredLanguage, forKey: "preferredLanguage")
+            UserDefaults.standard.set(user.preferredTheme, forKey: "preferredTheme")
+            UserDefaults.standard.set(user.notificationsEnabled, forKey: "notificationsEnabled")
         }
 
         // ── Type-selection gate ────────────────────────────────────────────

@@ -195,6 +195,10 @@ struct RootView: View {
     /// Scene body re-evaluation from App-level @AppStorage is unreliable.
     @AppStorage("preferredLanguage") private var preferredLanguage = "en"
 
+    /// Persisted theme preference ("light", "dark", or "system").
+    /// Applied globally so the interface switches immediately after login/profile sync.
+    @AppStorage("preferredTheme") private var preferredTheme = "system"
+
     // MARK: - Deep Link State
 
     /// Holds the restaurantId extracted from an incoming pourrice://menu/{id} URL.
@@ -215,6 +219,18 @@ struct RootView: View {
 
     /// Drives the deep link MenuView sheet presentation.
     @State private var showingDeepLinkMenu = false
+
+    /// Maps the saved theme preference to SwiftUI's optional ColorScheme override.
+    private var appColorScheme: ColorScheme? {
+        switch preferredTheme {
+        case "light":
+            return .light
+        case "dark":
+            return .dark
+        default:
+            return nil
+        }
+    }
 
     // MARK: - Body
 
@@ -262,6 +278,7 @@ struct RootView: View {
         // without an app restart. BilingualText.localised also reads UserDefaults
         // directly, so dynamic API data (restaurant names etc.) switches too.
         .environment(\.locale, Locale(identifier: preferredLanguage))
+        .preferredColorScheme(appColorScheme)
         // ── URL / Deep Link Handling ──────────────────────────────────────
         // Handles both Google Sign-In OAuth callbacks AND Pour Rice QR deep links.
         //
