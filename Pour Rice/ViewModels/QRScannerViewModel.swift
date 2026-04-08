@@ -57,7 +57,16 @@ final class QRScannerViewModel {
     // MARK: - Init
 
     init(services: Services) {
+        // Frame processor stays platform-neutral by relying on Core Image.
+        // This means the exact same extraction logic runs on:
+        // - iOS (fallback paths)
+        // - macOS (desktop testing)
+        // - Simulator (no physical camera available)
         self.frameProcessor = CoreImageQRFrameProcessor()
+
+        // Inject restaurant lookup as a closure so QRDataHandler has no direct
+        // dependency on the full Services container or concrete service types.
+        // This keeps the shared QR layer easy to unit-test in isolation.
         self.dataHandler = QRDataHandler { restaurantId in
             try await services.restaurantService.fetchRestaurant(id: restaurantId)
         }
@@ -67,6 +76,8 @@ final class QRScannerViewModel {
 
     /// Handles a payload received from a live camera scanner callback.
     func handleScannedString(_ rawValue: String) async {
+        // All live camera payloads funnel through one shared processing method.
+        // This avoids drift between iOS camera scans and desktop/manual scans.
         await processPayload(rawValue)
     }
 
@@ -76,16 +87,23 @@ final class QRScannerViewModel {
     /// without a physical iPhone camera.
     func handleScannedImageData(_ imageData: Data) async {
         do {
+            // Step 1: Decode QR payloads from image bytes.
+            // Core Image may find multiple codes, so we intentionally take the first.
             let payloads = try frameProcessor.extractPayloads(from: imageData)
             guard let firstPayload = payloads.first else {
+                // Defensive guard: extractPayloads already throws when empty,
+                // but this keeps behaviour explicit and future-proof.
                 scannerState = .error(String(localized: "qr_error_invalid_format", bundle: L10n.bundle))
                 presentError("qr_error_invalid_format")
                 return
             }
 
-            // Reuse the exact same payload-processing path as live camera scanning.
+            // Step 2: Reuse the exact same payload-processing path as live camera scanning.
+            // This guarantees format validation and API-fetch behaviour remain identical.
             await processPayload(firstPayload)
         } catch {
+            // Any failure here means we could not obtain a valid QR payload
+            // from the selected image, so surface the same invalid-format message.
             scannerState = .error(error.localizedDescription)
             presentError("qr_error_invalid_format")
         }
@@ -101,19 +119,27 @@ final class QRScannerViewModel {
 
     /// Runs the common detection + fetch flow through the shared data handler.
     private func processPayload(_ rawValue: String) async {
+        // Re-entrancy guard:
+        // DataScanner delegate callbacks can fire repeatedly for the same code.
+        // Without this guard we'd create duplicate network requests.
         guard !isPaused else { return }
         isPaused = true
         scannerState = .loading
 
         do {
+            // Shared data flow:
+            //   payload -> QRPayloadDetector -> restaurantId -> RestaurantService.fetchRestaurant
             let restaurant = try await dataHandler.handlePayload(rawValue)
             scannerState = .success(restaurant)
             // Keep paused=true intentionally until navigation completes.
         } catch let detectionError as QRDetectionError {
+            // Validation failures (scheme/host/path mismatch) map to format error toast.
             scannerState = .error(detectionError.localizedDescription)
             presentError(localisationKey(for: detectionError))
             isPaused = false
         } catch {
+            // Non-validation failures are generally fetch-time issues
+            // (e.g. network error, not found), so show not-found style messaging.
             scannerState = .error(error.localizedDescription)
             presentError("qr_error_restaurant_not_found")
             isPaused = false

@@ -36,6 +36,7 @@ struct QRScannerView: View {
     @State private var viewModel: QRScannerViewModel?
     @State private var selectedQRImageItem: PhotosPickerItem?
     @State private var manualPayload = ""
+    /// Tracks asynchronous image decoding/extraction so fallback UI can show progress.
     @State private var isProcessingImage = false
 
     // MARK: - Body
@@ -43,13 +44,16 @@ struct QRScannerView: View {
     var body: some View {
         Group {
             if let vm = viewModel {
+                // ViewModel is ready, render platform-appropriate scanner UI.
                 scannerBody(vm: vm)
             } else {
+                // Temporary placeholder while dependencies are injected from environment.
                 Color.black.ignoresSafeArea()
             }
         }
         .task {
             if viewModel == nil {
+                // Delay creation until .task so @Environment values are guaranteed available.
                 viewModel = QRScannerViewModel(services: services)
             }
         }
@@ -59,15 +63,19 @@ struct QRScannerView: View {
 
     @ViewBuilder
     private func scannerBody(vm: QRScannerViewModel) -> some View {
+        // Shared wrapper applies navigation + toast behaviour regardless of scanner source
+        // (camera, imported image, or manual payload text field).
         scannerContent(vm: vm)
             .navigationTitle("qr_scanner_title")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: Binding(
                 get: {
+                    // Present destination whenever scanner state transitions to success.
                     if case .success = vm.scannerState { return true }
                     return false
                 },
                 set: { presented in
+                    // When destination is dismissed, reset scanner so users can run another test.
                     if !presented { vm.reset() }
                 }
             )) {
@@ -92,11 +100,14 @@ struct QRScannerView: View {
     private func scannerContent(vm: QRScannerViewModel) -> some View {
         #if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
         if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+            // Primary path for physical iPhone/iPad devices with camera access.
             iosCameraScannerView(vm: vm)
         } else {
+            // Falls back on simulator or when camera scanning is unavailable/denied.
             fallbackScannerView(vm: vm)
         }
         #else
+        // Native macOS build path always uses fallback scanner.
         fallbackScannerView(vm: vm)
         #endif
     }
@@ -106,6 +117,7 @@ struct QRScannerView: View {
     #if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
     private func iosCameraScannerView(vm: QRScannerViewModel) -> some View {
         ZStack {
+            // Live camera feed + QR detection bridge.
             DataScannerRepresentable(viewModel: vm)
                 .ignoresSafeArea()
 
@@ -124,6 +136,7 @@ struct QRScannerView: View {
                     Spacer()
 
                     Button {
+                        // Toggle is reflected in updateUIViewController where torch hardware is set.
                         vm.isTorchOn.toggle()
                     } label: {
                         Image(systemName: vm.isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
@@ -195,6 +208,7 @@ struct QRScannerView: View {
                     }
 
                     if isProcessingImage {
+                        // British English wording kept intentionally per project request.
                         ProgressView("Analysing QR image…")
                     }
                 }
@@ -208,6 +222,7 @@ struct QRScannerView: View {
 
                     Button {
                         Task {
+                            // Manual payload testing still runs through ViewModel validation/fetch flow.
                             await vm.handleScannedString(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines))
                         }
                     } label: {
@@ -218,6 +233,7 @@ struct QRScannerView: View {
                 }
 
                 if case .loading = vm.scannerState {
+                    // Shared loading indicator while RestaurantService fetches matched restaurant.
                     ProgressView("Loading restaurant…")
                 }
 
@@ -239,6 +255,7 @@ struct QRScannerView: View {
         defer { isProcessingImage = false }
 
         guard let data = try? await item.loadTransferable(type: Data.self) else {
+            // Image import failure is surfaced as toast to match existing scanner feedback pattern.
             vm.showToast = false
             vm.toastMessage = "Unable to read the selected image."
             vm.toastStyle = .error
@@ -246,6 +263,7 @@ struct QRScannerView: View {
             return
         }
 
+        // Forward raw bytes into reusable frame-processing/data-handling pipeline.
         await vm.handleScannedImageData(data)
     }
 
@@ -267,6 +285,8 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
     let viewModel: QRScannerViewModel
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
+        // DataScanner configured strictly for QR symbols to minimise false positives
+        // and keep parity with Android scanner expectations.
         let scanner = DataScannerViewController(
             recognizedDataTypes: [.barcode(symbologies: [.qr])],
             qualityLevel: .balanced,
@@ -278,6 +298,7 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
         )
 
         scanner.delegate = context.coordinator
+        // Start capture immediately so the scanner is interactive on presentation.
         try? scanner.startScanning()
 
         return scanner
@@ -285,6 +306,7 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
         if let device = AVCaptureDevice.default(for: .video), device.hasTorch {
+            // DataScanner itself has no direct torch API, so we sync against AVCaptureDevice.
             try? device.lockForConfiguration()
             device.torchMode = viewModel.isTorchOn ? .on : .off
             device.unlockForConfiguration()
@@ -307,12 +329,14 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
             didAdd addedItems: [RecognizedItem],
             allItems: [RecognizedItem]
         ) {
+            // We only care about the first newly detected QR payload for this flow.
             guard let item = addedItems.first,
                   case .barcode(let barcode) = item,
                   let payload = barcode.payloadStringValue
             else { return }
 
             Task { @MainActor in
+                // Actor hop keeps Swift 6 strict-concurrency rules satisfied.
                 await viewModel.handleScannedString(payload)
             }
         }
