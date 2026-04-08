@@ -205,11 +205,11 @@ struct QRScannerView: View {
                 }
 
                 VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
-                    Text("1) Import QR image")
+                    Text("qr_scanner_fallback_import_step")
                         .font(.headline)
 
                     PhotosPicker(selection: $selectedQRImageItem, matching: .images) {
-                        Label("Choose QR image", systemImage: "photo")
+                        Label("qr_scanner_fallback_choose_image", systemImage: "photo")
                     }
                     .buttonStyle(.borderedProminent)
                     .onChange(of: selectedQRImageItem) { _, newItem in
@@ -221,15 +221,15 @@ struct QRScannerView: View {
 
                     if isProcessingImage {
                         // British English wording kept intentionally per project request.
-                        ProgressView("Analysing QR image…")
+                        ProgressView("qr_scanner_fallback_analysing")
                     }
                 }
 
                 VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
-                    Text("2) Paste QR payload")
+                    Text("qr_scanner_fallback_paste_step")
                         .font(.headline)
 
-                    TextField("pourrice://menu/{restaurantId}", text: $manualPayload, axis: .vertical)
+                    TextField("qr_scanner_fallback_payload_placeholder", text: $manualPayload, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
 
                     Button {
@@ -238,7 +238,7 @@ struct QRScannerView: View {
                             await vm.handleScannedString(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines))
                         }
                     } label: {
-                        Label("Validate payload", systemImage: "qrcode.viewfinder")
+                        Label("qr_scanner_fallback_validate_payload", systemImage: "qrcode.viewfinder")
                     }
                     .buttonStyle(.bordered)
                     .disabled(manualPayload.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -246,7 +246,7 @@ struct QRScannerView: View {
 
                 if case .loading = vm.scannerState {
                     // Shared loading indicator while RestaurantService fetches matched restaurant.
-                    ProgressView("Loading restaurant…")
+                    ProgressView("qr_scanner_fallback_loading_restaurant")
                 }
 
                 Button("qr_scanner_dismiss_button") {
@@ -290,9 +290,9 @@ struct QRScannerView: View {
     private func fallbackTitle(for reason: FallbackReason) -> String {
         switch reason {
         case .unsupportedPlatform:
-            return "Camera scanner unavailable on this device."
+            return String(localized: "qr_scanner_fallback_unsupported_title")
         case .cameraUnavailable:
-            return "Camera access is currently unavailable."
+            return String(localized: "qr_scanner_fallback_permission_title")
         }
     }
 
@@ -300,9 +300,9 @@ struct QRScannerView: View {
     private func fallbackMessage(for reason: FallbackReason) -> String {
         switch reason {
         case .unsupportedPlatform:
-            return "Use a QR image or paste a payload to test the exact same QR logic flow on macOS or simulator."
+            return String(localized: "qr_scanner_fallback_unsupported_message")
         case .cameraUnavailable:
-            return "Enable Camera access for Pour Rice in Settings, then reopen this screen. You can still test via QR image import or pasted payload below."
+            return String(localized: "qr_scanner_fallback_permission_message")
         }
     }
 }
