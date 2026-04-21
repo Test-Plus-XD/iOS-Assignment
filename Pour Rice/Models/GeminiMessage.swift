@@ -103,14 +103,14 @@ struct GeminiGenerateRequest: Codable, Sendable {
 /// Request body for POST /API/Gemini/restaurant-description
 struct GeminiRestaurantDescriptionRequest: Codable, Sendable {
     let restaurantId: String
-    let name: String
+    let name: String?
     let district: String?
     let keywords: [String]?
     let language: String?
 
     init(
         restaurantId: String,
-        name: String,
+        name: String? = nil,
         district: String? = nil,
         keywords: [String]? = nil,
         language: String? = nil

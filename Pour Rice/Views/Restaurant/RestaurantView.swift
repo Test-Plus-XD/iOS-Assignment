@@ -99,7 +99,7 @@ struct RestaurantView: View {
                 heroSection(restaurant: current)
 
                 // ─── Core Info (name, rating, price, open status) ──────────
-                infoSection(restaurant: current, vm: vm)
+                infoSection(restaurant: current)
                     .padding(.horizontal, Constants.UI.spacingMedium)
                     .padding(.top, Constants.UI.spacingMedium)
 
@@ -279,7 +279,7 @@ struct RestaurantView: View {
 
     /// Restaurant name, cuisine, rating, price, and open status
     @ViewBuilder
-    private func infoSection(restaurant: Restaurant, vm: RestaurantViewModel) -> some View {
+    private func infoSection(restaurant: Restaurant) -> some View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {
 
             // Restaurant name (bilingual)
@@ -296,21 +296,41 @@ struct RestaurantView: View {
             HStack(spacing: Constants.UI.spacingMedium) {
 
                 // Half-star row + numeric rating + review count
-                HStack(spacing: 4) {
-                    HStack(spacing: 1) {
-                        ForEach(0..<5, id: \.self) { i in
-                            Image(systemName: starSymbol(for: i, rating: restaurant.rating))
+                HStack(spacing: 6) {
+                    if restaurant.rating <= 0 {
+                        Text("New")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .textCase(.uppercase)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                Color(red: 0.94, green: 0.63, blue: 0.13),
+                                in: Capsule()
+                            )
+                    } else {
+                        HStack(spacing: 4) {
+                            HStack(spacing: 1) {
+                                ForEach(0..<5, id: \.self) { i in
+                                    Image(systemName: starSymbol(for: i, rating: restaurant.rating))
+                                        .foregroundStyle(.orange)
+                                        .font(.caption)
+                                }
+                            }
+                            Text(restaurant.ratingDisplay)
                                 .foregroundStyle(.orange)
-                                .font(.caption)
+                                .fontWeight(.medium)
                         }
                     }
-                    Text(restaurant.ratingDisplay)
-                        .foregroundStyle(.orange)
-                        .fontWeight(.medium)
                     Text("(\(restaurant.reviewCount))")
                         .foregroundStyle(.secondary)
                 }
-                .accessibilityLabel("\(restaurant.ratingDisplay) out of 5 stars, \(restaurant.reviewCount) reviews")
+                .accessibilityLabel(
+                    restaurant.rating <= 0
+                        ? "New restaurant, \(restaurant.reviewCount) reviews"
+                        : "\(restaurant.ratingDisplay) out of 5 stars, \(restaurant.reviewCount) reviews"
+                )
 
                 Spacer()
 

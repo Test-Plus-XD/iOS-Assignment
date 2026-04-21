@@ -178,7 +178,7 @@ struct StripeCheckoutResponse: Codable, Sendable {
 /// Request body for POST /API/Gemini/restaurant-advertisement (auth required).
 struct GeminiAdvertisementRequest: Codable, Sendable {
     let restaurantId: String
-    let name: String
+    let name: String?
     let district: String?
     let keywords: [String]?
     let message: String?

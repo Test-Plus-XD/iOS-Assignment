@@ -120,12 +120,12 @@ final class GeminiService {
     /// - Returns: An AdvertisementGenerationResponse with Title_EN/TC and Content_EN/TC
     func generateAdvertisement(
         restaurantId: String,
-        name: String,
+        name: String? = nil,
         district: String? = nil,
         keywords: [String]? = nil,
         message: String? = nil
     ) async throws -> AdvertisementGenerationResponse {
-        print("🤖 GeminiService: Generating advertisement for restaurant: \(name)")
+        print("🤖 GeminiService: Generating advertisement for restaurantId: \(restaurantId)")
 
         let request = GeminiAdvertisementRequest(
             restaurantId: restaurantId,
@@ -141,7 +141,7 @@ final class GeminiService {
             callerService: "GeminiService"
         )
 
-        print("✅ GeminiService: Advertisement generated for \(name)")
+        print("✅ GeminiService: Advertisement generated for \(restaurantId)")
         return response
     }
 
@@ -151,12 +151,12 @@ final class GeminiService {
     /// Menu items are fetched server-side from Firestore using the restaurantId.
     func generateRestaurantDescription(
         restaurantId: String,
-        name: String,
+        name: String? = nil,
         district: String? = nil,
         keywords: [String]? = nil,
         language: String? = nil
     ) async throws -> String {
-        print("🤖 Generating description for restaurant: \(name)")
+        print("🤖 Generating description for restaurantId: \(restaurantId)")
 
         let request = GeminiRestaurantDescriptionRequest(
             restaurantId: restaurantId,
