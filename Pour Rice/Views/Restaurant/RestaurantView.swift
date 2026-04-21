@@ -306,7 +306,7 @@ struct RestaurantView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(
-                                Color(red: 0.94, green: 0.63, blue: 0.13),
+                                Color.newBadge,
                                 in: Capsule()
                             )
                     } else {

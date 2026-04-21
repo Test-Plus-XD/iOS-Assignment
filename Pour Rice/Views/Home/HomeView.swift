@@ -216,8 +216,8 @@ struct HomeView: View {
                         AdOfferCard(ad: ad)
                             .frame(width: 260, height: 160)
                             .onTapGesture {
-                                guard !ad.restaurantId.isEmpty else { return }
-                                selectedAdRoute = .restaurant(id: ad.restaurantId)
+                                guard let restaurantId = ad.restaurantId, !restaurantId.isEmpty else { return }
+                                selectedAdRoute = .restaurant(id: restaurantId)
                             }
                     }
                 }
@@ -517,7 +517,7 @@ private struct RestaurantRowView: View {
                     .padding(.vertical, 4)
                     .background(
                         restaurant.rating <= 0
-                            ? Color(red: 0.94, green: 0.63, blue: 0.13)
+                            ? .newBadge
                             : Color.accentColor.opacity(0.85),
                         in: Capsule()
                     )
@@ -579,8 +579,8 @@ private struct RatingBadge: View {
         .padding(.vertical, 4)
         .background(
             rating <= 0
-                ? Color(red: 0.94, green: 0.63, blue: 0.13)
-                : .black.opacity(0.6),
+                ? .newBadge
+                : Color.accentColor.opacity(0.85),
             in: Capsule()
         )
     }

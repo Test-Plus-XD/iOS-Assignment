@@ -380,7 +380,7 @@ private struct SearchResultRow: View {
                     .padding(.vertical, 4)
                     .background(
                         restaurant.rating <= 0
-                            ? Color(red: 0.94, green: 0.63, blue: 0.13)
+                            ? .newBadge
                             : Color.accentColor.opacity(0.85),
                         in: Capsule()
                     )
