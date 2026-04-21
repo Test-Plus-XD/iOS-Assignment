@@ -36,6 +36,7 @@ final class RestaurantService {
         let keywordsTC: [String]?
         let imageUrl: String?
         let seats: Int?
+        let rating: Double?
         let latitude: Double?
         let longitude: Double?
 
@@ -51,6 +52,7 @@ final class RestaurantService {
             case keywordsTC = "Keyword_TC"
             case imageUrl = "ImageUrl"
             case seats = "Seats"
+            case rating = "rating"
             case latitude = "Latitude"
             case longitude = "Longitude"
         }
@@ -81,7 +83,7 @@ final class RestaurantService {
                 cuisine: BilingualText(uniform: ""),
                 keywords: keywords,
                 priceRange: "",
-                rating: 0.0,
+                rating: rating ?? 0.0,
                 reviewCount: 0,
                 imageURLs: imageURLs,
                 location: Location(latitude: latitude ?? 0.0, longitude: longitude ?? 0.0),
@@ -125,6 +127,7 @@ final class RestaurantService {
         let Keyword_TC: [String]?
         let ImageUrl: String?
         let Seats: Int?
+        let rating: Double?
         let Latitude: Double?
         let Longitude: Double?
 
@@ -162,7 +165,7 @@ final class RestaurantService {
                 cuisine: BilingualText(uniform: ""),
                 keywords: keywords,
                 priceRange: "",
-                rating: 0.0,
+                rating: rating ?? 0.0,
                 reviewCount: 0,
                 imageURLs: imageURLs,
                 location: Location(latitude: Latitude ?? 0.0, longitude: Longitude ?? 0.0),

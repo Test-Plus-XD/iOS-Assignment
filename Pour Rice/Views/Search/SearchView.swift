@@ -199,7 +199,9 @@ struct SearchView: View {
                     withAnimation { showingMap.toggle() }
                 } label: {
                     Image(systemName: showingMap ? "list.bullet" : "map")
+                        .contentTransition(.symbolEffect(.replace))
                 }
+                .animation(.easeInOut(duration: 0.2), value: showingMap)
                 .accessibilityLabel(showingMap ? Text("search_view_list") : Text("search_view_map"))
                 .disabled(vm.searchResults.isEmpty)
             }
@@ -359,17 +361,29 @@ private struct SearchResultRow: View {
 
                 HStack(spacing: 10) {
                     // Rating with accent background
-                    HStack(spacing: 3) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                        Text(restaurant.ratingDisplay)
+                    if restaurant.rating <= 0 {
+                        Text("New")
                             .font(.caption)
-                            .fontWeight(.semibold)
+                            .fontWeight(.bold)
+                            .textCase(.uppercase)
+                    } else {
+                        HStack(spacing: 3) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                            Text(restaurant.ratingDisplay)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                        }
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.accentColor.opacity(0.85), in: Capsule())
+                    .background(
+                        restaurant.rating <= 0
+                            ? .newBadge
+                            : Color.accentColor.opacity(0.85),
+                        in: Capsule()
+                    )
 
                     Text(restaurant.priceRangeDisplay)
                         .font(.caption)

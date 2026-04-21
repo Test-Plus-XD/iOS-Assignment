@@ -57,6 +57,7 @@ struct HomeView: View {
     /// The ViewModel is created fresh when this view first appears.
     /// Services are injected via Environment, so we create the VM in .task{}
     @State private var viewModel: HomeViewModel?
+    @State private var selectedAdRoute: HomeRoute?
 
     // MARK: - Body
 
@@ -89,6 +90,12 @@ struct HomeView: View {
             get: { viewModel?.showToast ?? false },
             set: { viewModel?.showToast = $0 }
         ))
+        .navigationDestination(item: $selectedAdRoute) { route in
+            switch route {
+            case .restaurant(let restaurantId):
+                RestaurantLoadView(restaurantId: restaurantId)
+            }
+        }
     }
 
     // MARK: - Content
@@ -206,10 +213,12 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Constants.UI.spacingMedium) {
                     ForEach(ads) { ad in
-                        // Each ad may link to a restaurant — only wrap in NavigationLink
-                        // when a restaurantId is present
                         AdOfferCard(ad: ad)
                             .frame(width: 260, height: 160)
+                            .onTapGesture {
+                                guard let restaurantId = ad.restaurantId, !restaurantId.isEmpty else { return }
+                                selectedAdRoute = .restaurant(id: restaurantId)
+                            }
                     }
                 }
                 .padding(.horizontal, Constants.UI.spacingMedium)
@@ -303,15 +312,24 @@ private struct AdOfferCard: View {
                 endPoint: .bottom
             )
 
-            // Ad title (bilingual)
-            if !ad.localizedTitle.isEmpty {
-                Text(ad.localizedTitle)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
+            if !ad.localizedTitle.isEmpty || !ad.localizedContent.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    if !ad.localizedTitle.isEmpty {
+                        Text(ad.localizedTitle)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .lineLimit(2)
+                    }
+                    if !ad.localizedContent.isEmpty {
+                        Text(ad.localizedContent)
+                            .font(.caption)
+                            .lineLimit(2)
+                            .foregroundStyle(.white.opacity(0.92))
+                    }
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 10)
             }
         }
         .cornerRadius(Constants.UI.cornerRadiusMedium)
@@ -480,17 +498,29 @@ private struct RestaurantRowView: View {
 
                 HStack(spacing: 10) {
                     // Star + rating with accent background
-                    HStack(spacing: 3) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                        Text(restaurant.ratingDisplay)
+                    if restaurant.rating <= 0 {
+                        Text("New")
                             .font(.caption)
-                            .fontWeight(.semibold)
+                            .fontWeight(.bold)
+                            .textCase(.uppercase)
+                    } else {
+                        HStack(spacing: 3) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                            Text(restaurant.ratingDisplay)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                        }
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.accentColor.opacity(0.85), in: Capsule())
+                    .background(
+                        restaurant.rating <= 0
+                            ? .newBadge
+                            : Color.accentColor.opacity(0.85),
+                        in: Capsule()
+                    )
 
                     Text(restaurant.priceRangeDisplay)
                         .font(.caption)
@@ -528,18 +558,76 @@ private struct RatingBadge: View {
     let rating: Double
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "star.fill")
-                .font(.caption2)
-            Text(String(format: "%.1f", rating))
-                .font(.caption)
-                .fontWeight(.semibold)
+        Group {
+            if rating <= 0 {
+                Text("New")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .textCase(.uppercase)
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "star.fill")
+                        .font(.caption2)
+                    Text(String(format: "%.1f", rating))
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+            }
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        // Capsule = pill shape
-        .background(.black.opacity(0.6), in: Capsule())
+        .background(
+            rating <= 0
+                ? .newBadge
+                : Color.accentColor.opacity(0.85),
+            in: Capsule()
+        )
+    }
+}
+
+private enum HomeRoute: Hashable, Identifiable {
+    case restaurant(id: String)
+
+    var id: String {
+        switch self {
+        case .restaurant(let id):
+            return "restaurant-\(id)"
+        }
+    }
+}
+
+private struct RestaurantLoadView: View {
+    @Environment(\.services) private var services
+
+    let restaurantId: String
+    @State private var restaurant: Restaurant?
+    @State private var errorMessage: String?
+
+    var body: some View {
+        Group {
+            if let restaurant {
+                RestaurantView(restaurant: restaurant)
+            } else if let errorMessage {
+                ErrorView(message: errorMessage) {
+                    Task { await loadRestaurant() }
+                }
+            } else {
+                LoadingView(message: "restaurant_loading")
+            }
+        }
+        .task(id: restaurantId) {
+            if restaurant == nil { await loadRestaurant() }
+        }
+    }
+
+    private func loadRestaurant() async {
+        do {
+            errorMessage = nil
+            restaurant = try await services.restaurantService.fetchRestaurant(id: restaurantId)
+        } catch {
+            errorMessage = String(localized: "error_unknown", bundle: L10n.bundle)
+        }
     }
 }
 
