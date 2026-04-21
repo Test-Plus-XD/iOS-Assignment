@@ -82,6 +82,15 @@ struct Advertisement: Codable, Identifiable, Hashable, Sendable {
         return titleEN ?? titleTC ?? ""
     }
 
+    /// Returns the bilingual body text appropriate for the current app language setting.
+    var localizedContent: String {
+        let lang = UserDefaults.standard.string(forKey: "preferredLanguage") ?? "en"
+        if lang.hasPrefix("zh") {
+            return contentTC ?? contentEN ?? ""
+        }
+        return contentEN ?? contentTC ?? ""
+    }
+
     /// Returns the bilingual image URL for the current app language.
     var localizedImageURL: URL? {
         let lang = UserDefaults.standard.string(forKey: "preferredLanguage") ?? "en"
