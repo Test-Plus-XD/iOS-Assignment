@@ -207,18 +207,20 @@ private struct SearchMapCalloutCard: View {
 
                 HStack(spacing: 8) {
                     // Rating pill
-                    if restaurant.rating <= 0 {
-                        Text("New")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .textCase(.uppercase)
-                    } else {
-                        HStack(spacing: 3) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 10))
-                            Text(restaurant.ratingDisplay)
+                    Group {
+                        if restaurant.rating <= 0 {
+                            Text("New")
                                 .font(.caption)
-                                .fontWeight(.semibold)
+                                .fontWeight(.bold)
+                                .textCase(.uppercase)
+                        } else {
+                            HStack(spacing: 3) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 10))
+                                Text(restaurant.ratingDisplay)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
                         }
                     }
                     .foregroundStyle(.white)

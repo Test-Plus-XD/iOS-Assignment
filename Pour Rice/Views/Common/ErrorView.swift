@@ -75,8 +75,15 @@ struct ErrorView: View {
         message: String,
         onRetry: (() -> Void)? = nil
     ) {
-        self.title = title
-        self.message = message
+        // Wrap incoming `String` values in `LocalizedStringKey` so the stored
+        // properties retain their type. Call sites pass two kinds of strings:
+        //   1) localisation keys like "error_title" / "network_error_message"
+        //      — these are looked up in Localizable.xcstrings at render time.
+        //   2) pre-resolved runtime messages like `vm.errorMessage`
+        //      — these will fail the lookup and render verbatim, which is the
+        //      desired behaviour since they've already been localised upstream.
+        self.title = LocalizedStringKey(title)
+        self.message = LocalizedStringKey(message)
         self.onRetry = onRetry
     }
 

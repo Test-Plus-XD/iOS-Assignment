@@ -20,6 +20,7 @@ import PhotosUI
 #if canImport(VisionKit) && canImport(UIKit) && !os(macOS)
 import VisionKit
 import AVFoundation
+internal import Vision
 #endif
 
 // MARK: - QR Scanner View
@@ -103,13 +104,16 @@ struct QRScannerView: View {
                     set: { vm.showToast = $0 }
                 )
             )
-            .onChange(of: vm.scannerState) { _, newState in
-                switch newState {
-                case .loading:
+            .onChange(of: isLoadingState(of: vm)) { _, isLoading in
+                // QRScannerViewModel uses @Observable (not ObservableObject), so there is no
+                // Combine publisher on $scannerState. Instead we derive a plain Bool from the
+                // state enum — SwiftUI's @Observable tracking will re-evaluate this expression
+                // whenever `vm.scannerState` changes, triggering onChange as expected.
+                if isLoading {
                     // Once lookup starts, stop image-analysis indicator.
                     isProcessingImage = false
                     isFetchingRestaurant = true
-                case .idle, .success, .error:
+                } else {
                     isFetchingRestaurant = false
                 }
             }
@@ -294,6 +298,17 @@ struct QRScannerView: View {
         isProcessingImage = false
     }
 
+    /// Derives a simple Bool from `ScannerState` for use with `.onChange(of:)`.
+    ///
+    /// `ScannerState` carries an associated `Restaurant` value and is not `Equatable`,
+    /// so it cannot be observed directly by `.onChange`. Reducing it to a Bool keeps
+    /// the observation cheap while still letting SwiftUI's `@Observable` dependency
+    /// tracking pick up the underlying state change.
+    private func isLoadingState(of vm: QRScannerViewModel) -> Bool {
+        if case .loading = vm.scannerState { return true }
+        return false
+    }
+
     /// Platform-specific semantic background colour.
     private var backgroundColour: Color {
         #if os(macOS)
@@ -390,3 +405,4 @@ private struct DataScannerRepresentable: UIViewControllerRepresentable {
     }
 }
 #endif
+

@@ -4,9 +4,6 @@
 <dict>
 	<key>CFBundleURLTypes</key>
 	<array>
-		<!-- Google Sign-In OAuth callback scheme (auto-generated from GoogleService-Info.plist) -->
-		<!-- iOS delivers the OAuth redirect back to the app via this scheme -->
-		<!-- Handled by GIDSignIn.sharedInstance.handle(url) in AppDelegate + onOpenURL -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -15,11 +12,6 @@
 				<string>com.googleusercontent.apps.937491674619-tjm24ih1qlgss7eosl1vb1mn7t3fqe61</string>
 			</array>
 		</dict>
-		<!-- Pour Rice custom deep link scheme for QR code navigation -->
-		<!-- Format: pourrice://menu/{restaurantId} -->
-		<!-- Matches the scheme used by the Android Flutter app (pourrice://menu/{id}) -->
-		<!-- so QR codes generated on either platform are cross-compatible -->
-		<!-- Handled by RootView.onOpenURL in Pour_RiceApp.swift -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -29,12 +21,6 @@
 			</array>
 		</dict>
 	</array>
-	<!-- Camera usage description required by App Store Review Guidelines -->
-	<!-- DataScannerViewController (VisionKit) displays this to the user on first launch -->
-	<key>NSCameraUsageDescription</key>
-	<string>Pour Rice uses the camera to scan restaurant QR codes for quick menu access.</string>
-	<!-- Prevents Firebase from swizzling AppDelegate methods -->
-	<!-- Required because we manually implement application(_:open:options:) for Google Sign-In -->
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>
 </dict>

@@ -18,6 +18,7 @@ struct MessageBubbleView: View {
 
     @State private var showEditSheet = false
     @State private var editText = ""
+    @State private var showFullScreenImage = false
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -34,9 +35,12 @@ struct MessageBubbleView: View {
                 // Image attachment (shown above text bubble when present)
                 if let imageUrl = message.imageUrl, !message.deleted {
                     AsyncImageView(url: imageUrl, contentMode: .fill)
-                        .frame(maxWidth: 240)
-                        .frame(height: 160)
+                        .frame(width: 220, height: 220)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .contentShape(RoundedRectangle(cornerRadius: 14))
+                        .onTapGesture {
+                            showFullScreenImage = true
+                        }
                         // For image-only messages the text bubble branch is skipped,
                         // so the delete action must live here on the rendered image.
                         .contextMenu {
@@ -112,6 +116,11 @@ struct MessageBubbleView: View {
         .sheet(isPresented: $showEditSheet) {
             editSheet
         }
+        .fullScreenCover(isPresented: $showFullScreenImage) {
+            if let imageUrl = message.imageUrl {
+                FullScreenImageView(url: imageUrl)
+            }
+        }
     }
 
     // MARK: - Bubble Shape
@@ -146,5 +155,92 @@ struct MessageBubbleView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+}
+
+// MARK: - FullScreenImageView
+
+/// Full-screen image viewer with pinch-to-zoom, double-tap zoom, and drag-to-pan.
+/// Presented from `MessageBubbleView` when the user taps a chat image attachment.
+private struct FullScreenImageView: View {
+
+    let url: String
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var scale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @GestureState private var liveMagnification: CGFloat = 1.0
+    @GestureState private var liveDrag: CGSize = .zero
+
+    private var currentScale: CGFloat { scale * liveMagnification }
+    private var currentOffset: CGSize {
+        CGSize(width: offset.width + liveDrag.width, height: offset.height + liveDrag.height)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+
+            AsyncImageView(url: url, contentMode: .fit)
+                .scaleEffect(currentScale)
+                .offset(currentOffset)
+                .gesture(magnifyGesture)
+                .simultaneousGesture(dragGesture)
+                .onTapGesture(count: 2) {
+                    withAnimation(.spring(response: 0.3)) {
+                        if scale > 1.0 {
+                            scale = 1.0
+                            offset = .zero
+                        } else {
+                            scale = 2.5
+                        }
+                    }
+                }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.title3.bold())
+                            .foregroundStyle(.white)
+                            .padding(12)
+                            .background(.black.opacity(0.5), in: Circle())
+                    }
+                    .padding()
+                }
+                Spacer()
+            }
+        }
+    }
+
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture()
+            .updating($liveMagnification) { value, state, _ in
+                state = value.magnification
+            }
+            .onEnded { value in
+                withAnimation(.spring(response: 0.3)) {
+                    scale = max(1.0, min(scale * value.magnification, 5.0))
+                    if scale == 1.0 { offset = .zero }
+                }
+            }
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .updating($liveDrag) { value, state, _ in
+                guard scale > 1.0 else { return }
+                state = value.translation
+            }
+            .onEnded { value in
+                guard scale > 1.0 else { return }
+                offset.width += value.translation.width
+                offset.height += value.translation.height
+            }
     }
 }

@@ -24,7 +24,7 @@
 //
 
 import SwiftUI
-import CoreImage                   // CIFilter, CIContext, CIImage
+internal import CoreImage                   // CIFilter, CIContext, CIImage
 import CoreImage.CIFilterBuiltins  // Typed CIFilter.qrCodeGenerator() API (iOS 15+)
 import UniformTypeIdentifiers      // UTType.png — required for DataRepresentation in the Transferable extension
 
