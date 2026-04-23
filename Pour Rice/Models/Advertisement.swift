@@ -74,19 +74,18 @@ struct Advertisement: Codable, Identifiable, Hashable, Sendable {
 
     /// Returns the bilingual title appropriate for the current app language setting.
     var localizedTitle: String {
-        let lang = UserDefaults.standard.string(forKey: "preferredLanguage") ?? "en"
-        // Prefer the language-matching field, fall back to the other
-        if lang.hasPrefix("zh") {
-            return titleTC ?? titleEN ?? ""
-        }
-        return titleEN ?? titleTC ?? ""
+        BilingualText(en: titleEN ?? "", tc: titleTC ?? "").localised
+    }
+
+    /// Returns the bilingual body text appropriate for the current app language setting.
+    var localizedContent: String {
+        BilingualText(en: contentEN ?? "", tc: contentTC ?? "").localised
     }
 
     /// Returns the bilingual image URL for the current app language.
     var localizedImageURL: URL? {
-        let lang = UserDefaults.standard.string(forKey: "preferredLanguage") ?? "en"
-        let urlString = lang.hasPrefix("zh") ? (imageTC ?? imageEN) : (imageEN ?? imageTC)
-        guard let str = urlString, !str.isEmpty, str != "—" else { return nil }
+        let str = BilingualText(en: imageEN ?? "", tc: imageTC ?? "").localised
+        guard !str.isEmpty, str != "—" else { return nil }
         return URL(string: str)
     }
 
