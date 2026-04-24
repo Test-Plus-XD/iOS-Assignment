@@ -21,6 +21,7 @@
 
 import SwiftUI
 import CoreLocation
+import WebKit
 
 // MARK: - Home View
 
@@ -118,6 +119,9 @@ struct HomeView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
 
+                    // ─── Video Placeholder ───────────────────────────────
+                    videoPlaceholderSection
+
                     // ─── Featured Restaurants Carousel ───────────────────
                     if !vm.featuredRestaurants.isEmpty {
                         featuredSection(restaurants: vm.featuredRestaurants)
@@ -144,6 +148,23 @@ struct HomeView: View {
             }
             .id(preferredLanguage)
         }
+    }
+
+    // MARK: - Video Placeholder Section
+
+    /// Inline YouTube video embedded at the top of the home feed.
+    /// The 16:9 aspect ratio is enforced by a transparent Color layer so the
+    /// web view (which has no intrinsic size) lays out correctly inside the
+    /// scrolling LazyVStack.
+    private var videoPlaceholderSection: some View {
+        Color.black
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .overlay(
+                YouTubeVideoPlayerView(videoID: "ttsJwHYT8NA")
+            )
+            .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
+            .padding(.horizontal, Constants.UI.spacingMedium)
+            .padding(.top, Constants.UI.spacingMedium)
     }
 
     // MARK: - Featured Section
@@ -683,6 +704,14 @@ private struct HomeSkeletonView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
 
+                // Video placeholder skeleton (matches videoPlaceholderSection's 16:9 frame)
+                RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium)
+                    .fill(Color(.systemFill))
+                    .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                    .padding(.horizontal, Constants.UI.spacingMedium)
+                    .padding(.top, Constants.UI.spacingMedium)
+                    .shimmerEffect()
+
                 // Featured skeleton header
                 Text("home_featured_title")
                     .font(.title2).fontWeight(.bold)
@@ -756,6 +785,61 @@ struct SkeletonRestaurantRow: View {
             Spacer()
         }
         .shimmerEffect()
+    }
+}
+
+// MARK: - YouTube Video Player
+
+/// Embeds a YouTube video inside a WKWebView using YouTube's iframe embed API.
+/// The HTML wrapper forces a responsive 16:9 layout so the iframe always fills
+/// the available width regardless of device size or orientation.
+private struct YouTubeVideoPlayerView: UIViewRepresentable {
+
+    let videoID: String
+
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        // Keep playback inline rather than taking over the full screen immediately.
+        config.allowsInlineMediaPlayback = true
+        // Let autoplay/user-gesture rules match the embed's own settings.
+        config.mediaTypesRequiringUserActionForPlayback = []
+
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.bounces = false
+        webView.backgroundColor = .black
+        webView.isOpaque = false
+        return webView
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        let embedURL = "https://www.youtube.com/embed/\(videoID)?playsinline=1&rel=0"
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+          <style>
+            html, body { margin: 0; padding: 0; background: #000; height: 100%; }
+            .video-container { position: relative; width: 100%; height: 100%; }
+            iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="video-container">
+            <iframe
+              src="\(embedURL)"
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen>
+            </iframe>
+          </div>
+        </body>
+        </html>
+        """
+        // baseURL matters — YouTube rejects embeds loaded from `about:blank`.
+        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
     }
 }
 

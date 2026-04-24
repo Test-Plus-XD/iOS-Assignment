@@ -168,11 +168,16 @@ private struct FullScreenImageView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    // Committed transform — persists after each gesture ends.
     @State private var scale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
+
+    // In-flight transform — tracks the live gesture and auto-resets when it ends.
+    // @GestureState avoids having to manually reset state in .onEnded.
     @GestureState private var liveMagnification: CGFloat = 1.0
     @GestureState private var liveDrag: CGSize = .zero
 
+    // Applied transform = committed × live, so pinch/pan feel continuous.
     private var currentScale: CGFloat { scale * liveMagnification }
     private var currentOffset: CGSize {
         CGSize(width: offset.width + liveDrag.width, height: offset.height + liveDrag.height)
@@ -187,8 +192,11 @@ private struct FullScreenImageView: View {
                 .scaleEffect(currentScale)
                 .offset(currentOffset)
                 .gesture(magnifyGesture)
+                // Drag runs alongside magnify — the gesture itself guards on `scale > 1`
+                // so panning only applies when the image is already zoomed in.
                 .simultaneousGesture(dragGesture)
                 .onTapGesture(count: 2) {
+                    // Double-tap toggles between fit (1×) and a convenient 2.5× zoom.
                     withAnimation(.spring(response: 0.3)) {
                         if scale > 1.0 {
                             scale = 1.0
@@ -199,6 +207,7 @@ private struct FullScreenImageView: View {
                     }
                 }
 
+            // Close button overlay — top-trailing, above the image layer.
             VStack {
                 HStack {
                     Spacer()
@@ -220,10 +229,13 @@ private struct FullScreenImageView: View {
 
     private var magnifyGesture: some Gesture {
         MagnifyGesture()
+            // Live magnification is multiplied into the displayed scale for smoothness.
             .updating($liveMagnification) { value, state, _ in
                 state = value.magnification
             }
             .onEnded { value in
+                // Commit the final scale, clamped to [1×, 5×]; snap offset to zero
+                // when fully zoomed out so the image re-centres.
                 withAnimation(.spring(response: 0.3)) {
                     scale = max(1.0, min(scale * value.magnification, 5.0))
                     if scale == 1.0 { offset = .zero }
@@ -234,6 +246,8 @@ private struct FullScreenImageView: View {
     private var dragGesture: some Gesture {
         DragGesture()
             .updating($liveDrag) { value, state, _ in
+                // Only pan when zoomed in — otherwise the drag competes with the
+                // outer sheet's dismissal gesture and confuses the user.
                 guard scale > 1.0 else { return }
                 state = value.translation
             }

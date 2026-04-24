@@ -524,7 +524,7 @@ Key files:
 | `Views/Auth/SignUpView.swift` | 427 |
 | `Views/Gemini/GeminiChatView.swift` | ~210 |
 | `Models/Menu.swift` | 383 |
-| `Views/Home/HomeView.swift` | 376 |
+| `Views/Home/HomeView.swift` | ~845 |
 | `Pour_RiceApp.swift` | ~420 |
 | `Core/Services/RestaurantService.swift` | 370 |
 | `Core/Utilities/LocalDataLoader.swift` | ~90 |
@@ -570,7 +570,7 @@ Key files:
 | `Views/Chat/ChatListView.swift` | ~145 |
 | `Views/Chat/ChatRoomView.swift` | ~170 |
 | `Views/Account/ProfileEditView.swift` | ~110 |
-| `Views/Chat/MessageBubbleView.swift` | ~80 |
+| `Views/Chat/MessageBubbleView.swift` | ~260 |
 | `Views/Common/LoadingView.swift` | 135 |
 | `Views/Common/StatusBadgeView.swift` | ~50 |
 | `Models/Booking.swift` | ~300 |
@@ -593,6 +593,30 @@ Key files:
 ---
 
 ## Change Log
+
+### 2026-04-23 — Chat Image Lightbox + Home Video Placeholder
+
+**`Views/Chat/MessageBubbleView.swift`** — image attachments are now square (220×220, was 240×160 landscape) and open a full-screen viewer on tap:
+- `@State showFullScreenImage` + `.fullScreenCover` presents a new private `FullScreenImageView`
+- `.contentShape(RoundedRectangle(cornerRadius: 14))` ensures the tap area matches the clipped visual bounds; existing context-menu delete action preserved
+- `FullScreenImageView` — black-background lightbox with:
+  - Pinch-to-zoom via `MagnifyGesture` clamped to `[1×, 5×]`; double-tap toggles 1× ↔ 2.5×
+  - `DragGesture` attached via `.simultaneousGesture` but guarded on `scale > 1` so it never competes with dismiss
+  - Committed transform (`@State scale`, `@State offset`) × live transform (`@GestureState liveMagnification`, `@GestureState liveDrag`) = displayed transform — `@GestureState` auto-resets on gesture end so no manual cleanup needed
+  - Close button (xmark in translucent circle) pinned top-trailing
+
+**`Views/Home/HomeView.swift`** — new `videoPlaceholderSection` at the top of the home feed (above the Featured carousel):
+- `import WebKit` added
+- Private `YouTubeVideoPlayerView: UIViewRepresentable` wraps `WKWebView` and loads an HTML iframe embed for `ttsJwHYT8NA` with `playsinline=1` + `rel=0`
+- `allowsInlineMediaPlayback = true` and `mediaTypesRequiringUserActionForPlayback = []` keep playback inline
+- `loadHTMLString(_:baseURL:)` must pass `baseURL: https://www.youtube.com` — YouTube rejects iframe embeds loaded from `about:blank`
+- Sized via a transparent `Color.black.aspectRatio(16/9, .fit)` wrapper with the web view as an `.overlay` — `UIViewRepresentable` has no intrinsic content size, so the aspect ratio must come from a concrete SwiftUI view
+
+### 2026-04-09 — Compile Fix: `foregroundStyle` on `if/else` Block (PR #8)
+
+**`Views/Search/SearchMapView.swift`** — fixed `"Instance member 'foregroundStyle' cannot be used on type 'View'"` at line 224 of `SearchMapCalloutCard`'s rating badge:
+- **Issue**: an `if restaurant.rating <= 0 { Text } else { HStack }` block was followed by shared `.foregroundStyle(.white)`, `.padding(...)`, `.background(..., in: Capsule())` modifiers. SwiftUI parsed those as calls on the `View` metatype (because a bare `if/else` is not itself a `View` expression) rather than as modifiers on a concrete view.
+- **Fix**: wrapped the `if/else` in a `Group { ... }` so the shared modifiers attach to the Group's concrete `some View` output. Same fix is safe to apply anywhere an `if/else` branch needs to carry chained modifiers — reach for `Group` or `@ViewBuilder` before `AnyView`.
 
 ### 2026-04-08 — Cross-Platform QR Scanning + macOS Fallback (PR #5)
 
