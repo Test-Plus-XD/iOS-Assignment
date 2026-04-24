@@ -99,6 +99,7 @@ struct Pour_RiceApp: App {
     /// }
     init() {
         self.services = Self.sharedServices
+        self.appDelegate.configure(notificationCoordinator: services.notificationCoordinatorService)
     }
 
     // MARK: - Scene Configuration
@@ -364,10 +365,86 @@ struct RootView: View {
                 }
             }
         }
+        // ── Foreground FCM banner ─────────────────────────────────────────
+        // App-rendered foreground notification banner for chat and booking pushes.
+        // iOS background notifications are still shown by APNs; this overlay is only
+        // for the active foreground app where we suppress the system visual banner.
+        .overlay(alignment: .top) {
+            notificationBannerOverlay
+        }
+        // ── Auth-driven FCM token sync ─────────────────────────────────────
+        // Permission and backend token registration are attempted only after
+        // the profile has loaded, because notification preferences live there.
+        .task {
+            await services.notificationCoordinatorService.synchroniseForCurrentUser(reason: "root-task")
+        }
+        .onChange(of: authService.currentUser?.id) { _, _ in
+            Task {
+                await services.notificationCoordinatorService.synchroniseForCurrentUser(reason: "auth-user-change")
+            }
+        }
+        .onChange(of: authService.currentUser?.notificationsEnabled) { _, _ in
+            Task {
+                await services.notificationCoordinatorService.synchroniseForCurrentUser(reason: "notification-preference-change")
+            }
+        }
+    }
+
+    // MARK: - Foreground Notification Banner
+
+    /// App-level banner shown for foreground FCM notifications that are not suppressed.
+    private var notificationBannerOverlay: some View {
+        Group {
+            if let banner = services.notificationCoordinatorService.banner {
+                Button {
+                    services.notificationCoordinatorService.openBanner(banner)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.title3)
+                            .foregroundStyle(.white)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(banner.title)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .lineLimit(1)
+                            if !banner.body.isEmpty {
+                                Text(banner.body)
+                                    .font(.caption)
+                                    .lineLimit(2)
+                            }
+                        }
+
+                        Spacer()
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.accentColor.gradient, in: RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 6)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                }
+                .buttonStyle(.plain)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.35), value: services.notificationCoordinatorService.banner?.id)
     }
 }
 
 // MARK: - Main Tab View
+
+/// Stable tab identifiers used for programmatic notification routing.
+private enum AppTab: Hashable {
+    case home
+    case search
+    case bookings
+    case store
+    case chat
+    case account
+}
 
 /// Main tab-based navigation structure for the app with Liquid Glass effects (iOS 26+)
 /// Adapts tabs based on the user's account type:
@@ -398,6 +475,15 @@ struct MainTabView: View {
     /// Set to `true` by the sheet's `onDismiss` after the user picks their account type.
     @State private var showTypeSelectionToast = false
 
+    /// Currently selected tab, allowing notification taps to route into Chat, Bookings, or Store.
+    @State private var selectedTab: AppTab = .home
+
+    /// Store navigation path used to push restaurant-owner booking management from notifications.
+    @State private var storeNavigationPath = NavigationPath()
+
+    /// Chat navigation path used to push a specific room from notifications.
+    @State private var chatNavigationPath = NavigationPath()
+
     // MARK: - Computed
 
     /// Convenience: true when the signed-in user is a restaurant owner
@@ -413,13 +499,13 @@ struct MainTabView: View {
     // MARK: - Body
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
 
             // ================================================================
             // HOME TAB — restaurant discovery + featured carousel
             // ================================================================
 
-            Tab("home_title", systemImage: "house.fill") {
+            Tab("home_title", systemImage: "house.fill", value: AppTab.home) {
                 NavigationStack {
                     HomeView()
                         .navigationDestination(for: Restaurant.self) { restaurant in
@@ -441,7 +527,7 @@ struct MainTabView: View {
             // SEARCH TAB — Algolia-powered restaurant search
             // ================================================================
 
-            Tab("search_title", systemImage: "magnifyingglass") {
+            Tab("search_title", systemImage: "magnifyingglass", value: AppTab.search) {
                 NavigationStack {
                     SearchView()
                         .navigationDestination(for: Restaurant.self) { restaurant in
@@ -464,7 +550,7 @@ struct MainTabView: View {
             // ================================================================
 
             if isDiner {
-                Tab("bookings_title", systemImage: "calendar") {
+                Tab("bookings_title", systemImage: "calendar", value: AppTab.bookings) {
                     NavigationStack {
                         BookingsView()
                     }
@@ -476,8 +562,8 @@ struct MainTabView: View {
             // ================================================================
 
             if !isGuest && isRestaurantOwner {
-                Tab("store_title", systemImage: "storefront.fill") {
-                    NavigationStack {
+                Tab("store_title", systemImage: "storefront.fill", value: AppTab.store) {
+                    NavigationStack(path: $storeNavigationPath) {
                         StoreView()
                             .navigationDestination(for: StoreDestination.self) { destination in
                                 switch destination {
@@ -515,8 +601,8 @@ struct MainTabView: View {
             // ================================================================
 
             if !isGuest && authService.isAuthenticated {
-                Tab("chat_title", systemImage: "bubble.left.and.bubble.right.fill") {
-                    NavigationStack {
+                Tab("chat_title", systemImage: "bubble.left.and.bubble.right.fill", value: AppTab.chat) {
+                    NavigationStack(path: $chatNavigationPath) {
                         ChatListView()
                             .navigationDestination(for: ChatRoom.self) { room in
                                 ChatRoomView(room: room)
@@ -529,7 +615,7 @@ struct MainTabView: View {
             // ACCOUNT TAB — user profile, preferences, and sign-out
             // ================================================================
 
-            Tab("account_title", systemImage: "person.fill") {
+            Tab("account_title", systemImage: "person.fill", value: AppTab.account) {
                 NavigationStack {
                     AccountView(isGuest: $isGuest)
                         .navigationDestination(for: GeminiNavigation.self) { nav in
@@ -560,6 +646,47 @@ struct MainTabView: View {
             style: .success,
             isPresented: $showTypeSelectionToast
         )
+        .task {
+            handlePendingNotificationRouteIfAvailable()
+        }
+        .onChange(of: services.notificationCoordinatorService.routeRequest) { _, _ in
+            handlePendingNotificationRouteIfAvailable()
+        }
+        .onChange(of: authService.currentUser?.id) { _, _ in
+            handlePendingNotificationRouteIfAvailable()
+        }
+        .onChange(of: authService.currentUser?.userType.rawValue) { _, _ in
+            handlePendingNotificationRouteIfAvailable()
+        }
+    }
+
+    // MARK: - Notification Routing
+
+    /// Applies one-shot route requests emitted by NotificationCoordinatorService.
+    private func handlePendingNotificationRouteIfAvailable() {
+        guard let request = services.notificationCoordinatorService.routeRequest,
+              !isGuest,
+              authService.currentUser != nil else { return }
+
+        switch request.route {
+        case .bookings:
+            if isRestaurantOwner {
+                selectedTab = .store
+                storeNavigationPath = NavigationPath()
+                storeNavigationPath.append(StoreDestination.bookings)
+            } else if isDiner {
+                selectedTab = .bookings
+            } else {
+                return
+            }
+
+        case .chat(let roomId):
+            selectedTab = .chat
+            chatNavigationPath = NavigationPath()
+            chatNavigationPath.append(ChatRoom.placeholder(roomId: roomId, name: String(localized: "chat_conversation", bundle: L10n.bundle)))
+        }
+
+        services.notificationCoordinatorService.clearRouteRequest(request)
     }
 }
 

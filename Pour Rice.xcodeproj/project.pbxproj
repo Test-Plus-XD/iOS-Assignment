@@ -14,6 +14,8 @@
 		CD7409952F3F8C82000A59BE /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409942F3F8C82000A59BE /* FirebaseAnalytics */; };
 		CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409962F3F8C8C000A59BE /* FirebaseAuth */; };
 		CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */; };
+		EEFC00012F98000000000001 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EEFC00032F98000000000001 /* FirebaseMessaging */; };
+		EEFC00022F98000000000001 /* FirebaseInAppMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EEFC00042F98000000000001 /* FirebaseInAppMessaging */; };
 		EEA100001111111111111111 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EEA100011111111111111111 /* GoogleSignIn */; };
 /* End PBXBuildFile section */
 
@@ -109,6 +111,8 @@
 				CD7409932F3F8C77000A59BE /* FirebaseAnalyticsCore in Frameworks */,
 				CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */,
 				CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */,
+				EEFC00012F98000000000001 /* FirebaseMessaging in Frameworks */,
+				EEFC00022F98000000000001 /* FirebaseInAppMessaging in Frameworks */,
 				EEA100001111111111111111 /* GoogleSignIn in Frameworks */,
 			);
 		};
@@ -178,6 +182,8 @@
 				CD7409942F3F8C82000A59BE /* FirebaseAnalytics */,
 				CD7409962F3F8C8C000A59BE /* FirebaseAuth */,
 				CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */,
+				EEFC00032F98000000000001 /* FirebaseMessaging */,
+				EEFC00042F98000000000001 /* FirebaseInAppMessaging */,
 				EEA100011111111111111111 /* GoogleSignIn */,
 				EEB200011111111111111111 /* SocketIO */,
 			);
@@ -456,6 +462,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "Pour Rice/Pour_Rice.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SN36Y72MA3;
@@ -502,6 +509,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "Pour Rice/Pour_Rice.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SN36Y72MA3;
@@ -744,6 +752,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseInstallations;
+		};
+		EEFC00032F98000000000001 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		EEFC00042F98000000000001 /* FirebaseInAppMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseInAppMessaging;
 		};
 		EEA100011111111111111111 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;

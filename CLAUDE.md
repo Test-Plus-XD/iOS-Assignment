@@ -11,6 +11,7 @@ Supports multiple user types (diners and restaurant owners) with real-time chat,
 - **Authentication**: Firebase Auth (email/password + Google Sign-In) with guest browsing mode
 - **Backend**: Vercel Express API (`https://vercel-express-api-alpha.vercel.app`)
 - **Real-time**: Socket.IO v4 via Railway (`https://railway-socket-production.up.railway.app`)
+- **Notifications**: Firebase Cloud Messaging/APNs + Firebase In-App Messaging campaign SDK
 - **AI**: Google Gemini via Vercel proxy (`POST /API/Gemini/chat`)
 - **Search**: Algolia via Vercel proxy (`GET /API/Algolia/Restaurants`) — no client-side Algolia SDK
 - **Maps**: Apple MapKit (SwiftUI `Map`, `Marker`, `MapPolyline`, `MKDirections`) — no Google Maps SDK
@@ -122,6 +123,7 @@ Pour Rice/
       │   ├── BookingService.swift       # Booking CRUD (diner + restaurant owner perspectives)
       │   ├── ChatService.swift          # Chat REST API (rooms, messages, edit/delete)
       │   ├── SocketService.swift        # Socket.IO v4 real-time (socket.io-client-swift library)
+      │   ├── NotificationCoordinatorService.swift # FCM token lifecycle + foreground banners + push routing
       │   ├── GeminiService.swift        # Gemini AI chat + description generation + generateAdvertisement()
       │   ├── AdvertisementService.swift # Advertisement CRUD + createStripeCheckoutSession()
       │   ├── ImageUploadService.swift   # Chat image upload (progress KVO) + generic uploadImage(folder:authToken:)
@@ -137,6 +139,7 @@ Pour Rice/
       │   └── APIError.swift             # Network error types
       ├── Utilities/
       │   ├── Constants.swift            # API URLs, Socket.IO URL, endpoint paths, UI values, Map config
+      │   ├── NotificationRouteParser.swift # FCM route/url payload parsing for /booking and /chat/:roomId
       │   └── LocalDataLoader.swift      # Synchronous JSON loader for bundled bilingual data; BilingualEntry model
       └── Extensions/
           ├── View+Extensions.swift      # Services env key + shimmerEffect + haptics + cardStyle
@@ -149,6 +152,8 @@ Pour Rice/
 - `Models/Booking.swift` — `BookingStatus` enum with `.colour` and `.label`; `BookingDiner` for restaurant-side enrichment; `canCancel`, `isUpcoming`, `isPast` computed properties
 - `Models/ChatRoom.swift` — `ChatRoom.placeholder(roomId:name:)` factory for navigation values; `ChatMessage.displayText` renders "[Message deleted]" for soft-deletes
 - `Core/Services/SocketService.swift` — Socket.IO v4 via `socket.io-client-swift` (`SocketManager` + `SocketIOClient`); `isConnected` and `isRegistered` state gates; `incomingMessages`, `typingIndicators`, and `connectionStateChanges` as `AsyncStream`; `reconnect()` with stored credentials
+- `Core/Services/NotificationCoordinatorService.swift` — FCM/APNs token sync; registers `ios-native` tokens with `/API/Messaging/register-token`; removes tokens before sign-out; renders foreground banners; suppresses active-chat duplicates; emits notification route requests
+- `Core/Utilities/NotificationRouteParser.swift` — Parses `route` first and legacy `url` fallback for `/booking`, `/chat/{roomId}`, `pourrice://bookings`, and `pourrice://chat/{roomId}`
 - `ViewModels/ChatRoomViewModel.swift` — Starts/stops socket stream listeners; falls back to REST if socket unavailable; typing debounce with auto-stop; automatic reconnection with connection state monitoring; `isUsingSocket` observable for UI feedback
 - `ViewModels/AccountViewModel.swift` — Profile editing with edit buffers (name, phone, bio, theme, notifications); toast feedback on save; language preference management
 - `Views/Restaurant/RestaurantView.swift` — Location section (embedded `Map`, address, "Get Directions" button) inserted between Contact and Menu Preview; action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`)
@@ -165,6 +170,7 @@ Pour Rice/
 - **Search**: `GET /API/Algolia/Restaurants?query=&districts=&keywords=&page=0&hitsPerPage=50`
 - **Bookings**: `GET/POST /API/Bookings`, `PUT/DELETE /API/Bookings/:id`, `GET /API/Bookings/restaurant/:id`
 - **Chat REST**: `GET /API/Chat/Records/:uid`, `GET/POST /API/Chat/Rooms`, `GET/POST/PUT/DELETE /API/Chat/Rooms/:roomId/Messages/:messageId`
+- **Messaging**: `POST /API/Messaging/register-token`, `DELETE /API/Messaging/register-token?token=...` (auth; iOS sends `platform: "ios-native"` and bundle ID appId)
 - **Gemini**: `POST /API/Gemini/chat` (no auth), `POST /API/Gemini/generate` (auth), `POST /API/Gemini/restaurant-description` (no auth)
 - **Restaurant**: `POST /API/Restaurants` (create, no auth, `ownerId` in body), `POST /API/Restaurants/:id/claim`, `PUT /API/Restaurants/:id`, `POST /API/Restaurants/:id/image`
 - **Add Restaurant flow**: `POST /API/Restaurants` → get `{ id }` → `PUT /API/Users/:uid { restaurantId }` (auth). `StoreService.createRestaurant(request:)` handles both steps. `AddRestaurantView` — SwiftUI Form sheet triggered from `ClaimRestaurantView` ("Can't find your restaurant? Add a new one" button). Bundled JSON data loaded via `LocalDataLoader`: `districts.json` (18 HK districts), `keywords.json` (90 keywords), `payments.json` (10 methods), `weekdays.json` (7 days). Keywords/Payments shown only in active locale. Opening hours: `Toggle` per day + `DatePicker(.hourAndMinute)`. Location: `MapReader` + `.onTapGesture` → `proxy.convert(_:from:)` → `CLLocationCoordinate2D`. New `APIEndpoint.createRestaurant(CreateRestaurantRequest)` + `CreateRestaurantResponse`. `UpdateUserRequest` gained `restaurantId: String?` field.
@@ -214,6 +220,47 @@ Restaurant owner flow:
     → BookingService.acceptBooking / declineBooking / completeBooking
     → PUT /API/Bookings/:id { status, declineMessage? }
 ```
+
+## Notification Architecture (FCM/APNs + In-App Messaging)
+```
+AppDelegate
+  ├── FirebaseApp.configure() guard
+  ├── Messaging.messaging().delegate = self
+  ├── UNUserNotificationCenter.current().delegate = self
+  ├── Messaging.messaging().apnsToken = deviceToken   # required because swizzling is disabled
+  └── InAppMessaging.inAppMessaging()                 # enables Firebase Console campaign SDK
+
+RootView
+  ├── waits for AuthService.currentUser/profile
+  ├── NotificationCoordinatorService.synchroniseForCurrentUser(...)
+  └── foreground banner overlay for app-rendered chat/booking notifications
+
+NotificationCoordinatorService
+  ├── requests alert/badge/sound permission after auth/profile load
+  ├── fetches FCM token via FirebaseMessaging
+  ├── POST /API/Messaging/register-token
+  │     { token, platform: "ios-native", appId: Bundle.main.bundleIdentifier }
+  ├── DELETE /API/Messaging/register-token?token=... before sign-out
+  ├── suppresses foreground chat banners when ChatRoomView is already open for the same room
+  └── emits NotificationRouteRequest for MainTabView to consume
+
+Notification payload contract:
+  route: "/booking" | "/chat/{roomId}"      # preferred
+  url: "pourrice://bookings|chat/{roomId}"  # legacy fallback
+  notificationTag/messageId                 # foreground de-duplication
+  title/body                                # foreground banner text
+
+Notification routing:
+  /booking       → Diner Bookings tab, or Restaurant Owner Store tab → StoreDestination.bookings
+  /chat/{roomId} → Chat tab → ChatRoomView(ChatRoom.placeholder(roomId:name:))
+```
+
+Manual setup that code cannot complete:
+- Firebase Console: Bundle ID must match `Pour-Rice.Pour-Rice`; `GoogleService-Info.plist` must be for that iOS app.
+- Firebase Console: Upload an APNs authentication key under Cloud Messaging for the iOS app.
+- Firebase Console: Firebase In-App Messaging campaigns require Firebase Analytics and an active campaign in the console; chat/booking banners do not depend on campaigns.
+- Xcode/MacBook: Verify Push Notifications capability, Background Modes > Remote notifications, signing team, provisioning profile, and `aps-environment` entitlement.
+- Device testing: Background/terminated APNs delivery must be validated on a physical iPhone, not only the simulator.
 
 ## Gemini AI Integration
 ```
@@ -507,16 +554,16 @@ Key files:
 
 ### SPM Dependencies
 - **Kingfisher** — image loading and caching (`AsyncImageView`)
-- **Firebase iOS SDK** — FirebaseCore, FirebaseAuth, FirebaseAnalytics, FirebaseAnalyticsCore, FirebaseInstallations
+- **Firebase iOS SDK** — FirebaseCore, FirebaseAuth, FirebaseAnalytics, FirebaseAnalyticsCore, FirebaseInstallations, FirebaseMessaging, FirebaseInAppMessaging
 - **GoogleSignIn-iOS** — Google OAuth sign-in (v8.0.0)
 - **socket.io-client-swift** — Socket.IO v4 client (`SocketManager` + `SocketIOClient`); branch `master`; used in `SocketService.swift`
-- Removed (unused): Alamofire, algoliasearch-client-swift, swift-async-algorithms, FirebaseFirestore, FirebaseInAppMessaging-Beta, FirebaseMessaging, FirebaseStorage
+- Removed (unused): Alamofire, algoliasearch-client-swift, swift-async-algorithms, FirebaseFirestore, FirebaseStorage
 
 ## Swift File Line Counts
 
 | File | Lines |
 |------|-------|
-| `Core/Services/AuthService.swift` | ~600 |
+| `Core/Services/AuthService.swift` | ~606 |
 | `Views/Restaurant/RestaurantView.swift` | ~640 |
 | `Views/Restaurant/DirectionsView.swift` | ~230 |
 | `Models/Restaurant.swift` | 524 |
@@ -525,26 +572,26 @@ Key files:
 | `Views/Gemini/GeminiChatView.swift` | ~210 |
 | `Models/Menu.swift` | 383 |
 | `Views/Home/HomeView.swift` | ~845 |
-| `Pour_RiceApp.swift` | ~420 |
+| `Pour_RiceApp.swift` | ~547 |
 | `Core/Services/RestaurantService.swift` | 370 |
 | `Core/Utilities/LocalDataLoader.swift` | ~90 |
 | `Views/Store/StoreView.swift` | ~260 |
 | `Views/Menu/MenuView.swift` | 330 |
 | `Core/Services/LocationService.swift` | 315 |
-| `Models/ChatRoom.swift` | ~330 |
+| `Models/ChatRoom.swift` | ~338 |
 | `Core/Services/SocketService.swift` | ~280 |
-| `ViewModels/ChatRoomViewModel.swift` | ~440 |
+| `ViewModels/ChatRoomViewModel.swift` | ~442 |
 | `Views/Search/SearchView.swift` | ~290 |
 | `Views/Search/SearchMapView.swift` | ~175 |
 | `Views/Common/AsyncImageView.swift` | 259 |
 | `Views/Account/AccountView.swift` | ~390 |
 | `Views/Account/UserTypeSelectionView.swift` | ~165 |
 | `Models/BilingualText.swift` | 251 |
-| `Core/Network/APIEndpoint.swift` | ~440 |
+| `Core/Network/APIEndpoint.swift` | ~471 |
 | `Core/Network/APIClient.swift` | ~280 |
 | `Models/User.swift` | ~350 |
 | `Views/Common/EmptyStateView.swift` | 216 |
-| `Core/Extensions/View+Extensions.swift` | ~425 |
+| `Core/Extensions/View+Extensions.swift` | ~436 |
 | `ViewModels/SearchViewModel.swift` | ~225 |
 | `ViewModels/RestaurantViewModel.swift` | ~220 |
 | `Core/Services/MenuService.swift` | 185 |
@@ -552,7 +599,7 @@ Key files:
 | `Core/Network/APIError.swift` | 179 |
 | `Core/Extensions/Date+Extensions.swift` | 177 |
 | `ViewModels/HomeViewModel.swift` | ~195 |
-| `Core/Utilities/Constants.swift` | ~285 |
+| `Core/Utilities/Constants.swift` | ~290 |
 | `ViewModels/MenuViewModel.swift` | 169 |
 | `Views/Store/AddRestaurantView.swift` | ~375 |
 | `Views/Search/FilterView.swift` | ~150 |
@@ -568,31 +615,49 @@ Key files:
 | `Views/Bookings/BookingCardView.swift` | ~100 |
 | `Views/Bookings/CreateBookingView.swift` | ~130 |
 | `Views/Chat/ChatListView.swift` | ~145 |
-| `Views/Chat/ChatRoomView.swift` | ~170 |
+| `Views/Chat/ChatRoomView.swift` | ~174 |
 | `Views/Account/ProfileEditView.swift` | ~110 |
 | `Views/Chat/MessageBubbleView.swift` | ~260 |
 | `Views/Common/LoadingView.swift` | 135 |
 | `Views/Common/StatusBadgeView.swift` | ~50 |
 | `Models/Booking.swift` | ~300 |
 | `Models/GeminiMessage.swift` | ~200 |
-| `ViewModels/AccountViewModel.swift` | ~235 |
+| `ViewModels/AccountViewModel.swift` | ~238 |
 | `Models/Review.swift` | ~260 |
 | `Core/Services/ReviewService.swift` | 126 |
-| `App/AppDelegate.swift` | 62 |
+| `App/AppDelegate.swift` | 164 |
+| `Core/Services/NotificationCoordinatorService.swift` | 368 |
+| `Core/Utilities/NotificationRouteParser.swift` | 83 |
 | `Core/QR/QRPayloadDetector.swift` | ~100 |
 | `Core/QR/QRFrameProcessor.swift` | ~85 |
 | `Core/QR/QRDataHandler.swift` | ~55 |
 | `Views/QR/QRScannerView.swift` | ~395 |
 | `Views/QR/RestaurantQRView.swift` | 237 |
 | `ViewModels/QRScannerViewModel.swift` | ~205 |
+| `Pour_Rice.entitlements` | 8 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~14,820** |
+| **Total (estimated)** | **~15,578** |
 
 ---
 
 ## Change Log
+
+### 2026-04-24 — iOS FCM + In-App Messaging
+
+**FCM/APNs integration** — Added native iOS notification plumbing matching the repaired Android flow:
+- `FirebaseMessaging` and `FirebaseInAppMessaging` package products added to the `Pour Rice` target.
+- `AppDelegate.swift` now wires `MessagingDelegate`, `UNUserNotificationCenterDelegate`, APNs token handoff, foreground push handling, notification taps, and Firebase In-App Messaging initialisation while keeping `FirebaseAppDelegateProxyEnabled = false`.
+- `NotificationCoordinatorService` owns permission requests, FCM token registration/removal, foreground banner state, de-duplication, active-chat suppression, and notification route requests.
+- `NotificationRouteParser` supports `route` first and legacy `url` fallback for `/booking`, `/chat/{roomId}`, `pourrice://bookings`, and `pourrice://chat/{roomId}`.
+- `MainTabView` now has programmatic tab/path routing for booking and chat notification taps.
+- `ChatRoomView` reports the active room so foreground chat notifications for the visible room are suppressed.
+- REST fallback chat sends now include a client-generated `messageId` for backend idempotency/de-duplication.
+- Added `Pour_Rice.entitlements` with `aps-environment` and `Info.plist` `UIBackgroundModes = remote-notification`.
+- Added `NotificationRouteParserTests` for the notification route contract.
+
+Manual setup still required: Firebase APNs key upload, matching iOS Firebase app/`GoogleService-Info.plist`, Firebase In-App Messaging campaign configuration if campaigns are desired, Xcode Push Notifications + Background Modes verification, provisioning/signing check, and physical iPhone testing.
 
 ### 2026-04-23 — Chat Image Lightbox + Home Video Placeholder
 

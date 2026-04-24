@@ -114,6 +114,9 @@ final class AuthService {
     /// This handle lets us remove the listener later to prevent memory leaks
     private var authStateHandle: AuthStateDidChangeListenerHandle?
 
+    /// Optional async hook used by Services to run cleanup that requires a valid Firebase ID token before sign-out.
+    var beforeSignOut: (() async -> Void)?
+
     // MARK: - Initialisation
 
     /// Creates a new authentication service instance
@@ -447,8 +450,11 @@ final class AuthService {
     /// Future<void> signOut() async {
     ///   await FirebaseAuth.instance.signOut();
     /// }
-    func signOut() throws {
+    func signOut() async throws {
         do {
+            // Run notification token cleanup before Firebase Auth clears the ID token used by the backend.
+            await beforeSignOut?()
+
             // Sign out from Firebase
             try auth.signOut()
 
@@ -723,4 +729,3 @@ final class AuthService {
         }
     }
 }
-

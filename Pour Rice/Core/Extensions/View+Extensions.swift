@@ -128,6 +128,9 @@ class Services {
     /// DocuPipe AI document extraction service (menu bulk import)
     let docuPipeService: DocuPipeService
 
+    /// FCM/APNs notification coordinator for token lifecycle, foreground banners, and push routing.
+    let notificationCoordinatorService: NotificationCoordinatorService
+
     // MARK: - Initialisation
 
     /// Creates a new services container with all dependencies
@@ -155,6 +158,14 @@ class Services {
         self.imageUploadService = ImageUploadService()
         self.advertisementService = AdvertisementService(apiClient: client)
         self.docuPipeService = DocuPipeService()
+
+        let notificationCoordinator = NotificationCoordinatorService(apiClient: client, authService: auth)
+        self.notificationCoordinatorService = notificationCoordinator
+
+        // Token removal must happen before Firebase Auth signs out because the backend endpoint requires a valid ID token.
+        auth.beforeSignOut = { [weak notificationCoordinator] in
+            await notificationCoordinator?.unregisterCurrentToken(reason: "sign-out")
+        }
 
         print("✅ Services container initialised")
     }

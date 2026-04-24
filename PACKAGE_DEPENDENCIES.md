@@ -1,31 +1,34 @@
 # Swift Package Dependencies Setup
 
-**IMPORTANT**: Please add these dependencies in Xcode using: File > Add Package Dependencies
+**IMPORTANT**: Most packages are already present in `Pour Rice.xcodeproj`. Use Xcode > File > Add Package Dependencies only if package resolution removes or fails to attach one of these products.
 
 ## Packages to Add (Using Latest Versions)
 
 ### 1. Firebase iOS SDK
 - **URL**: https://github.com/firebase/firebase-ios-sdk
-- **Version**: Latest (11.x or higher)
+- **Version**: Existing project pin (`12.11.0`) or newer
 - **Products to add to "Pour Rice" target**:
+  - FirebaseCore
+  - FirebaseAnalytics
   - FirebaseAuth
-  - FirebaseFirestore
-  - FirebaseStorage
+  - FirebaseInstallations
+  - FirebaseMessaging
+  - FirebaseInAppMessaging
 
-### 2. Alamofire
-- **URL**: https://github.com/Alamofire/Alamofire
-- **Version**: Latest (5.x or higher)
-- **Products to add**: Alamofire
-
-### 3. Kingfisher
+### 2. Kingfisher
 - **URL**: https://github.com/onevcat/Kingfisher
 - **Version**: Latest (8.x or higher)
 - **Products to add**: Kingfisher
 
-### 4. AlgoliaSearchClient
-- **URL**: https://github.com/algolia/algoliasearch-client-swift
+### 3. GoogleSignIn-iOS
+- **URL**: https://github.com/google/GoogleSignIn-iOS
 - **Version**: Latest (8.x or higher)
-- **Products to add**: AlgoliaSearchClient
+- **Products to add**: GoogleSignIn
+
+### 4. Socket.IO Client Swift
+- **URL**: https://github.com/socketio/socket.io-client-swift
+- **Version**: Existing project pin/branch
+- **Products to add**: SocketIO
 
 ## How to Add in Xcode
 
@@ -42,9 +45,10 @@
 ## Verification
 
 After adding all packages, the project should build successfully with `import` statements for:
+- `import FirebaseCore`
 - `import FirebaseAuth`
-- `import FirebaseFirestore`
-- `import FirebaseStorage`
-- `import Alamofire`
+- `import FirebaseMessaging`
+- `import FirebaseInAppMessaging`
 - `import Kingfisher`
-- `import AlgoliaSearchClient`
+- `import GoogleSignIn`
+- `import SocketIO`

@@ -73,10 +73,14 @@ struct ChatRoomView: View {
                 }
             }
         }
+        .onAppear {
+            services.notificationCoordinatorService.setActiveChatRoom(room.id)
+        }
         .task {
             await startChat()
         }
         .onDisappear {
+            services.notificationCoordinatorService.clearActiveChatRoom(room.id)
             viewModel.stop()
         }
         .toast(message: viewModel.toastMessage, style: viewModel.toastStyle, isPresented: Binding(

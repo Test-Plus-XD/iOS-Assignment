@@ -81,6 +81,11 @@ enum Constants {
             /// Suffix appended to chatRooms + /:roomId for messages
             static let chatMessages = "/Messages"
 
+            // MARK: Messaging Endpoints
+
+            /// Endpoint for registering and unregistering FCM device tokens.
+            static let messagingRegisterToken = "/API/Messaging/register-token"
+
             // MARK: Gemini AI Endpoints
 
             /// Endpoint for multi-turn Gemini chat

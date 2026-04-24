@@ -813,7 +813,8 @@ private struct YouTubeVideoPlayerView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        let embedURL = "https://www.youtube.com/embed/\(videoID)?playsinline=1&rel=0"
+        let origin = "https://pourrice.app"
+        let embedURL = "https://www.youtube-nocookie.com/embed/\(videoID)?playsinline=1&rel=0&origin=\(origin)"
         let html = """
         <!DOCTYPE html>
         <html>
@@ -839,7 +840,9 @@ private struct YouTubeVideoPlayerView: UIViewRepresentable {
         </html>
         """
         // baseURL matters — YouTube rejects embeds loaded from `about:blank`.
-        webView.loadHTMLString(html, baseURL: URL(string: "https://www.youtube.com"))
+        // Using a neutral origin (not youtube.com itself) and matching `origin=` param
+        // avoids the 152-2 "origin mismatch" error on simulator embeds.
+        webView.loadHTMLString(html, baseURL: URL(string: origin))
     }
 }
 

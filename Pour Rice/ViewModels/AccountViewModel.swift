@@ -225,11 +225,14 @@ final class AccountViewModel {
     func signOut() {
         isSigningOut = true
         errorMessage = nil
-        do {
-            try authService.signOut()
-        } catch {
-            errorMessage = error.localizedDescription
+        Task { @MainActor in
+            defer { isSigningOut = false }
+
+            do {
+                try await authService.signOut()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
-        isSigningOut = false
     }
 }

@@ -487,7 +487,9 @@ final class ChatRoomViewModel {
         } else {
             // REST fallback — text only (images already blocked above if present)
             do {
-                let request = SendMessageRequest(message: text, userId: userId, displayName: displayName)
+                let timestampMilliseconds = Int(Date().timeIntervalSince1970 * 1000)
+                let messageId = "\(userId)-\(timestampMilliseconds)"
+                let request = SendMessageRequest(message: text, userId: userId, displayName: displayName, messageId: messageId)
                 _ = try await chatService?.sendMessage(roomId: roomId, request: request)
                 await pollMessages()
             } catch {

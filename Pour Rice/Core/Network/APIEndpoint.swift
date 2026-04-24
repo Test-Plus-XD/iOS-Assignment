@@ -106,6 +106,14 @@ enum APIEndpoint {
     /// Soft-delete a chat message (DELETE /API/Chat/Rooms/:roomId/Messages/:messageId).
     case deleteChatMessage(roomId: String, messageId: String, DeleteMessageRequest)
 
+    // MARK: - Messaging Endpoints
+
+    /// Register this device's FCM token for the authenticated user.
+    case registerFcmToken(RegisterFcmTokenRequest)
+
+    /// Remove this device's FCM token for the authenticated user.
+    case unregisterFcmToken(token: String)
+
     /// Create a new restaurant (POST /API/Restaurants). No auth required; ownerId set in body.
     case createRestaurant(CreateRestaurantRequest)
 
@@ -156,6 +164,7 @@ enum APIEndpoint {
              .createBooking, .updateBooking, .deleteBooking,
              .claimRestaurant, .updateRestaurant,
              .createMenuItem, .updateMenuItem, .deleteMenuItem,
+             .registerFcmToken, .unregisterFcmToken,
              .geminiGenerate,
              .geminiAdvertisement,
              .createAdvertisement, .updateAdvertisement, .deleteAdvertisement,
@@ -265,6 +274,10 @@ enum APIEndpoint {
         case .deleteChatMessage(let roomId, let messageId, _):
             return "\(Constants.API.Endpoints.chatRooms)/\(roomId)\(Constants.API.Endpoints.chatMessages)/\(messageId)"
 
+        // Messaging
+        case .registerFcmToken, .unregisterFcmToken:
+            return Constants.API.Endpoints.messagingRegisterToken
+
         // Gemini
         case .geminiChat:
             return Constants.API.Endpoints.geminiChat
@@ -307,6 +320,7 @@ enum APIEndpoint {
         case .submitReview, .createUserProfile, .createBooking,
              .claimRestaurant, .createMenuItem,
              .createChatRoom, .sendChatMessage,
+             .registerFcmToken,
              .geminiChat, .geminiGenerate, .geminiRestaurantDescription, .geminiRestaurantChat,
              .geminiAdvertisement,
              .createRestaurant,
@@ -322,6 +336,7 @@ enum APIEndpoint {
 
         // DELETE — removing resources
         case .deleteBooking, .deleteMenuItem, .deleteChatMessage,
+             .unregisterFcmToken,
              .deleteAdvertisement:
             return .delete
 
@@ -360,6 +375,9 @@ enum APIEndpoint {
         case .fetchAdvertisements(let restaurantId):
             guard let restaurantId = restaurantId else { return nil }
             return [URLQueryItem(name: "restaurantId", value: restaurantId)]
+
+        case .unregisterFcmToken(let token):
+            return [URLQueryItem(name: "token", value: token)]
 
         default:
             return nil
@@ -403,6 +421,10 @@ enum APIEndpoint {
         case .editChatMessage(_, _, let request):
             return request
         case .deleteChatMessage(_, _, let request):
+            return request
+
+        // Messaging
+        case .registerFcmToken(let request):
             return request
 
         // Gemini
@@ -541,6 +563,15 @@ struct EditMessageRequest: Codable, Sendable {
 /// Request body for DELETE /API/Chat/Rooms/:roomId/Messages/:messageId
 struct DeleteMessageRequest: Codable, Sendable {
     let userId: String
+}
+
+// MARK: - Messaging Request Models
+
+/// Request body for POST /API/Messaging/register-token.
+struct RegisterFcmTokenRequest: Codable, Sendable {
+    let token: String
+    let platform: String
+    let appId: String?
 }
 
 // MARK: - Claim Restaurant Response

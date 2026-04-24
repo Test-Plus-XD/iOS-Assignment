@@ -289,9 +289,17 @@ struct CreateRoomRequest: Codable, Sendable {
 
 /// Request body for POST /API/Chat/Rooms/:roomId/Messages
 struct SendMessageRequest: Codable, Sendable {
+    let messageId: String?
     let message: String
     let userId: String
     let displayName: String
+
+    init(message: String, userId: String, displayName: String, messageId: String? = nil) {
+        self.messageId = messageId
+        self.message = message
+        self.userId = userId
+        self.displayName = displayName
+    }
 }
 
 // MARK: - Response Models
