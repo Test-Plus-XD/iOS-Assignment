@@ -163,16 +163,36 @@ struct QRScannerView: View {
 
                     Spacer()
 
-                    Button {
-                        // Toggle is reflected in updateUIViewController where torch hardware is set.
-                        vm.isTorchOn.toggle()
-                    } label: {
-                        Image(systemName: vm.isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                            .font(.title)
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.4), radius: 4)
+                    HStack(spacing: Constants.UI.spacingMedium) {
+                        // Gallery import mirrors the fallback path: users can decode a QR
+                        // screenshot or a saved QR image without leaving the scanner.
+                        PhotosPicker(selection: $selectedQRImageItem, matching: .images) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.title)
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.4), radius: 4)
+                        }
+                        .accessibilityLabel(Text("qr_scanner_pick_image"))
+                        .disabled(vm.isPaused)
+                        .onChange(of: selectedQRImageItem) { _, newItem in
+                            guard let newItem else { return }
+                            guard !vm.isPaused else { return }
+                            Task {
+                                await processImportedImage(item: newItem, vm: vm)
+                            }
+                        }
+
+                        Button {
+                            // Toggle is reflected in updateUIViewController where torch hardware is set.
+                            vm.isTorchOn.toggle()
+                        } label: {
+                            Image(systemName: vm.isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                                .font(.title)
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.4), radius: 4)
+                        }
+                        .accessibilityLabel(Text("qr_scanner_torch"))
                     }
-                    .accessibilityLabel(Text("qr_scanner_torch"))
                 }
                 .padding(.horizontal, Constants.UI.spacingMedium)
                 .padding(.top, Constants.UI.spacingMedium)
@@ -183,6 +203,16 @@ struct QRScannerView: View {
                     ProgressView()
                         .scaleEffect(1.5)
                         .tint(.white)
+                        .padding(Constants.UI.spacingLarge)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
+                        .padding(.bottom, Constants.UI.spacingMedium)
+                } else if isProcessingImage {
+                    // Image decoding runs off the main actor and completes before the
+                    // viewmodel transitions to .loading; show an interim spinner so the
+                    // tap on the gallery icon has immediate visual feedback.
+                    ProgressView("qr_scanner_fallback_analysing")
+                        .tint(.white)
+                        .foregroundStyle(.white)
                         .padding(Constants.UI.spacingLarge)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusMedium))
                         .padding(.bottom, Constants.UI.spacingMedium)

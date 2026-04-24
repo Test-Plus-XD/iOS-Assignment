@@ -6080,6 +6080,23 @@
         }
       }
     },
+    "qr_scanner_pick_image" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import QR image from photos"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從相片匯入 QR 圖片"
+          }
+        }
+      }
+    },
     "qr_scanner_open" : {
       "extractionState" : "manual",
       "localizations" : {
