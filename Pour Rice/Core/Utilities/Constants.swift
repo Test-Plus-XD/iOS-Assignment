@@ -8,6 +8,10 @@
 
 import Foundation
 
+extension Notification.Name {
+    static let storeStripeReturnURL = Notification.Name("storeStripeReturnURL")
+}
+
 /// Global constants used throughout the Pour Rice application
 /// Centralises all configuration values for easy maintenance and updates
 enum Constants {
@@ -271,6 +275,10 @@ enum Constants {
         /// The path segment after the host carries the restaurantId:
         ///   pourrice://menu/{restaurantId}
         static let menuHost = "menu"
+
+        /// URL host component used by Stripe Checkout to return to Store.
+        /// Expected URL format: pourrice://store?payment_success=true&session_id=cs_...
+        static let storeHost = "store"
     }
 
     // MARK: - Search Configuration

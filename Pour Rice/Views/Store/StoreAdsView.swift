@@ -11,6 +11,21 @@
 
 import SwiftUI
 
+private enum StoreAdCreationStartMode: Equatable {
+    case payment
+    case resume(sessionId: String)
+}
+
+private enum StoreAdPaymentConstants {
+    static let pendingSessionKey = "pendingAdSession"
+    static let graceInterval: TimeInterval = 2 * 60 * 60
+}
+
+private struct PendingAdPaymentSession: Codable, Equatable {
+    let sessionId: String
+    let timestamp: Date
+}
+
 // MARK: - ViewModel
 
 @MainActor
@@ -104,43 +119,66 @@ struct StoreAdsView: View {
     @Environment(\.services) private var services
     @State private var viewModel = StoreAdsViewModel()
     @State private var showCreateSheet = false
+    @State private var creationStartMode: StoreAdCreationStartMode = .payment
+    @State private var pendingAdPaymentSession: PendingAdPaymentSession?
+    private let pendingSessionTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     // MARK: - Body
 
     var body: some View {
-        Group {
-            if viewModel.isLoading && viewModel.ads.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if viewModel.ads.isEmpty && !viewModel.isLoading {
-                emptyState
-            } else {
-                adList
+        VStack(spacing: 0) {
+            if let pendingAdPaymentSession {
+                pendingAdSessionBanner(pendingAdPaymentSession)
+            }
+
+            Group {
+                if viewModel.isLoading && viewModel.ads.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.ads.isEmpty && !viewModel.isLoading {
+                    emptyState
+                } else {
+                    adList
+                }
             }
         }
         .navigationTitle("store_ads")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    showCreateSheet = true
+                    openPaymentSheet()
                 } label: {
                     Image(systemName: "plus")
                 }
             }
         }
         .task {
+            refreshPendingAdPaymentSession()
             await viewModel.load(
                 restaurantId: restaurantId,
                 advertisementService: services.advertisementService
             )
         }
+        .onReceive(pendingSessionTimer) { _ in
+            refreshPendingAdPaymentSession()
+        }
         .refreshable {
             await viewModel.refresh()
         }
         .sheet(isPresented: $showCreateSheet, onDismiss: {
+            refreshPendingAdPaymentSession()
             Task { await viewModel.refresh() }
         }) {
-            StoreAdCreationSheet(restaurantId: restaurantId)
+            StoreAdCreationSheet(
+                restaurantId: restaurantId,
+                startMode: creationStartMode,
+                onVerifiedPayment: { sessionId in
+                    savePendingAdPaymentSession(sessionId: sessionId)
+                },
+                onAdCreated: {
+                    clearPendingAdPaymentSession()
+                }
+            )
         }
         .errorAlert(error: $viewModel.error)
         .toast(
@@ -169,7 +207,7 @@ struct StoreAdsView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             Button {
-                showCreateSheet = true
+                openPaymentSheet()
             } label: {
                 Label("store_ads_create", systemImage: "plus")
                     .fontWeight(.semibold)
@@ -198,6 +236,93 @@ struct StoreAdsView: View {
             }
         }
         .listStyle(.insetGrouped)
+    }
+
+    // MARK: - Pending Payment Banner
+
+    private func pendingAdSessionBanner(_ session: PendingAdPaymentSession) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "hourglass.circle.fill")
+                    .foregroundStyle(.orange)
+                Text("Advertisement placement pending")
+                    .font(.headline)
+            }
+
+            Text("Your payment was received, but the advertisement has not been published yet.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Label("Time remaining: \(pendingAdSessionRemainingText(for: session))", systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    openResumeSheet(sessionId: session.sessionId)
+                } label: {
+                    Label("Complete", systemImage: "arrow.forward.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .tint(.orange)
+            }
+        }
+        .padding()
+        .background(Color.orange.opacity(0.12))
+    }
+
+    // MARK: - Pending Payment Helpers
+
+    private func openPaymentSheet() {
+        creationStartMode = .payment
+        showCreateSheet = true
+    }
+
+    private func openResumeSheet(sessionId: String) {
+        creationStartMode = .resume(sessionId: sessionId)
+        showCreateSheet = true
+    }
+
+    @discardableResult
+    private func refreshPendingAdPaymentSession() -> PendingAdPaymentSession? {
+        guard let data = UserDefaults.standard.data(forKey: StoreAdPaymentConstants.pendingSessionKey),
+              let session = try? JSONDecoder().decode(PendingAdPaymentSession.self, from: data),
+              isValidStripeCheckoutSessionId(session.sessionId),
+              Date().timeIntervalSince(session.timestamp) <= StoreAdPaymentConstants.graceInterval else {
+            clearPendingAdPaymentSession()
+            return nil
+        }
+
+        pendingAdPaymentSession = session
+        return session
+    }
+
+    private func savePendingAdPaymentSession(sessionId: String) {
+        let session = PendingAdPaymentSession(sessionId: sessionId, timestamp: Date())
+        if let data = try? JSONEncoder().encode(session) {
+            UserDefaults.standard.set(data, forKey: StoreAdPaymentConstants.pendingSessionKey)
+        }
+        pendingAdPaymentSession = session
+    }
+
+    private func clearPendingAdPaymentSession() {
+        UserDefaults.standard.removeObject(forKey: StoreAdPaymentConstants.pendingSessionKey)
+        pendingAdPaymentSession = nil
+    }
+
+    private func isValidStripeCheckoutSessionId(_ sessionId: String) -> Bool {
+        sessionId.range(of: #"^cs_[A-Za-z0-9_]+$"#, options: .regularExpression) != nil
+    }
+
+    private func pendingAdSessionRemainingText(for session: PendingAdPaymentSession) -> String {
+        let elapsed = Date().timeIntervalSince(session.timestamp)
+        let remaining = max(0, StoreAdPaymentConstants.graceInterval - elapsed)
+        let totalMinutes = max(1, Int((remaining / 60).rounded(.up)))
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours <= 0 { return "\(minutes)m" }
+        return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
     }
 }
 
@@ -278,29 +403,82 @@ private struct AdRowView: View {
 private struct StoreAdCreationSheet: View {
 
     let restaurantId: String
+    let startMode: StoreAdCreationStartMode
+    let onVerifiedPayment: (String) -> Void
+    let onAdCreated: () -> Void
 
     @Environment(\.services) private var services
     @Environment(\.dismiss) private var dismiss
 
-    private enum Step { case payment, form }
+    private enum Step { case payment, verifying, form }
 
-    @State private var step: Step = .payment
+    @State private var step: Step
     @State private var stripeURL: URL?
     @State private var showSafari = false
     @State private var isCreatingSession = false
+    @State private var isVerifyingPayment = false
+    @State private var isHandlingCheckoutReturn = false
+    @State private var didVerifyInitialSession = false
+    @State private var verifiedSessionId: String?
     @State private var sessionErrorMessage: String?
+    @State private var toastMessage = ""
+    @State private var toastStyle: ToastStyle = .info
+    @State private var showToast = false
+
+    init(
+        restaurantId: String,
+        startMode: StoreAdCreationStartMode,
+        onVerifiedPayment: @escaping (String) -> Void,
+        onAdCreated: @escaping () -> Void
+    ) {
+        self.restaurantId = restaurantId
+        self.startMode = startMode
+        self.onVerifiedPayment = onVerifiedPayment
+        self.onAdCreated = onAdCreated
+
+        switch startMode {
+        case .payment:
+            _step = State(initialValue: .payment)
+        case .resume:
+            _step = State(initialValue: .verifying)
+        }
+    }
 
     var body: some View {
         NavigationStack {
             switch step {
             case .payment:
                 paymentStep
+            case .verifying:
+                verifyingStep
             case .form:
                 StoreAdFormView(restaurantId: restaurantId) {
+                    onAdCreated()
                     dismiss()
                 }
             }
         }
+        .task {
+            await verifyInitialResumeSessionIfNeeded()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .storeStripeReturnURL)) { notification in
+            guard let url = notification.object as? URL else { return }
+            Task { await handleStripeReturnURL(url) }
+        }
+        .sheet(isPresented: $showSafari, onDismiss: handleSafariDismissed) {
+            if let url = stripeURL {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
+        .toast(
+            message: toastMessage,
+            style: toastStyle,
+            isPresented: Binding(
+                get: { showToast },
+                set: { showToast = $0 }
+            )
+        )
     }
 
     // MARK: - Payment Step
@@ -380,7 +558,7 @@ private struct StoreAdCreationSheet: View {
                     Task { await startPayment() }
                 } label: {
                     HStack(spacing: 8) {
-                        if isCreatingSession {
+                        if isCreatingSession || isVerifyingPayment {
                             ProgressView().tint(.white)
                         }
                         Text("store_ad_pay_stripe")
@@ -392,16 +570,7 @@ private struct StoreAdCreationSheet: View {
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .disabled(isCreatingSession)
-
-                // Shortcut for users who already paid
-                Button {
-                    step = .form
-                } label: {
-                    Text("store_ad_already_paid")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+                .disabled(isCreatingSession || isVerifyingPayment)
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
@@ -415,16 +584,25 @@ private struct StoreAdCreationSheet: View {
                 Button("cancel") { dismiss() }
             }
         }
-        .sheet(isPresented: $showSafari, onDismiss: {
-            // Advance to form once Safari is dismissed — covers both
-            // success redirect and manual dismissal (belt-and-suspenders).
-            step = .form
-        }) {
-            if let url = stripeURL {
-                SafariView(url: url)
-                    .ignoresSafeArea()
-            }
+    }
+
+    // MARK: - Verifying Step
+
+    private var verifyingStep: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.25)
+            Text("Verifying payment...")
+                .font(.headline)
+            Text("The advertisement form will open only after Stripe confirms the payment.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .navigationTitle("store_ad_new")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: - Stripe Session
@@ -434,11 +612,9 @@ private struct StoreAdCreationSheet: View {
         sessionErrorMessage = nil
 
         do {
-            // Use Vercel-hosted URLs as Stripe redirect targets.
-            // The iOS app advances to the form regardless of which URL Stripe lands on;
-            // the session_id is embedded for potential server-side verification.
-            let successURL = "https://vercel-express-api-alpha.vercel.app/stripe-success?session_id={CHECKOUT_SESSION_ID}"
-            let cancelURL  = "https://vercel-express-api-alpha.vercel.app/stripe-cancel"
+            // Stripe redirects back through the app's registered URL scheme.
+            let successURL = "pourrice://store?payment_success=true&session_id={CHECKOUT_SESSION_ID}"
+            let cancelURL  = "pourrice://store?payment_cancelled=true"
 
             let session = try await services.advertisementService.createStripeCheckoutSession(
                 restaurantId: restaurantId,
@@ -450,9 +626,99 @@ private struct StoreAdCreationSheet: View {
             showSafari = true
         } catch {
             sessionErrorMessage = error.localizedDescription
+            showPaymentToast(error.localizedDescription, .error)
         }
 
         isCreatingSession = false
+    }
+
+    private func verifyInitialResumeSessionIfNeeded() async {
+        guard !didVerifyInitialSession else { return }
+        guard case .resume(let sessionId) = startMode else { return }
+        didVerifyInitialSession = true
+        await verifyPayment(sessionId: sessionId, persistSession: false)
+    }
+
+    private func handleStripeReturnURL(_ url: URL) async {
+        guard url.scheme == Constants.DeepLink.scheme,
+              url.host == Constants.DeepLink.storeHost else {
+            return
+        }
+
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        let queryItems = components?.queryItems ?? []
+        let paymentSuccess = queryItems.first(where: { $0.name == "payment_success" })?.value == "true"
+        let paymentCancelled = queryItems.first(where: { $0.name == "payment_cancelled" })?.value == "true"
+        let sessionId = queryItems.first(where: { $0.name == "session_id" })?.value
+
+        let wasShowingSafari = showSafari
+        isHandlingCheckoutReturn = wasShowingSafari
+        showSafari = false
+
+        if paymentCancelled {
+            step = .payment
+            showPaymentToast("Payment was cancelled. The advertisement form will stay closed.", .error)
+            if !wasShowingSafari { isHandlingCheckoutReturn = false }
+            return
+        }
+
+        guard paymentSuccess,
+              let sessionId,
+              isValidStripeCheckoutSessionId(sessionId) else {
+            step = .payment
+            showPaymentToast("Payment was not completed. The advertisement form will stay closed.", .error)
+            if !wasShowingSafari { isHandlingCheckoutReturn = false }
+            return
+        }
+
+        await verifyPayment(sessionId: sessionId, persistSession: true)
+        if !wasShowingSafari { isHandlingCheckoutReturn = false }
+    }
+
+    private func verifyPayment(sessionId: String, persistSession: Bool) async {
+        isVerifyingPayment = true
+        sessionErrorMessage = nil
+        step = .verifying
+
+        do {
+            _ = try await services.advertisementService.verifyPaidAdvertisementSession(
+                sessionId: sessionId,
+                restaurantId: restaurantId
+            )
+            verifiedSessionId = sessionId
+            if persistSession {
+                onVerifiedPayment(sessionId)
+            }
+            step = .form
+            showPaymentToast("Payment confirmed. You can now create your advertisement.", .success)
+        } catch {
+            verifiedSessionId = nil
+            step = .payment
+            showPaymentToast(error.localizedDescription, .error)
+        }
+
+        isVerifyingPayment = false
+    }
+
+    private func handleSafariDismissed() {
+        if isHandlingCheckoutReturn {
+            isHandlingCheckoutReturn = false
+            return
+        }
+
+        guard verifiedSessionId == nil, step != .form else { return }
+        showPaymentToast("Payment was not completed. The advertisement form will stay closed.", .error)
+    }
+
+    private func isValidStripeCheckoutSessionId(_ sessionId: String) -> Bool {
+        sessionId.range(of: #"^cs_[A-Za-z0-9_]+$"#, options: .regularExpression) != nil
+    }
+
+    private func showPaymentToast(_ message: String, _ style: ToastStyle) {
+        sessionErrorMessage = message
+        toastMessage = message
+        toastStyle = style
+        showToast = true
     }
 }
 
@@ -486,7 +752,6 @@ struct StoreAdFormView: View {
     // MARK: - Environment & State
 
     @Environment(\.services) private var services
-    @Environment(\.authService) private var authService
 
     @State private var titleEN = ""
     @State private var titleTC = ""
@@ -568,14 +833,9 @@ struct StoreAdFormView: View {
         isGenerating = true
         errorMessage = nil
 
-        // Use the restaurant name from the auth service if available,
-        // otherwise fall back to restaurantId as the name hint.
-        let restaurantName = authService.currentUser?.displayName ?? restaurantId
-
         do {
             let result = try await services.geminiService.generateAdvertisement(
-                restaurantId: restaurantId,
-                name: restaurantName
+                restaurantId: restaurantId
             )
             titleEN   = result.titleEN
             titleTC   = result.titleTC

@@ -301,6 +301,13 @@ struct RootView: View {
             _ = GIDSignIn.sharedInstance.handle(url)
 
             // ── Pour Rice QR Deep Link ────────────────────────────────────
+            // Stripe Checkout returns through pourrice://store?... while the ad sheet is active.
+            if url.scheme == Constants.DeepLink.scheme,
+               url.host == Constants.DeepLink.storeHost {
+                NotificationCenter.default.post(name: .storeStripeReturnURL, object: url)
+                return
+            }
+
             // Only handle URLs matching pourrice://menu/{restaurantId}.
             // All other schemes (including Google's reverse client ID) fall through
             // to GIDSignIn.handle above and are ignored here.

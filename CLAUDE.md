@@ -644,6 +644,18 @@ Key files:
 
 ## Change Log
 
+### 2026-04-24 — Stripe Ad Return Verification + Gemini Contract Fix
+
+**Advertisement payment hardening** — Store ad creation now follows the Ionic Stripe return contract:
+- `StoreAdsView` opens Stripe Checkout in `SFSafariViewController` with `pourrice://store?payment_success=true&session_id={CHECKOUT_SESSION_ID}` as the success URL and `pourrice://store?payment_cancelled=true` as the cancel URL.
+- `RootView.onOpenURL` recognises `pourrice://store` and forwards the URL to the active ad sheet.
+- `StoreAdCreationSheet` no longer treats Safari dismissal as payment success and no longer exposes the manual "already paid" bypass.
+- Returned Checkout Session IDs must match `cs_...` and are verified through `GET /API/Stripe/checkout-session/:id` before the ad form opens.
+- A paid but unpublished ad session is stored in `UserDefaults` for a two-hour grace period, with a pending banner and resume button in `StoreAdsView`.
+- Cancelled, dismissed, invalid, unpaid, wrong-type, or wrong-restaurant payment returns show an error toast and keep the form closed.
+- `APIEndpoint.geminiRestaurantDescription` now requires auth for description mode, matching the current backend implementation, while restaurant chat mode remains public.
+- Gemini ad generation now sends only `restaurantId` by default so the backend fetches restaurant metadata and menu from Firestore instead of accidentally overriding the restaurant name with the account display name.
+
 ### 2026-04-24 — iOS FCM + In-App Messaging
 
 **FCM/APNs integration** — Added native iOS notification plumbing matching the repaired Android flow:
@@ -705,8 +717,6 @@ Manual setup still required: Firebase APNs key upload, matching iOS Firebase app
 - `presentImageLoadError()` — new public method called by view when `PhotosPickerItem` data load fails
 - `isTorchOn: Bool` — observable property synced to device torch by `DataScannerRepresentable.updateUIViewController`
 
-**Last Updated**: 2026-04-08
-
 ### 2026-04-06 — Rating Field & Half-Star Detail Display
 
 **`Models/Restaurant.swift`**:
@@ -719,8 +729,6 @@ Manual setup still required: Firebase APNs key upload, matching iOS Firebase app
 - Replaced `Label(restaurant.ratingDisplay, systemImage: "star.fill")` + `Text("(\(restaurant.reviewCount))")` in `infoSection` with:
   - `HStack` containing a 5-star icon row (`ForEach(0..<5)` using `starSymbol`) + `Text(restaurant.ratingDisplay)` (orange, medium weight) + `Text("(\(restaurant.reviewCount))")` (secondary colour)
   - `.accessibilityLabel` set to `"\(ratingDisplay) out of 5 stars, \(reviewCount) reviews"`
-
-**Last Updated**: 2026-04-06
 
 ### 2026-04-06 — Cross-Platform Feature Parity (Ads, DocuPipe, Review Images)
 

@@ -125,7 +125,7 @@ enum APIEndpoint {
     /// One-shot Gemini text generation (POST /API/Gemini/generate).
     case geminiGenerate(GeminiGenerateRequest)
 
-    /// Generate AI restaurant description (POST /API/Gemini/restaurant-description). No auth required.
+    /// Generate AI restaurant description (POST /API/Gemini/restaurant-description). Auth required in description mode.
     case geminiRestaurantDescription(GeminiRestaurantDescriptionRequest)
 
     /// Multi-turn restaurant-specific chat (POST /API/Gemini/restaurant-description, chat mode). No auth required.
@@ -153,6 +153,9 @@ enum APIEndpoint {
     /// Create a Stripe Checkout session for an ad payment (POST /API/Stripe/create-ad-checkout-session). Auth required.
     case createStripeCheckoutSession(StripeCheckoutRequest)
 
+    /// Fetch a Stripe Checkout session status after return (GET /API/Stripe/checkout-session/:id). Auth required.
+    case fetchStripeCheckoutSession(id: String)
+
     // MARK: - Endpoint Properties
 
     /// Whether this endpoint requires a Firebase ID token in the Authorization header.
@@ -165,17 +168,17 @@ enum APIEndpoint {
              .claimRestaurant, .updateRestaurant,
              .createMenuItem, .updateMenuItem, .deleteMenuItem,
              .registerFcmToken, .unregisterFcmToken,
-             .geminiGenerate,
+             .geminiGenerate, .geminiRestaurantDescription,
              .geminiAdvertisement,
              .createAdvertisement, .updateAdvertisement, .deleteAdvertisement,
-             .createStripeCheckoutSession:
+             .createStripeCheckoutSession, .fetchStripeCheckoutSession:
             return true
 
         // Public/no-auth endpoints
         case .fetchNearbyRestaurants, .fetchRestaurant, .fetchMenuItems, .fetchReviews,
              .fetchChatRecords, .fetchChatRoom, .createChatRoom,
              .fetchChatMessages, .sendChatMessage, .editChatMessage, .deleteChatMessage,
-             .geminiChat, .geminiRestaurantDescription, .geminiRestaurantChat, .createRestaurant,
+             .geminiChat, .geminiRestaurantChat, .createRestaurant,
              .fetchAdvertisements:
             return false
         }
@@ -310,6 +313,9 @@ enum APIEndpoint {
         // Stripe
         case .createStripeCheckoutSession:
             return "/API/Stripe/create-ad-checkout-session"
+
+        case .fetchStripeCheckoutSession(let id):
+            return "/API/Stripe/checkout-session/\(id)"
         }
     }
 
@@ -345,7 +351,8 @@ enum APIEndpoint {
              .fetchReviews, .fetchUserProfile,
              .fetchBookings, .fetchBooking, .fetchRestaurantBookings,
              .fetchChatRecords, .fetchChatRoom, .fetchChatMessages,
-             .fetchAdvertisements:
+             .fetchAdvertisements,
+             .fetchStripeCheckoutSession:
             return .get
         }
     }

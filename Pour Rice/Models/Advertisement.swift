@@ -172,6 +172,22 @@ struct StripeCheckoutResponse: Codable, Sendable {
     let url: URL
 }
 
+/// Response from GET /API/Stripe/checkout-session/:id.
+struct StripeCheckoutSessionStatus: Codable, Sendable {
+    let id: String
+    let status: String
+    let paymentStatus: String
+    let paymentIntentId: String?
+    let amountTotal: Int?
+    let currency: String?
+    let paymentType: String?
+    let metadata: [String: String]?
+
+    var isPaid: Bool {
+        status == "complete" && paymentStatus == "paid"
+    }
+}
+
 // MARK: - Gemini Advertisement Generation Models
 
 /// Request body for POST /API/Gemini/restaurant-advertisement (auth required).
@@ -181,6 +197,14 @@ struct GeminiAdvertisementRequest: Codable, Sendable {
     let district: String?
     let keywords: [String]?
     let message: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case restaurantId
+        case name = "name_en"
+        case district
+        case keywords
+        case message
+    }
 }
 
 /// Response from POST /API/Gemini/restaurant-advertisement.

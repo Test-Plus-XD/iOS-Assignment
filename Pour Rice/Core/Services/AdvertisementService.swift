@@ -8,6 +8,29 @@
 
 import Foundation
 
+// MARK: - Advertisement Payment Errors
+
+/// Errors raised when a returned Stripe Checkout session is not valid for opening the ad form.
+enum AdvertisementPaymentError: LocalizedError {
+    case invalidSession
+    case unpaid
+    case wrongPaymentType
+    case wrongRestaurant
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidSession:
+            return "The payment session is invalid. Please start the payment again."
+        case .unpaid:
+            return "Payment was not completed. The advertisement form will stay closed."
+        case .wrongPaymentType:
+            return "This payment session is not for an advertisement placement."
+        case .wrongRestaurant:
+            return "This payment belongs to a different restaurant."
+        }
+    }
+}
+
 // MARK: - Advertisement Service
 
 /// Service responsible for advertisement CRUD operations and Stripe payment initiation.
@@ -119,6 +142,47 @@ final class AdvertisementService {
 
         print("✅ AdvertisementService: Stripe session created, id=\(response.sessionId)")
         return response
+    }
+
+    /// Fetches the latest status of a Stripe Checkout session after Safari returns to the app.
+    /// The backend verifies the session belongs to the authenticated user before returning it.
+    func fetchStripeCheckoutSession(id sessionId: String) async throws -> StripeCheckoutSessionStatus {
+        print("💳 AdvertisementService: Fetching Stripe session status id=\(sessionId)")
+
+        let response = try await apiClient.request(
+            .fetchStripeCheckoutSession(id: sessionId),
+            responseType: StripeCheckoutSessionStatus.self,
+            callerService: "AdvertisementService"
+        )
+
+        print("✅ AdvertisementService: Stripe session status=\(response.status), paymentStatus=\(response.paymentStatus)")
+        return response
+    }
+
+    /// Confirms that a Checkout session is a paid advertisement payment for the current restaurant.
+    func verifyPaidAdvertisementSession(
+        sessionId: String,
+        restaurantId: String
+    ) async throws -> StripeCheckoutSessionStatus {
+        guard sessionId.range(of: #"^cs_[A-Za-z0-9_]+$"#, options: .regularExpression) != nil else {
+            throw AdvertisementPaymentError.invalidSession
+        }
+
+        let session = try await fetchStripeCheckoutSession(id: sessionId)
+
+        guard session.isPaid else {
+            throw AdvertisementPaymentError.unpaid
+        }
+
+        guard session.paymentType == "advertisement" || session.metadata?["paymentType"] == "advertisement" else {
+            throw AdvertisementPaymentError.wrongPaymentType
+        }
+
+        guard session.metadata?["restaurantId"] == restaurantId else {
+            throw AdvertisementPaymentError.wrongRestaurant
+        }
+
+        return session
     }
 }
 
