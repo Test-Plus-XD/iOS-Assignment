@@ -10,6 +10,7 @@
 //
 
 import Combine
+import PhotosUI
 import SwiftUI
 
 private enum StoreAdCreationStartMode: Equatable {
@@ -765,6 +766,9 @@ struct StoreAdFormView: View {
     @State private var titleTC = ""
     @State private var contentEN = ""
     @State private var contentTC = ""
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoImage: Image?
+    @State private var selectedPhotoData: Data?
 
     @State private var isSaving = false
     @State private var isGenerating = false
@@ -788,6 +792,47 @@ struct StoreAdFormView: View {
                     .lineLimit(4...8)
             } header: {
                 Text("store_ad_section_content")
+            }
+
+            Section {
+                PhotosPicker(
+                    selection: $selectedPhotoItem,
+                    matching: .images,
+                    photoLibrary: .shared()
+                ) {
+                    if let image = selectedPhotoImage {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .contentShape(RoundedRectangle(cornerRadius: 10))
+                    } else {
+                        Label("store_ad_image_add", systemImage: "photo.badge.plus")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                }
+                .disabled(isSaving)
+                .onChange(of: selectedPhotoItem) { _, newItem in
+                    Task { await loadSelectedPhoto(newItem) }
+                }
+
+                if selectedPhotoImage != nil {
+                    Button(role: .destructive) {
+                        selectedPhotoItem = nil
+                        selectedPhotoImage = nil
+                        selectedPhotoData = nil
+                    } label: {
+                        Label("store_ad_image_remove", systemImage: "trash")
+                    }
+                    .disabled(isSaving)
+                }
+            } header: {
+                Text("store_ad_section_image")
+            } footer: {
+                Text("store_ad_image_optional_hint")
             }
 
             Section {
@@ -837,6 +882,24 @@ struct StoreAdFormView: View {
 
     // MARK: - Actions
 
+    private func loadSelectedPhoto(_ item: PhotosPickerItem?) async {
+        guard let item else { return }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let uiImage = UIImage(data: data),
+                  let jpegData = uiImage.jpegData(compressionQuality: 0.85) else {
+                errorMessage = String(localized: "store_ad_image_load_failed", bundle: L10n.bundle)
+                return
+            }
+
+            selectedPhotoData = jpegData
+            selectedPhotoImage = Image(uiImage: uiImage)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func generateWithAI() async {
         isGenerating = true
         errorMessage = nil
@@ -860,13 +923,32 @@ struct StoreAdFormView: View {
         isSaving = true
         errorMessage = nil
 
+        var uploadedImageURL: String?
+
+        do {
+            if let photoData = selectedPhotoData {
+                let token = try await services.authService.getIDToken()
+                uploadedImageURL = try await services.imageUploadService.uploadImage(
+                    photoData,
+                    mimeType: "image/jpeg",
+                    filename: "advertisement_\(UUID().uuidString).jpg",
+                    folder: "Advertisements/\(restaurantId)",
+                    authToken: token
+                )
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            isSaving = false
+            return
+        }
+
         let request = CreateAdvertisementRequest(
             titleEN:      titleEN.isEmpty   ? nil : titleEN,
             titleTC:      titleTC.isEmpty   ? nil : titleTC,
             contentEN:    contentEN.isEmpty  ? nil : contentEN,
             contentTC:    contentTC.isEmpty  ? nil : contentTC,
-            imageEN:      nil,
-            imageTC:      nil,
+            imageEN:      uploadedImageURL,
+            imageTC:      uploadedImageURL,
             restaurantId: restaurantId
         )
 

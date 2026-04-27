@@ -2,8 +2,8 @@
 //  BulkMenuImportView.swift
 //  Pour Rice
 //
-//  Bulk menu import from PDF/image using DocuPipe AI extraction.
-//  Flow: Pick document → AI extracts items → Review list → Import selected items.
+//  Bulk menu import from menu images using DocuPipe AI extraction.
+//  Flow: Pick image → AI extracts items → Review list → Import selected items.
 //
 //  FLUTTER/ANDROID EQUIVALENT:
 //  lib/pages/store_page.dart BulkMenuImportModal — same three-step flow with
@@ -17,7 +17,7 @@ import UniformTypeIdentifiers
 
 /// Three-step bulk menu importer for restaurant owners.
 ///
-/// Step 1 (Pick): Document picker (PDF or image)
+/// Step 1 (Pick): Image picker (JPG, PNG, GIF, or WebP)
 /// Step 2 (Review): AI-extracted items shown in an editable list — user can
 ///   deselect items they don't want and correct names/prices inline
 /// Step 3 (Done): Success summary with item count
@@ -41,6 +41,7 @@ struct BulkMenuImportView: View {
     @State private var isImporting = false
     @State private var importedCount = 0
     @State private var showFilePicker = false
+    @State private var showManualEntry = false
 
     // MARK: - Body
 
@@ -86,12 +87,18 @@ struct BulkMenuImportView: View {
                     .padding(.horizontal)
             }
 
-            // Supported formats info
+            // Supported image formats
             HStack(spacing: 20) {
-                FormatChip(icon: "doc.fill", label: "PDF")
                 FormatChip(icon: "photo.fill", label: "JPG")
                 FormatChip(icon: "photo", label: "PNG")
+                FormatChip(icon: "photo.on.rectangle", label: "WEBP")
             }
+
+            Text("bulk_import_image_only_note")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
 
             if let errMsg = extractionError {
                 Text(errMsg)
@@ -105,27 +112,40 @@ struct BulkMenuImportView: View {
         }
         .padding()
         .safeAreaInset(edge: .bottom) {
-            Button {
-                showFilePicker = true
-            } label: {
-                HStack(spacing: 8) {
-                    if isExtracting {
-                        ProgressView().tint(.white)
-                        Text("bulk_import_extracting")
-                            .fontWeight(.semibold)
-                    } else {
-                        Image(systemName: "doc.badge.arrow.up")
-                        Text("bulk_import_pick_file")
-                            .fontWeight(.semibold)
+            VStack(spacing: 10) {
+                Button {
+                    showFilePicker = true
+                } label: {
+                    HStack(spacing: 8) {
+                        if isExtracting {
+                            ProgressView().tint(.white)
+                            Text("bulk_import_extracting")
+                                .fontWeight(.semibold)
+                        } else {
+                            Image(systemName: "photo.badge.plus")
+                            Text("bulk_import_pick_file")
+                                .fontWeight(.semibold)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.purple)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .disabled(isExtracting)
+
+                Button {
+                    showManualEntry = true
+                } label: {
+                    Label("bulk_import_add_manually", systemImage: "square.and.pencil")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(isExtracting)
             }
-            .disabled(isExtracting)
             .padding(.horizontal)
             .padding(.bottom, 24)
             .padding(.top, 8)
@@ -140,15 +160,15 @@ struct BulkMenuImportView: View {
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [
-                .pdf,
-                .jpeg,
-                .png,
-                UTType("public.webp") ?? .image
-            ],
+            allowedContentTypes: allowedImageTypes,
             allowsMultipleSelection: false
         ) { result in
             handleFilePick(result)
+        }
+        .sheet(isPresented: $showManualEntry) {
+            ManualMenuItemSheet(restaurantId: restaurantId) {
+                onImported()
+            }
         }
     }
 
@@ -260,6 +280,14 @@ struct BulkMenuImportView: View {
         extractedItems.filter(\.isSelected).count
     }
 
+    private var allowedImageTypes: [UTType] {
+        var types: [UTType] = [.jpeg, .png, .gif]
+        if let webPType = UTType(filenameExtension: "webp") {
+            types.append(webPType)
+        }
+        return types
+    }
+
     // MARK: - Actions
 
     private func handleFilePick(_ result: Result<[URL], Error>) {
@@ -268,6 +296,10 @@ struct BulkMenuImportView: View {
             extractionError = error.localizedDescription
         case .success(let urls):
             guard let url = urls.first else { return }
+            guard isSupportedImage(url) else {
+                extractionError = String(localized: "bulk_import_images_only_error", bundle: L10n.bundle)
+                return
+            }
             Task { await extractFromURL(url) }
         }
     }
@@ -282,7 +314,11 @@ struct BulkMenuImportView: View {
 
         do {
             let fileData = try Data(contentsOf: url)
-            let mimeType = mimeType(for: url)
+            guard let mimeType = mimeType(for: url) else {
+                extractionError = String(localized: "bulk_import_images_only_error", bundle: L10n.bundle)
+                isExtracting = false
+                return
+            }
             let fileName = url.lastPathComponent
 
             extractedItems = try await services.docuPipeService.extractMenu(
@@ -329,15 +365,118 @@ struct BulkMenuImportView: View {
 
     // MARK: - Helpers
 
-    private func mimeType(for url: URL) -> String {
+    private func isSupportedImage(_ url: URL) -> Bool {
+        mimeType(for: url) != nil
+    }
+
+    private func mimeType(for url: URL) -> String? {
         let ext = url.pathExtension.lowercased()
         switch ext {
-        case "pdf":  return "application/pdf"
         case "jpg", "jpeg": return "image/jpeg"
         case "png":  return "image/png"
+        case "gif":  return "image/gif"
         case "webp": return "image/webp"
-        default:     return "application/octet-stream"
+        default:     return nil
         }
+    }
+}
+
+// MARK: - Manual Menu Item Sheet
+
+private struct ManualMenuItemSheet: View {
+    let restaurantId: String
+    let onSaved: () -> Void
+
+    @Environment(\.services) private var services
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var nameEN = ""
+    @State private var nameTC = ""
+    @State private var descEN = ""
+    @State private var descTC = ""
+    @State private var price = ""
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("store_menu_name") {
+                    TextField("English", text: $nameEN)
+                    TextField("繁體中文", text: $nameTC)
+                }
+
+                Section("store_menu_description") {
+                    TextField("English", text: $descEN, axis: .vertical)
+                        .lineLimit(2...4)
+                    TextField("繁體中文", text: $descTC, axis: .vertical)
+                        .lineLimit(2...4)
+                }
+
+                Section("store_menu_price") {
+                    TextField("HK$", text: $price)
+                        .keyboardType(.decimalPad)
+                }
+
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                Section {
+                    Button {
+                        Task { await submit() }
+                    } label: {
+                        HStack {
+                            Spacer()
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text("store_menu_add")
+                                    .fontWeight(.semibold)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .disabled(nameEN.isEmpty || isSubmitting)
+                }
+            }
+            .navigationTitle("bulk_import_manual_title")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func submit() async {
+        isSubmitting = true
+        errorMessage = nil
+
+        let request = CreateMenuItemRequest(
+            restaurantId: restaurantId,
+            nameEN: nameEN,
+            nameTC: nameTC.isEmpty ? nameEN : nameTC,
+            descriptionEN: descEN.isEmpty ? nil : descEN,
+            descriptionTC: descTC.isEmpty ? nil : descTC,
+            price: Double(price),
+            image: nil
+        )
+
+        do {
+            try await services.storeService.createMenuItem(request)
+            onSaved()
+            dismiss()
+        } catch {
+            errorMessage = String(localized: "bulk_import_manual_save_failed", bundle: L10n.bundle)
+        }
+
+        isSubmitting = false
     }
 }
 

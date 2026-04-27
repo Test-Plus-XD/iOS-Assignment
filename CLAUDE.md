@@ -82,9 +82,10 @@ Pour Rice/
   │   │   ├── StoreView.swift            # Restaurant owner dashboard (stats + 6 quick actions grid)
   │   │   ├── StoreBookingsView.swift    # Restaurant booking management (accept/decline/complete)
   │   │   ├── StoreMenuManageView.swift  # Menu CRUD + Liquid Glass toolbar with bulk-import button
+  │   │   ├── StoreReviewsView.swift     # Restaurant owner review list + rating summary
   │   │   ├── StoreInfoEditView.swift    # Restaurant info editor + image upload
   │   │   ├── StoreAdsView.swift         # Advertisement list/create/toggle/delete + Stripe checkout via SafariView
-  │   │   ├── BulkMenuImportView.swift   # DocuPipe bulk import: file picker → review extracted items → import
+  │   │   ├── BulkMenuImportView.swift   # DocuPipe image-only bulk import + manual menu item fallback
   │   │   ├── ClaimRestaurantView.swift  # Restaurant ownership claim flow (search + "Add New Restaurant" trigger)
   │   │   └── AddRestaurantView.swift    # Full form sheet for creating a new restaurant listing
   │   ├── Chat/
@@ -178,7 +179,7 @@ Pour Rice/
 - **Menu CRUD**: `POST/PUT/DELETE /API/Menu/Items/:id`
 - **Advertisements**: `GET /API/Advertisements?restaurantId=X`, `POST/PUT/DELETE /API/Advertisements/:id` (auth required for CUD)
 - **Stripe**: `POST /API/Stripe/create-ad-checkout-session` (auth required) → `{ sessionId, url }` — open `url` in `SafariView`; on `SafariView.onDismiss` advance to ad creation form
-- **DocuPipe**: `POST /API/DocuPipe/extract-menu` (multipart, no auth) → `{ menu_items: [{ Name_EN, Name_TC, Description_EN, Description_TC, price }] }`
+- **DocuPipe**: `POST /API/DocuPipe/extract-menu` (multipart, no auth) → `{ menu_items: [{ Name_EN, Name_TC, Description_EN, Description_TC, price }] }`; iOS `BulkMenuImportView` exposes image-only upload (JPG/PNG/GIF/WebP), tells users only images are allowed, and provides a manual Add Menu Item fallback using `StoreService.createMenuItem`.
 - **Gemini ad copy**: `POST /API/Gemini/restaurant-advertisement` (auth required) → `AdvertisementGenerationResponse` with `Title_EN/TC`, `Content_EN/TC`
 
 ## Chat Architecture (REST + Socket.IO)

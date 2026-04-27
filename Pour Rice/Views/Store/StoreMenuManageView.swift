@@ -117,7 +117,7 @@ struct StoreMenuManageView: View {
                     .glassEffect(.regular.interactive(), in: Circle())
                     .glassEffectID("bin", in: glassNamespace)
 
-                    // Bulk import from PDF/image via DocuPipe AI
+                    // Bulk import from a menu image via DocuPipe AI
                     Button {
                         showBulkImport = true
                     } label: {
@@ -423,4 +423,3 @@ private struct EditMenuItemSheet: View {
         dismiss()
     }
 }
-
