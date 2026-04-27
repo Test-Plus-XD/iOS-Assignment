@@ -58,7 +58,7 @@ Pour Rice/
   │   ├── ChatListViewModel.swift        # Chat room list sorted by recency
   │   ├── ChatRoomViewModel.swift        # Message history + Socket.IO stream + typing + reconnection
   │   ├── GeminiViewModel.swift         # AI conversation state + context-aware suggestion chips
-  │   └── QRScannerViewModel.swift      # QR scan state: URL validation, restaurant fetch, toast
+  │   └── QRScannerViewModel.swift      # QR scan flow: URL validation, restaurant fetch, returns Restaurant? for routing, toast
   ├── Views/
   │   ├── Auth/
   │   │   ├── LoginView.swift            # Email/Google sign-in + guest mode
@@ -94,7 +94,7 @@ Pour Rice/
   │   ├── Gemini/
   │   │   └── GeminiChatView.swift       # Gemini AI chat with markdown rendering + suggestion chips
   │   ├── QR/
-  │   │   ├── QRScannerView.swift        # Cross-platform scanner: iOS live camera (VisionKit) + macOS/simulator fallback (PhotosPicker + manual payload)
+  │   │   ├── QRScannerView.swift        # QR scanner: iOS VisionKit camera + direct UIKit photo picker + simulator/macOS fallback; emits fetched Restaurant to parent
   │   │   └── RestaurantQRView.swift     # QR code generation + sharing (CoreImage, for restaurant owners)
   │   ├── Account/
   │   │   ├── AccountView.swift          # Profile, preferences, AI assistant link, sign-out, toast
@@ -156,7 +156,8 @@ Pour Rice/
 - `Core/Utilities/NotificationRouteParser.swift` — Parses `route` first and legacy `url` fallback for `/booking`, `/chat/{roomId}`, `pourrice://bookings`, and `pourrice://chat/{roomId}`
 - `ViewModels/ChatRoomViewModel.swift` — Starts/stops socket stream listeners; falls back to REST if socket unavailable; typing debounce with auto-stop; automatic reconnection with connection state monitoring; `isUsingSocket` observable for UI feedback
 - `ViewModels/AccountViewModel.swift` — Profile editing with edit buffers (name, phone, bio, theme, notifications); toast feedback on save; language preference management
-- `Views/Restaurant/RestaurantView.swift` — Location section (embedded `Map`, address, "Get Directions" button) inserted between Contact and Menu Preview; action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`)
+- `Views/Restaurant/RestaurantView.swift` — Location section (embedded `Map`, address, "Get Directions" button) inserted between Contact and Menu Preview; action buttons at bottom: "Book a Table" (diner, `.sheet`), "Chat" (authenticated, `NavigationLink(value: ChatRoom.placeholder(...))`), "Ask AI" (everyone, `NavigationLink(value: GeminiNavigation(...))`); `opensMenuOnAppear` lets QR/deep-link routes land on RestaurantView and push MenuView so Back from menu returns to the restaurant page
+- `Views/Search/SearchView.swift` — Search list/map plus QR scanner presentation; QR success dismisses the scanner full-screen cover, stores the fetched `Restaurant`, pushes `RestaurantView(restaurant:opensMenuOnAppear: true)`, then RestaurantView pushes MenuView
 - `Views/Restaurant/DirectionsView.swift` — `DirectionsViewModel` (`@Observable`, `@MainActor`) with `TransportMode` enum (transit/walking/driving); `fetchDirections()` builds `MKDirections.Request` + `calculate()`; `openInAppleMaps()` uses `MKMapItem.openInMaps(launchOptions:)` with `MKLaunchOptionsDirectionsModeKey`; `DirectionsView` renders map + `MapPolyline(route.polyline)` + segmented picker + route summary card
 - `Views/Search/SearchMapView.swift` — `Map(position:selection:)` with `Marker` per restaurant (tinted by `isOpenNow`); `UserAnnotation()`; auto-fit camera via `MKCoordinateRegion` bounding box over all results; `SearchMapCalloutCard` bottom overlay (`.regularMaterial` card) shown on pin tap; navigates to `RestaurantView` via `NavigationLink(value: restaurant)`
 - `Pour_RiceApp.swift` — `GeminiNavigation` struct (Hashable, wraps `Restaurant?`) for type-safe Gemini navigation
@@ -391,7 +392,7 @@ QR Generation (restaurant owners):
 
 QR Scanning (all users — guests, diners, owners):
   SearchView toolbar → camera.viewfinder button
-    → .fullScreenCover { NavigationStack { QRScannerView() } }
+    → .fullScreenCover { NavigationStack { QRScannerView(onRestaurantScanned:) } }
 
   Shared logic layers (platform-neutral, all in Core/QR/):
     QRPayloadDetector.detect(from:)        # validates scheme/host/path → QRDetection
@@ -402,19 +403,39 @@ QR Scanning (all users — guests, diners, owners):
     DataScannerRepresentable (UIViewControllerRepresentable)
       DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])])
       Coordinator.dataScanner(_:didAdd:allItems:)
-        → Task { @MainActor in vm.handleScannedString(payload) }
+        → Task { @MainActor in await vm.handleScannedString(payload) }
           → QRDataHandler.handlePayload(_:) → scannerState = .success(restaurant)
+          → returns Restaurant? directly to QRScannerView
     Torch toggle: vm.isTorchOn synced via AVCaptureDevice in updateUIViewController
 
-  macOS / simulator fallback path (QRScannerView.fallbackScannerView):
-    Option A – PhotosPicker: loadTransferable(Data) → vm.handleScannedImageData(_:)
+  Image/manual paths:
+    iOS photo import: PHPickerHost.present(...) → vm.handleScannedImageData(_:)
+      # Direct UIKit PHPicker is used because SwiftUI .photosPicker/.sheet is unstable
+      # inside SearchView's fullScreenCover on iOS 26.
+    macOS PhotosPicker: loadTransferable(Data) → vm.handleScannedImageData(_:)
       → Task.detached { CoreImageQRFrameProcessor.extractPayloads } (off main actor)
       → first valid payload → QRDataHandler.handlePayload(_:)
-    Option B – Manual text field: vm.handleScannedString(trimmedPayload)
+    Simulator/manual text field: vm.handleScannedString(trimmedPayload)
       → QRDataHandler.handlePayload(_:)
 
-  Both paths converge on QRScannerViewModel.processPayload(_:) then:
-    .navigationDestination(isPresented:) → MenuView(restaurantId:restaurantName:)
+  Successful in-app QR route:
+    QRScannerView.routeScannedRestaurant(restaurant)
+      ├── duplicate guard: deliveredRestaurantId prevents repeated camera callbacks
+      ├── parent route exists (SearchView):
+      │     onRestaurantScanned(restaurant)
+      │       → SearchView stores scannedQRRestaurant
+      │       → showingQRScanner = false
+      │     QRScannerView.dismiss()
+      │     SearchView.fullScreenCover.onDismiss
+      │       → showingScannedQRRestaurant = true
+      │       → navigationDestination → RestaurantView(restaurant, opensMenuOnAppear: true)
+      │       → RestaurantView.openInitialMenuIfNeeded()
+      │       → navigationDestination(isPresented: $showingAllMenu) → MenuView(...)
+      │       # Back from MenuView returns to RestaurantView.
+      └── no parent route handler:
+            fallbackMenuRestaurant = restaurant
+            showingFallbackMenu = true
+            → RestaurantView(restaurant, opensMenuOnAppear: true)
 
 OS-level deep link (app opened from pourrice:// URL):
   Info.plist CFBundleURLTypes → scheme "pourrice" registered
@@ -427,19 +448,23 @@ OS-level deep link (app opened from pourrice:// URL):
     deepLinkRestaurant = restaurant
     showingDeepLinkMenu = true
   }
-  .sheet → NavigationStack { MenuView(...) }     ← modal, works regardless of active tab
+  .sheet → NavigationStack {
+    RestaurantView(restaurant, opensMenuOnAppear: true)
+      → pushes MenuView on appear
+  }
+  # Modal sheet still works regardless of active tab, and Back from menu returns to restaurant.
 ```
 
 Key files:
 - `Core/QR/QRPayloadDetector.swift` — `QRDetection` result type + `QRDetectionError` + `QRPayloadDetector.detect(from:)`
 - `Core/QR/QRFrameProcessor.swift` — `QRFrameProcessing` protocol + `CoreImageQRFrameProcessor` (CIDetector, iOS + macOS) + `QRFrameProcessingError`
 - `Core/QR/QRDataHandler.swift` — composes detector + injected `fetchRestaurant` closure; UI-independent
-- `Views/QR/QRScannerView.swift` — `FallbackReason` enum; iOS camera path (`#if canImport(VisionKit)`); macOS/simulator fallback (PhotosPicker + manual payload field); `DataScannerRepresentable` + `Coordinator`
+- `Views/QR/QRScannerView.swift` — optional `onRestaurantScanned` callback; `routeScannedRestaurant(_:)` duplicate guard + parent dismiss/fallback routing; iOS camera path (`#if canImport(VisionKit)`); direct UIKit `PHPickerHost` for iOS image import; `cameraUnavailableView` for permission recovery; `unsupportedPlatformView` for simulator/macOS manual testing; `DataScannerRepresentable` + `Coordinator`
 - `Views/QR/RestaurantQRView.swift` — CoreImage QR generation + ShareLink + `UIImage: @retroactive Transferable`
-- `ViewModels/QRScannerViewModel.swift` — `ScannerState` enum; `init(services:)`; `handleScannedString(_:)`, `handleScannedImageData(_:)`, `processPayload(_:)`; `isPaused` re-entrancy guard; `isTorchOn`
+- `ViewModels/QRScannerViewModel.swift` — `ScannerState` enum; `init(services:)`; `handleScannedString(_:) -> Restaurant?`, `handleScannedImageData(_:) -> Restaurant?`, `processPayload(_:) -> Restaurant?`; `isPaused` re-entrancy guard; `isTorchOn`
 - `Core/Utilities/Constants.swift` — `Constants.DeepLink.scheme` + `.menuHost`
 - `Pour Rice/Info.plist` — `pourrice` URL scheme + `NSCameraUsageDescription`
-- `Pour_RiceApp.swift` `RootView` — `onOpenURL` + `.onChange` + deep link sheet
+- `Pour_RiceApp.swift` `RootView` — `onOpenURL` + `.onChange` + deep link sheet containing `RestaurantView(restaurant:opensMenuOnAppear: true)`
 
 Simulator testing: `xcrun simctl openurl booted "pourrice://menu/{validRestaurantId}"`
 
@@ -564,7 +589,7 @@ Key files:
 | File | Lines |
 |------|-------|
 | `Core/Services/AuthService.swift` | ~606 |
-| `Views/Restaurant/RestaurantView.swift` | ~640 |
+| `Views/Restaurant/RestaurantView.swift` | 853 |
 | `Views/Restaurant/DirectionsView.swift` | ~230 |
 | `Models/Restaurant.swift` | 524 |
 | `Views/Auth/LoginView.swift` | 472 |
@@ -572,7 +597,7 @@ Key files:
 | `Views/Gemini/GeminiChatView.swift` | ~210 |
 | `Models/Menu.swift` | 383 |
 | `Views/Home/HomeView.swift` | ~845 |
-| `Pour_RiceApp.swift` | ~547 |
+| `Pour_RiceApp.swift` | 789 |
 | `Core/Services/RestaurantService.swift` | 370 |
 | `Core/Utilities/LocalDataLoader.swift` | ~90 |
 | `Views/Store/StoreView.swift` | ~260 |
@@ -581,7 +606,7 @@ Key files:
 | `Models/ChatRoom.swift` | ~338 |
 | `Core/Services/SocketService.swift` | ~280 |
 | `ViewModels/ChatRoomViewModel.swift` | ~442 |
-| `Views/Search/SearchView.swift` | ~290 |
+| `Views/Search/SearchView.swift` | 449 |
 | `Views/Search/SearchMapView.swift` | ~175 |
 | `Views/Common/AsyncImageView.swift` | 259 |
 | `Views/Account/AccountView.swift` | ~390 |
@@ -631,18 +656,32 @@ Key files:
 | `Core/QR/QRPayloadDetector.swift` | ~100 |
 | `Core/QR/QRFrameProcessor.swift` | ~85 |
 | `Core/QR/QRDataHandler.swift` | ~55 |
-| `Views/QR/QRScannerView.swift` | ~395 |
+| `Views/QR/QRScannerView.swift` | 690 |
 | `Views/QR/RestaurantQRView.swift` | 237 |
-| `ViewModels/QRScannerViewModel.swift` | ~205 |
+| `ViewModels/QRScannerViewModel.swift` | 211 |
 | `Pour_Rice.entitlements` | 8 |
 | `Pour RiceTests/Pour_RiceTests.swift` | 17 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~15,578** |
+| **Total (estimated)** | **~16,493** |
 
 ---
 
 ## Change Log
+
+### 2026-04-27 — QR Scanner Routing + Menu Back Stack
+
+**QR scanner routing repair** — successful QR parsing/fetch now routes from the same async task that received the fetched `Restaurant`, instead of relying on SwiftUI observing `scannerState == .success` after the fact:
+- `QRScannerViewModel.handleScannedString(_:)`, `handleScannedImageData(_:)`, and `processPayload(_:)` now return `Restaurant?` while still updating `scannerState`/toast state.
+- `QRScannerView` accepts an optional `onRestaurantScanned` parent callback. Camera, manual payload, and image import paths all call `routeScannedRestaurant(_:)` immediately after a successful fetch.
+- `routeScannedRestaurant(_:)` guards duplicate camera frames with `deliveredRestaurantId`, calls the parent callback, and dismisses the full-screen scanner. Standalone scanner usage falls back to local navigation.
+- iOS image import uses direct UIKit `PHPickerHost.present(...)` because SwiftUI `.photosPicker`/`.sheet` presentation was unreliable inside the scanner full-screen cover on iOS 26.
+
+**Restaurant-first menu route** — QR/deep-link menu opens now preserve a useful back stack:
+- `SearchView` stores the scanned `Restaurant`, dismisses `QRScannerView`, then pushes `RestaurantView(restaurant:opensMenuOnAppear: true)`.
+- `RestaurantView` gained `opensMenuOnAppear`; it pushes `MenuView` once after appearing via `navigationDestination(isPresented:)`.
+- Back from `MenuView` now returns to the restaurant page instead of going straight back to Search.
+- `RootView` OS-level `pourrice://menu/{id}` handling now presents `RestaurantView(restaurant:opensMenuOnAppear: true)` inside the modal `NavigationStack`, so deep links follow the same Restaurant → Menu stack.
 
 ### 2026-04-24 — Stripe Ad Return Verification + Gemini Contract Fix
 

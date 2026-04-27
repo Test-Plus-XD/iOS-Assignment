@@ -66,6 +66,14 @@ struct AsyncImageView: View {
     /// Optional — nil triggers the placeholder state immediately
     let urlString: String?
 
+    /// Stable random index picked once per view instance so every missing
+    /// thumbnail shows a different sample image without flickering on re-render.
+    @State private var fallbackIndex = Int.random(in: 0...3)
+
+    private static let fallbackImages = ["Placeholder", "sample_1", "sample_2", "sample_3"]
+
+    private var fallbackImageName: String { Self.fallbackImages[fallbackIndex] }
+
     /// How the image should be fitted within its frame
     /// .fill = image fills the entire frame (may be cropped)
     /// .fit = entire image visible (may have empty space)
@@ -119,7 +127,7 @@ struct AsyncImageView: View {
             .fade(duration: Constants.UI.animationDurationMedium)
             // SwiftUI failure placeholder shown when image loading fails
             .onFailureView {
-                Image("Placeholder")
+                Image(fallbackImageName)
                     .resizable()
                     .scaledToFill()
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
@@ -148,7 +156,7 @@ struct AsyncImageView: View {
 
     /// Placeholder shown when no URL is provided for a restaurant image
     private var placeholderView: some View {
-        Image("Placeholder")
+        Image(fallbackImageName)
             .resizable()
             .scaledToFill()
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))

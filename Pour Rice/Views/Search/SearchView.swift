@@ -48,6 +48,12 @@ struct SearchView: View {
     /// because scanning a QR code just opens a public menu page.
     @State private var showingQRScanner = false
 
+    /// Restaurant returned by the QR scanner, held while the full-screen scanner
+    /// dismisses before pushing the restaurant page on this tab's NavigationStack.
+    /// The restaurant page then opens the menu, so Back from Menu returns here.
+    @State private var scannedQRRestaurant: Restaurant?
+    @State private var showingScannedQRRestaurant = false
+
     /// Controls whether search results are displayed as a map or list
     @State private var showingMap = false
 
@@ -82,12 +88,36 @@ struct SearchView: View {
         //  1. The camera viewfinder must fill the entire screen (no card-style modal)
         //  2. It matches the Android app's full-screen camera UX
         //
-        // NavigationStack wrapper is REQUIRED so QRScannerView's .navigationDestination
-        // can push MenuView after a successful scan. Without it, the push has no stack
-        // to push onto and will be silently ignored by SwiftUI.
-        .fullScreenCover(isPresented: $showingQRScanner) {
+        // NavigationStack wrapper gives the scanner its own navigation bar while
+        // it is presented full-screen. Successful scans are routed by SearchView:
+        // dismiss the scanner first, then push RestaurantView. RestaurantView
+        // opens MenuView on top so the menu back button returns to the restaurant.
+        .fullScreenCover(
+            isPresented: $showingQRScanner,
+            onDismiss: {
+                if scannedQRRestaurant != nil {
+                    showingScannedQRRestaurant = true
+                }
+            }
+        ) {
             NavigationStack {
-                QRScannerView()
+                QRScannerView { restaurant in
+                    scannedQRRestaurant = restaurant
+                    showingQRScanner = false
+                }
+            }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { showingScannedQRRestaurant && scannedQRRestaurant != nil },
+            set: { isPresented in
+                showingScannedQRRestaurant = isPresented
+                if !isPresented {
+                    scannedQRRestaurant = nil
+                }
+            }
+        )) {
+            if let restaurant = scannedQRRestaurant {
+                RestaurantView(restaurant: restaurant, opensMenuOnAppear: true)
             }
         }
     }

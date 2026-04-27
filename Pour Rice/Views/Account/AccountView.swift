@@ -58,6 +58,11 @@ struct AccountView: View {
     /// Persisted language preference — guests can still change language via UserDefaults
     @AppStorage("preferredLanguage") private var preferredLanguage = "en"
 
+    /// Persisted theme preference — guests can still change theme via UserDefaults.
+    /// Pour_RiceApp's RootView reads the same key and applies `.preferredColorScheme`,
+    /// so writes here switch the interface immediately.
+    @AppStorage("preferredTheme") private var preferredTheme = "system"
+
     // MARK: - Body
 
     var body: some View {
@@ -350,6 +355,12 @@ struct AccountView: View {
                 Picker("account_language_label", selection: $preferredLanguage) {
                     Text("language_en").tag("en")
                     Text("language_tc").tag("zh-Hant")
+                }
+
+                Picker("account_theme_label", selection: $preferredTheme) {
+                    Text("theme_system").tag("system")
+                    Text("theme_light").tag("light")
+                    Text("theme_dark").tag("dark")
                 }
             }
 

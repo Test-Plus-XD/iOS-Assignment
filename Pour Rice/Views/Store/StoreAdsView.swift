@@ -9,6 +9,7 @@
 //    Step 2 — Ad content form with optional Gemini AI generation
 //
 
+import Combine
 import SwiftUI
 
 private enum StoreAdCreationStartMode: Equatable {

@@ -14,9 +14,9 @@
 		CD7409952F3F8C82000A59BE /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409942F3F8C82000A59BE /* FirebaseAnalytics */; };
 		CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409962F3F8C8C000A59BE /* FirebaseAuth */; };
 		CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */; };
-		EEFC00012F98000000000001 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EEFC00032F98000000000001 /* FirebaseMessaging */; };
-		EEFC00022F98000000000001 /* FirebaseInAppMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EEFC00042F98000000000001 /* FirebaseInAppMessaging */; };
 		EEA100001111111111111111 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = EEA100011111111111111111 /* GoogleSignIn */; };
+		EEFC00012F98000000000001 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = EEFC00032F98000000000001 /* FirebaseMessaging */; };
+		EEFC00022F98000000000001 /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = EEFC00042F98000000000001 /* FirebaseInAppMessaging-Beta */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -112,7 +112,7 @@
 				CD7409972F3F8C8C000A59BE /* FirebaseAuth in Frameworks */,
 				CD7409A52F3F8CE9000A59BE /* FirebaseInstallations in Frameworks */,
 				EEFC00012F98000000000001 /* FirebaseMessaging in Frameworks */,
-				EEFC00022F98000000000001 /* FirebaseInAppMessaging in Frameworks */,
+				EEFC00022F98000000000001 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				EEA100001111111111111111 /* GoogleSignIn in Frameworks */,
 			);
 		};
@@ -183,7 +183,7 @@
 				CD7409962F3F8C8C000A59BE /* FirebaseAuth */,
 				CD7409A42F3F8CE9000A59BE /* FirebaseInstallations */,
 				EEFC00032F98000000000001 /* FirebaseMessaging */,
-				EEFC00042F98000000000001 /* FirebaseInAppMessaging */,
+				EEFC00042F98000000000001 /* FirebaseInAppMessaging-Beta */,
 				EEA100011111111111111111 /* GoogleSignIn */,
 				EEB200011111111111111111 /* SocketIO */,
 			);
@@ -753,16 +753,6 @@
 			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseInstallations;
 		};
-		EEFC00032F98000000000001 /* FirebaseMessaging */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseMessaging;
-		};
-		EEFC00042F98000000000001 /* FirebaseInAppMessaging */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseInAppMessaging;
-		};
 		EEA100011111111111111111 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = EEA100021111111111111111 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
@@ -772,6 +762,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = EEB200021111111111111111 /* XCRemoteSwiftPackageReference "socket" */;
 			productName = SocketIO;
+		};
+		EEFC00032F98000000000001 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		EEFC00042F98000000000001 /* FirebaseInAppMessaging-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD5900A32F3DDA56000E3C82 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseInAppMessaging-Beta";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

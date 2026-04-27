@@ -45,15 +45,27 @@ struct RestaurantView: View {
     /// Restaurant passed from navigation (avoids extra API call for basic data)
     let restaurant: Restaurant
 
+    /// When true, the restaurant page pushes its full menu after appearing.
+    /// Used by QR/deep-link routes so Back from Menu lands on this restaurant.
+    private let opensMenuOnAppear: Bool
+
     // MARK: - State
 
     @State private var viewModel: RestaurantViewModel?
     @State private var showingCreateBooking = false
     @State private var showingDirections = false
     @State private var showingAllMenu = false
+    @State private var didOpenInitialMenu = false
 
     @AppStorage("preferredLanguage") private var preferredLanguage: String = "en"
     private var isTC: Bool { preferredLanguage == "zh-Hant" }
+
+    // MARK: - Init
+
+    init(restaurant: Restaurant, opensMenuOnAppear: Bool = false) {
+        self.restaurant = restaurant
+        self.opensMenuOnAppear = opensMenuOnAppear
+    }
 
     // MARK: - Body
 
@@ -79,6 +91,11 @@ struct RestaurantView: View {
                 viewModel = vm
                 await vm.loadData(restaurantId: restaurant.id)
             }
+        }
+        .onAppear(perform: openInitialMenuIfNeeded)
+        .navigationDestination(isPresented: $showingAllMenu) {
+            let current = viewModel?.restaurant ?? restaurant
+            MenuView(restaurantId: current.id, restaurantName: current.name.localised)
         }
         .toast(message: viewModel?.toastMessage ?? "", style: viewModel?.toastStyle ?? .success, isPresented: Binding(
             get: { viewModel?.showToast ?? false },
@@ -148,11 +165,6 @@ struct RestaurantView: View {
         .refreshable {
             await vm.refresh(restaurantId: restaurant.id)
         }
-        // Register navigation destinations used by NavigationLink(value:)
-        .navigationDestination(for: String.self) { restaurantId in
-            // Full menu screen — pushed when user taps "See Full Menu"
-            MenuView(restaurantId: restaurantId, restaurantName: current.name.localised)
-        }
         // Review submission sheet
         .sheet(isPresented: Binding(
             get: { vm.showingReviewSheet },
@@ -174,11 +186,16 @@ struct RestaurantView: View {
                 userLocation: services.locationService.currentLocation
             )
         }
-        // Full menu sheet
-        .sheet(isPresented: $showingAllMenu) {
-            NavigationStack {
-                MenuView(restaurantId: restaurant.id, restaurantName: restaurant.name.localised)
-            }
+    }
+
+    /// Opens the menu once after this restaurant page becomes active.
+    private func openInitialMenuIfNeeded() {
+        guard opensMenuOnAppear, !didOpenInitialMenu else { return }
+        didOpenInitialMenu = true
+
+        Task { @MainActor in
+            await Task.yield()
+            showingAllMenu = true
         }
     }
 
@@ -486,7 +503,7 @@ struct RestaurantView: View {
 
     // MARK: - Menu Section
 
-    /// Vertical menu section showing up to 10 items (~3 visible at a time) + sheet for all
+    /// Vertical menu section showing up to 10 items (~3 visible at a time) + full menu push
     @ViewBuilder
     private func menuSection(items: [Menu], restaurantId: String, restaurantName: String) -> some View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingSmall) {

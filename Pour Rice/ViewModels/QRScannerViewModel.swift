@@ -75,7 +75,8 @@ final class QRScannerViewModel {
     // MARK: - Public API
 
     /// Handles a payload received from a live camera scanner callback.
-    func handleScannedString(_ rawValue: String) async {
+    @discardableResult
+    func handleScannedString(_ rawValue: String) async -> Restaurant? {
         // All live camera payloads funnel through one shared processing method.
         // This avoids drift between iOS camera scans and desktop/manual scans.
         await processPayload(rawValue)
@@ -85,7 +86,8 @@ final class QRScannerViewModel {
     ///
     /// This is used by macOS/simulator fallback UI so users can test QR flow
     /// without a physical iPhone camera.
-    func handleScannedImageData(_ imageData: Data) async {
+    @discardableResult
+    func handleScannedImageData(_ imageData: Data) async -> Restaurant? {
         do {
             // Step 1: Decode QR payloads off-main to avoid blocking SwiftUI rendering.
             //
@@ -107,12 +109,12 @@ final class QRScannerViewModel {
             guard let firstValidPayload else {
                 scannerState = .error(String(localized: "qr_error_invalid_format", bundle: L10n.bundle))
                 presentError("qr_error_invalid_format")
-                return
+                return nil
             }
 
             // Step 2: Reuse the exact same payload-processing path as live camera scanning.
             // This guarantees format validation and API-fetch behaviour remain identical.
-            await processPayload(firstValidPayload)
+            return await processPayload(firstValidPayload)
         } catch let frameError as QRFrameProcessingError {
             switch frameError {
             case .invalidImageData, .detectorInitializationFailed:
@@ -127,6 +129,8 @@ final class QRScannerViewModel {
             scannerState = .error(error.localizedDescription)
             presentError("qr_error_invalid_format")
         }
+
+        return nil
     }
 
     /// Resets the scanner state so a fresh scan attempt can begin.
@@ -138,11 +142,11 @@ final class QRScannerViewModel {
     // MARK: - Private Helpers
 
     /// Runs the common detection + fetch flow through the shared data handler.
-    private func processPayload(_ rawValue: String) async {
+    private func processPayload(_ rawValue: String) async -> Restaurant? {
         // Re-entrancy guard:
         // DataScanner delegate callbacks can fire repeatedly for the same code.
         // Without this guard we'd create duplicate network requests.
-        guard !isPaused else { return }
+        guard !isPaused else { return nil }
         isPaused = true
         scannerState = .loading
 
@@ -152,6 +156,7 @@ final class QRScannerViewModel {
             let restaurant = try await dataHandler.handlePayload(rawValue)
             scannerState = .success(restaurant)
             // Keep paused=true intentionally until navigation completes.
+            return restaurant
         } catch let detectionError as QRDetectionError {
             // Validation failures (scheme/host/path mismatch) map to format error toast.
             scannerState = .error(detectionError.localizedDescription)
@@ -168,6 +173,8 @@ final class QRScannerViewModel {
             }
             isPaused = false
         }
+
+        return nil
     }
 
     /// Maps shared detection errors to localisation keys used in string catalogues.

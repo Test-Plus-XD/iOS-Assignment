@@ -325,7 +325,8 @@ struct RootView: View {
         }
         // ── Async restaurant fetch triggered by deep link ─────────────────
         // .onChange fires on the main actor whenever pendingDeepLinkId changes.
-        // It launches a Task to fetch the restaurant, then presents the menu sheet.
+        // It launches a Task to fetch the restaurant, then presents a restaurant
+        // sheet that opens the menu on top.
         //
         // WHY .onChange instead of fetching inside onOpenURL:
         //   onOpenURL is a synchronous closure. Swift async/await requires an async
@@ -351,24 +352,22 @@ struct RootView: View {
             }
         }
         // ── Deep link sheet ───────────────────────────────────────────────
-        // Presents MenuView modally when a valid pourrice:// deep link is opened.
+        // Presents RestaurantView modally when a valid pourrice:// deep link is opened,
+        // then pushes MenuView so Back from the menu returns to the restaurant.
         // Modal presentation (not push navigation) is used because:
         //   1. We don't know which tab is active when the URL arrives
         //   2. Modal sheets layer on top of the current UI without disrupting tab state
         //   3. The user can dismiss with a swipe to return exactly where they were
         //
-        // NavigationStack wrapper gives MenuView its own navigation bar with a
-        // back/done button. Without it, MenuView renders without any chrome.
+        // NavigationStack wrapper gives the restaurant/menu route its own navigation
+        // bar without disturbing the currently selected tab.
         .sheet(isPresented: $showingDeepLinkMenu, onDismiss: {
             // Release the restaurant object when dismissed to free memory
             deepLinkRestaurant = nil
         }) {
             if let restaurant = deepLinkRestaurant {
                 NavigationStack {
-                    MenuView(
-                        restaurantId: restaurant.id,
-                        restaurantName: restaurant.name.localised
-                    )
+                    RestaurantView(restaurant: restaurant, opensMenuOnAppear: true)
                 }
             }
         }
