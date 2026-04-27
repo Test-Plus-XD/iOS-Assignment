@@ -737,8 +737,8 @@ struct ReviewSubmissionView: View {
                         .frame(minHeight: 100)
                 }
 
-                // Optional photo attachment
-                Section("review_photo_label") {
+                // Optional photo attachment — reviewers can submit with just a rating and comment.
+                Section {
                     PhotosPicker(
                         selection: $selectedPhotoItem,
                         matching: .images,
@@ -770,6 +770,10 @@ struct ReviewSubmissionView: View {
                             Label("review_photo_remove", systemImage: "trash")
                         }
                     }
+                } header: {
+                    Text("review_photo_label")
+                } footer: {
+                    Text("review_photo_optional_hint")
                 }
             }
             .navigationTitle("review_sheet_title")

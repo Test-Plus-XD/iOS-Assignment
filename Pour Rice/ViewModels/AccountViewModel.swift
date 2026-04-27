@@ -52,12 +52,6 @@ final class AccountViewModel {
     /// Edit buffer for bio
     var editBio = ""
 
-    /// Edit buffer for preferred theme
-    var editTheme = "system"
-
-    /// Edit buffer for notifications enabled
-    var editNotifications = true
-
     /// Whether a profile save operation is in progress
     var isSaving = false
 
@@ -123,25 +117,16 @@ final class AccountViewModel {
         authService.currentUser?.preferredLanguage ?? "en"
     }
 
-    /// Preferred theme display label
-    var themeDisplay: String {
-        switch authService.currentUser?.preferredTheme {
-        case "light":
-            return String(localized: "theme_light", bundle: L10n.bundle)
-        case "dark":
-            return String(localized: "theme_dark", bundle: L10n.bundle)
-        default:
-            return String(localized: "theme_system", bundle: L10n.bundle)
-        }
+    /// Current preferred theme code ("system", "light", or "dark")
+    /// Used to drive the theme Picker selection in AccountView
+    var preferredTheme: String {
+        authService.currentUser?.preferredTheme ?? "system"
     }
 
-    /// Notifications enabled display label
-    var notificationsDisplay: String {
-        if authService.currentUser?.notificationsEnabled ?? true {
-            return String(localized: "notifications_enabled", bundle: L10n.bundle)
-        } else {
-            return String(localized: "notifications_disabled", bundle: L10n.bundle)
-        }
+    /// Whether push notifications are enabled
+    /// Used to drive the notifications Toggle in AccountView
+    var notificationsEnabled: Bool {
+        authService.currentUser?.notificationsEnabled ?? true
     }
 
     // MARK: - Initialisation
@@ -158,8 +143,6 @@ final class AccountViewModel {
         return editDisplayName != user.displayName
             || editPhoneNumber != (user.phoneNumber ?? "")
             || editBio != (user.bio ?? "")
-            || editTheme != user.preferredTheme
-            || editNotifications != user.notificationsEnabled
     }
 
     // MARK: - Actions
@@ -170,8 +153,6 @@ final class AccountViewModel {
         editDisplayName = user.displayName
         editPhoneNumber = user.phoneNumber ?? ""
         editBio = user.bio ?? ""
-        editTheme = user.preferredTheme
-        editNotifications = user.notificationsEnabled
         isEditing = true
     }
 
@@ -184,9 +165,7 @@ final class AccountViewModel {
         let request = UpdateUserRequest(
             displayName: editDisplayName != user.displayName ? editDisplayName : nil,
             phoneNumber: editPhoneNumber != (user.phoneNumber ?? "") ? editPhoneNumber : nil,
-            bio: editBio != (user.bio ?? "") ? editBio : nil,
-            theme: editTheme != user.preferredTheme ? editTheme : nil,
-            notifications: editNotifications != user.notificationsEnabled ? editNotifications : nil
+            bio: editBio != (user.bio ?? "") ? editBio : nil
         )
 
         do {
@@ -214,6 +193,35 @@ final class AccountViewModel {
 
         // Persist the preference to the backend
         let request = UpdateUserRequest(displayName: nil, photoURL: nil, preferredLanguage: code)
+        do {
+            try await authService.updateUserProfile(request)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Updates the user's preferred theme in UserDefaults and persists it to the backend
+    ///
+    /// Writing to UserDefaults triggers the @AppStorage("preferredTheme") watcher in
+    /// Pour_RiceApp, which re-applies `.preferredColorScheme` — instantly switching the UI.
+    ///
+    /// - Parameter value: Theme code to switch to ("system", "light", or "dark")
+    func updateTheme(_ value: String) async {
+        UserDefaults.standard.set(value, forKey: "preferredTheme")
+
+        let request = UpdateUserRequest(theme: value)
+        do {
+            try await authService.updateUserProfile(request)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Persists the user's notifications preference to the backend
+    ///
+    /// - Parameter enabled: Whether push notifications should be enabled
+    func updateNotifications(_ enabled: Bool) async {
+        let request = UpdateUserRequest(notifications: enabled)
         do {
             try await authService.updateUserProfile(request)
         } catch {

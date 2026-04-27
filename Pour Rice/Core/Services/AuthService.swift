@@ -114,6 +114,12 @@ final class AuthService {
     /// This handle lets us remove the listener later to prevent memory leaks
     private var authStateHandle: AuthStateDidChangeListenerHandle?
 
+    /// True while sign-up is creating the matching backend profile.
+    /// Firebase signs the user in before `POST /API/Users` completes, so the
+    /// auth-state listener can momentarily observe a session whose profile is
+    /// not ready yet.
+    private var isCreatingAccountProfile = false
+
     /// Optional async hook used by Services to run cleanup that requires a valid Firebase ID token before sign-out.
     var beforeSignOut: (() async -> Void)?
 
@@ -207,6 +213,11 @@ final class AuthService {
                     do {
                         try await self.loadUserProfile(uid: user.uid)
                     } catch {
+                        if self.isCreatingAccountProfile {
+                            print("⚠️ Ignoring transient profile load failure during account setup: \(error.localizedDescription)")
+                            return
+                        }
+
                         // Profile fetch/decode failed — treat as signed-out so the app
                         // doesn't remain in a half-authenticated state (isAuthenticated = true
                         // but currentUser = nil).  Firebase session is untouched; the user
@@ -401,7 +412,11 @@ final class AuthService {
     func signUp(email: String, password: String, displayName: String) async throws {
         isLoading = true
         error = nil
-        defer { isLoading = false }
+        isCreatingAccountProfile = true
+        defer {
+            isCreatingAccountProfile = false
+            isLoading = false
+        }
 
         do {
             // STEP 1: Create Firebase Auth account
@@ -426,6 +441,10 @@ final class AuthService {
             print("✅ User account created successfully: \(result.user.uid)")
 
         } catch {
+            try? auth.signOut()
+            currentUser = nil
+            isAuthenticated = false
+            needsTypeSelection = false
             self.error = error
             print("❌ Sign up failed: \(error.localizedDescription)")
             throw error
@@ -564,15 +583,50 @@ final class AuthService {
         }
 
         // ── Type-selection gate ────────────────────────────────────────────
-        // If this device has never seen a choice key for this UID, the user is
-        // returning from a previous install or a different device → treat them
-        // as having already chosen their type (skip the sheet).
+        // If the backend profile has an empty/missing type, keep the gate open
+        // until UserTypeSelectionView persists an explicit choice. If this
+        // device has never seen a choice key for an already-typed UID, the user
+        // is returning from a previous install or a different device → treat
+        // them as having already chosen their type (skip the sheet).
         // New accounts set the key to `false` inside createUserProfile.
         let choiceKey = "userTypeChosen_\(uid)"
-        if UserDefaults.standard.object(forKey: choiceKey) == nil {
+        if currentUser?.hasSelectedUserType == false {
+            UserDefaults.standard.set(false, forKey: choiceKey)
+        } else if UserDefaults.standard.object(forKey: choiceKey) == nil {
             UserDefaults.standard.set(true, forKey: choiceKey)
         }
         needsTypeSelection = !UserDefaults.standard.bool(forKey: choiceKey)
+    }
+
+    /// Loads a just-created backend profile, retrying the brief consistency gap
+    /// where `POST /API/Users` has returned but `GET /API/Users/:uid` can still
+    /// respond with 404.
+    private func loadCreatedUserProfile(uid: String) async throws {
+        var lastError: Error?
+
+        for attempt in 0..<4 {
+            do {
+                try await loadUserProfile(uid: uid)
+                return
+            } catch {
+                lastError = error
+
+                guard
+                    let apiError = error as? APIError,
+                    case .clientError(404) = apiError,
+                    attempt < 3
+                else {
+                    throw error
+                }
+
+                let delayMs = UInt64(250 * (attempt + 1))
+                try await Task.sleep(nanoseconds: delayMs * 1_000_000)
+            }
+        }
+
+        if let lastError {
+            throw lastError
+        }
     }
 
     /// Creates a new user profile in the backend database
@@ -599,24 +653,27 @@ final class AuthService {
             uid: uid,
             email: email,
             displayName: displayName,
-            userType: "Diner",  // All new users are diners (not restaurant owners)
-            preferredLanguage: Locale.current.language.languageCode?.identifier ?? "en"
+            userType: "Diner",  // Temporary fallback; the required choice is saved by UserTypeSelectionView.
+            languageCode: Locale.current.language.languageCode?.identifier ?? "en"
         )
 
         // Send POST request to create user profile
         let endpoint = APIEndpoint.createUserProfile(request)
 
-        // Store the created user profile
-        currentUser = try await apiClient.request(
+        // The backend returns only `{ id }` for creation, not a full User.
+        try await apiClient.requestVoid(
             endpoint,
-            responseType: User.self,
             callerService: "AuthService"
         )
 
         // Mark this brand-new account as requiring type selection.
-        // The key is set to `false` so that the subsequent auth-state listener
-        // call to loadUserProfile preserves it and keeps needsTypeSelection = true.
+        // Set the key before fetching so any overlapping auth-state listener
+        // response also preserves the pending-selection state.
         UserDefaults.standard.set(false, forKey: "userTypeChosen_\(uid)")
+
+        try await loadCreatedUserProfile(uid: uid)
+
+        isAuthenticated = true
         needsTypeSelection = true
     }
 

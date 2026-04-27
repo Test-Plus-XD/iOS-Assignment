@@ -60,21 +60,6 @@ struct ProfileEditView: View {
                     TextField("profile_bio_placeholder", text: $viewModel.editBio, axis: .vertical)
                         .lineLimit(3...6)
                 }
-
-                // ─── Theme ────────────────────────────────────────────
-                Section(header: Text("profile_theme")) {
-                    Picker("profile_theme", selection: $viewModel.editTheme) {
-                        Text("theme_system").tag("system")
-                        Text("theme_light").tag("light")
-                        Text("theme_dark").tag("dark")
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                // ─── Notifications ────────────────────────────────────
-                Section(header: Text("profile_notifications")) {
-                    Toggle("profile_notifications_toggle", isOn: $viewModel.editNotifications)
-                }
             }
             .navigationTitle("profile_edit_title")
             .navigationBarTitleDisplayMode(.inline)

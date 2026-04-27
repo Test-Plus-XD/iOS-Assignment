@@ -53,6 +53,14 @@ struct User: Codable, Identifiable, Hashable, Sendable {
     /// Uses the UserType enum defined below
     let userType: UserType
 
+    /// Whether the backend profile contains an explicit account type.
+    ///
+    /// New accounts can briefly return an empty `type` until the user chooses
+    /// Diner or Restaurant Owner in `UserTypeSelectionView`. In that pending
+    /// state the app uses `.diner` as a harmless UI fallback, while
+    /// `AuthService` uses this flag to keep the type-selection sheet open.
+    let hasSelectedUserType: Bool
+
     /// Profile photo URL (optional)
     ///
     /// WHAT IS String?:
@@ -158,7 +166,15 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         id               = try c.decode(String.self,   forKey: .id)
         email            = try c.decode(String.self,   forKey: .email)
         displayName      = try c.decodeIfPresent(String.self, forKey: .displayName) ?? ""
-        userType         = try c.decode(UserType.self, forKey: .userType)
+        let rawUserType = try c.decodeIfPresent(String.self, forKey: .userType)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if let rawUserType, let decodedUserType = UserType(rawValue: rawUserType) {
+            userType = decodedUserType
+            hasSelectedUserType = true
+        } else {
+            userType = .diner
+            hasSelectedUserType = false
+        }
         photoURL         = try c.decodeIfPresent(String.self, forKey: .photoURL)
         phoneNumber      = try c.decodeIfPresent(String.self, forKey: .phoneNumber)
         bio              = try c.decodeIfPresent(String.self, forKey: .bio)
@@ -166,13 +182,20 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         createdAt        = (try? c.decode(Date.self,   forKey: .createdAt)) ?? Date()
         updatedAt        = (try? c.decode(Date.self,   forKey: .updatedAt)) ?? Date()
 
-        // Preferences live inside the nested "preferences" object.
-        let prefs = try c.nestedContainer(keyedBy: PreferencesCodingKeys.self, forKey: .preferences)
-        // Map API codes ("EN" → "en", "TC" → "zh-Hant")
-        let lang  = try prefs.decode(String.self, forKey: .language)
-        preferredLanguage = lang == "TC" ? "zh-Hant" : "en"
-        preferredTheme = try prefs.decodeIfPresent(String.self, forKey: .theme) ?? "system"
-        notificationsEnabled = try prefs.decodeIfPresent(Bool.self, forKey: .notifications) ?? true
+        // Preferences live inside the nested "preferences" object. Do not read
+        // the legacy top-level preferredLanguage field; that was an iOS client
+        // payload bug. If an older malformed profile lacks preferences, fall
+        // back locally so auth/profile decoding still succeeds.
+        if let prefs = try? c.nestedContainer(keyedBy: PreferencesCodingKeys.self, forKey: .preferences) {
+            let rawLanguage = try prefs.decodeIfPresent(String.self, forKey: .language) ?? "EN"
+            preferredLanguage = User.appLanguageCode(fromAPIValue: rawLanguage)
+            preferredTheme = try prefs.decodeIfPresent(String.self, forKey: .theme) ?? "system"
+            notificationsEnabled = try prefs.decodeIfPresent(Bool.self, forKey: .notifications) ?? true
+        } else {
+            preferredLanguage = "en"
+            preferredTheme = "system"
+            notificationsEnabled = true
+        }
     }
 
     // MARK: - Custom Encodable
@@ -185,7 +208,7 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         try c.encode(id, forKey: .id)                 // maps to "uid"
         try c.encode(email, forKey: .email)
         try c.encode(displayName, forKey: .displayName)
-        try c.encode(userType, forKey: .userType)     // maps to "type"
+        try c.encode(hasSelectedUserType ? userType.rawValue : "", forKey: .userType) // maps to "type"
         try c.encodeIfPresent(photoURL, forKey: .photoURL)
         try c.encodeIfPresent(phoneNumber, forKey: .phoneNumber)
         try c.encodeIfPresent(bio, forKey: .bio)
@@ -207,6 +230,16 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         try prefs.encode(langCode, forKey: .language)
         try prefs.encode(preferredTheme, forKey: .theme)
         try prefs.encode(notificationsEnabled, forKey: .notifications)
+    }
+
+    /// Normalises backend preference language values into app locale codes.
+    private static func appLanguageCode(fromAPIValue value: String) -> String {
+        switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "tc", "zh-hant", "zh_hant":
+            return "zh-Hant"
+        default:
+            return "en"
+        }
     }
 
     // MARK: - Initialisation
@@ -236,6 +269,7 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         email: String,
         displayName: String,
         userType: UserType = .diner,
+        hasSelectedUserType: Bool = true,
         photoURL: String? = nil,
         phoneNumber: String? = nil,
         bio: String? = nil,
@@ -248,6 +282,7 @@ struct User: Codable, Identifiable, Hashable, Sendable {
         self.email = email
         self.displayName = displayName
         self.userType = userType
+        self.hasSelectedUserType = hasSelectedUserType
         self.photoURL = photoURL
         self.phoneNumber = phoneNumber
         self.bio = bio
@@ -283,14 +318,38 @@ struct CreateUserRequest: Codable {
     let email: String                  // User's email address
     let displayName: String            // User's chosen display name
     let userType: String               // Account type as string ("Diner" or "Restaurant")
-    let preferredLanguage: String      // Language preference ("en" or "zh-Hant")
+    let preferences: Preferences       // Nested preference payload expected by the backend
+
+    struct Preferences: Codable {
+        let language: String?
+        let theme: String?
+        let notifications: Bool?
+    }
 
     enum CodingKeys: String, CodingKey {
         case uid
         case email
         case displayName
         case userType = "type"         // API expects "type" not "userType"
-        case preferredLanguage
+        case preferences
+    }
+
+    init(
+        uid: String,
+        email: String,
+        displayName: String,
+        userType: String,
+        languageCode: String
+    ) {
+        self.uid = uid
+        self.email = email
+        self.displayName = displayName
+        self.userType = userType
+        self.preferences = Preferences(
+            language: languageCode == "zh-Hant" ? "TC" : "EN",
+            theme: "system",
+            notifications: true
+        )
     }
 }
 
@@ -359,4 +418,3 @@ struct UpdateUserRequest: Codable {
         }
     }
 }
-

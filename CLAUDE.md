@@ -475,13 +475,18 @@ New users are prompted to choose between **Diner (食客)** and **Restaurant Own
 ```
 Registration / Google sign-up
   └── AuthService.createUserProfile()
-        ├── POST /API/Users → User (type: "Diner" default)
+        ├── POST /API/Users { uid, email, displayName, type, preferences }
+        │     └── response is only { id } — do not decode it as User
         ├── UserDefaults["userTypeChosen_{uid}"] = false   ← gate key
+        ├── loadCreatedUserProfile(uid:) with short 404 retry
+        ├── isAuthenticated = true
         └── needsTypeSelection = true
 
 Auth state listener fires → AuthService.loadUserProfile()
-  └── Key exists (false) → needsTypeSelection stays true
-      Key missing (existing user on new device) → set true → needsTypeSelection = false
+  └── User.type empty/missing → decode as .diner fallback + hasSelectedUserType=false
+      ├── UserDefaults["userTypeChosen_{uid}"] = false → needsTypeSelection = true
+      ├── Key exists (false) → needsTypeSelection stays true
+      └── Key missing for already-typed existing user → set true → needsTypeSelection = false
 
 MainTabView
   └── .sheet(isPresented: Binding { authService.needsTypeSelection })
@@ -500,6 +505,10 @@ MainTabView
 
 Key behaviours:
 - **New users**: `createUserProfile` sets `UserDefaults["userTypeChosen_{uid}"] = false` → sheet shown
+- **Create response shape**: `POST /API/Users` returns `{ id }`, so creation uses `requestVoid` and then fetches `GET /API/Users/:uid`
+- **Preferences contract**: Create/update payloads use nested `preferences.language/theme/notifications`; the legacy top-level `preferredLanguage` field is ignored
+- **Empty backend type**: `User` decodes empty/missing/unknown `type` as `.diner` only as a UI fallback and sets `hasSelectedUserType=false`; `AuthService.loadUserProfile` keeps the sheet open instead of failing auth
+- **Signup race**: Firebase can emit an auth-state change before `POST /API/Users` finishes; `AuthService` ignores transient profile-load failures during account setup, then retries the post-create fetch for brief 404 propagation
 - **Existing users / new device**: `loadUserProfile` finds no key → sets it to `true` → sheet not shown
 - **On error**: card resets (no selected state, no spinner), inline error message shown; user can retry
 - **Sign-out**: `needsTypeSelection` reset to `false` in `signOut()`
@@ -508,8 +517,8 @@ Key behaviours:
 
 Key files:
 - `Views/Account/UserTypeSelectionView.swift` — sheet UI + `UserTypeCard` private component
-- `Core/Services/AuthService.swift` — `needsTypeSelection` var + `updateUserType()` + gate logic in `loadUserProfile`/`createUserProfile`/`signOut`
-- `Models/User.swift` — `UpdateUserTypeRequest` struct
+- `Core/Services/AuthService.swift` — `needsTypeSelection` var + `updateUserType()` + empty-type gate logic in `loadUserProfile`/`createUserProfile`/`signOut`
+- `Models/User.swift` — `hasSelectedUserType` pending-selection flag + `UpdateUserTypeRequest` struct
 - `Core/Network/APIEndpoint.swift` — `.updateUserType` case
 - `Pour_RiceApp.swift` `MainTabView` — sheet binding + `onDismiss` toast
 
@@ -588,7 +597,7 @@ Key files:
 
 | File | Lines |
 |------|-------|
-| `Core/Services/AuthService.swift` | ~606 |
+| `Core/Services/AuthService.swift` | 788 |
 | `Views/Restaurant/RestaurantView.swift` | 853 |
 | `Views/Restaurant/DirectionsView.swift` | ~230 |
 | `Models/Restaurant.swift` | 524 |
@@ -614,7 +623,7 @@ Key files:
 | `Models/BilingualText.swift` | 251 |
 | `Core/Network/APIEndpoint.swift` | ~471 |
 | `Core/Network/APIClient.swift` | ~280 |
-| `Models/User.swift` | ~350 |
+| `Models/User.swift` | 420 |
 | `Views/Common/EmptyStateView.swift` | 216 |
 | `Core/Extensions/View+Extensions.swift` | ~436 |
 | `ViewModels/SearchViewModel.swift` | ~225 |
@@ -660,14 +669,23 @@ Key files:
 | `Views/QR/RestaurantQRView.swift` | 237 |
 | `ViewModels/QRScannerViewModel.swift` | 211 |
 | `Pour_Rice.entitlements` | 8 |
-| `Pour RiceTests/Pour_RiceTests.swift` | 17 |
+| `Pour RiceTests/Pour_RiceTests.swift` | 80 |
 | `Pour RiceUITests/Pour_RiceUITests.swift` | 41 |
 | `Pour RiceUITests/Pour_RiceUITestsLaunchTests.swift` | 33 |
-| **Total (estimated)** | **~16,493** |
+| **Total (estimated)** | **~16,800** |
 
 ---
 
 ## Change Log
+
+### 2026-04-27 — User Type Selection Signup Fix
+
+**Pending user type handling** — new accounts whose backend profile returns an empty `type` no longer fail profile decoding before the account-type sheet can appear:
+- `Models/User.swift` now decodes empty/missing/unknown `type` as `.diner` only as a temporary UI fallback, with `hasSelectedUserType=false`.
+- `Models/User.swift` ignores the legacy top-level `preferredLanguage` field; preferences are decoded from nested `preferences`, with local defaults only for malformed old profiles.
+- `CreateUserRequest` now encodes nested `preferences.language/theme/notifications` instead of top-level `preferredLanguage`.
+- `AuthService.createUserProfile()` treats `POST /API/Users` as a create-only request because the backend returns `{ id }`, then calls `loadCreatedUserProfile(uid:)` with a short 404 retry before showing the sheet.
+- Added Swift Testing coverage for empty/missing/selected user type decoding, malformed missing-preferences fallback, and the create payload shape.
 
 ### 2026-04-27 — QR Scanner Routing + Menu Back Stack
 

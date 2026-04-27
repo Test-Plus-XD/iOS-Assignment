@@ -578,8 +578,9 @@ struct MainTabView: View {
                                 case .bookings:
                                     StoreBookingsView()
                                 case .reviews:
-                                    Text("store_reviews_placeholder")
-                                        .navigationTitle("store_view_reviews")
+                                    if let restaurantId = authService.currentUser?.restaurantId {
+                                        StoreReviewsView(restaurantId: restaurantId)
+                                    }
                                 case .editInfo:
                                     StoreInfoEditView()
                                 case .advertisements:

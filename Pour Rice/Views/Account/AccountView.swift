@@ -205,16 +205,6 @@ struct AccountView: View {
                 Text(vm.accountTypeDisplay)
                     .foregroundStyle(.secondary)
             }
-
-            LabeledContent("account_theme_label") {
-                Text(vm.themeDisplay)
-                    .foregroundStyle(.secondary)
-            }
-
-            LabeledContent("account_notifications_label") {
-                Text(vm.notificationsDisplay)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -234,6 +224,22 @@ struct AccountView: View {
                 Text("language_en").tag("en")
                 Text("language_tc").tag("zh-Hant")
             }
+
+            // Theme picker — writes to UserDefaults via vm.updateTheme(), which triggers
+            // @AppStorage("preferredTheme") in Pour_RiceApp to re-apply .preferredColorScheme.
+            Picker("account_theme_label", selection: Binding(
+                get: { vm.preferredTheme },
+                set: { newValue in Task { await vm.updateTheme(newValue) } }
+            )) {
+                Text("theme_system").tag("system")
+                Text("theme_light").tag("light")
+                Text("theme_dark").tag("dark")
+            }
+
+            Toggle("account_notifications_label", isOn: Binding(
+                get: { vm.notificationsEnabled },
+                set: { newValue in Task { await vm.updateNotifications(newValue) } }
+            ))
         }
     }
 

@@ -246,23 +246,26 @@ struct StoreAdsView: View {
             HStack(spacing: 8) {
                 Image(systemName: "hourglass.circle.fill")
                     .foregroundStyle(.orange)
-                Text("Advertisement placement pending")
+                Text("ad_pending_title")
                     .font(.headline)
             }
 
-            Text("Your payment was received, but the advertisement has not been published yet.")
+            Text("ad_pending_subtitle")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             HStack {
-                Label("Time remaining: \(pendingAdSessionRemainingText(for: session))", systemImage: "clock")
+                Label(
+                    "ad_pending_time_remaining \(pendingAdSessionRemainingText(for: session))",
+                    systemImage: "clock"
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button {
                     openResumeSheet(sessionId: session.sessionId)
                 } label: {
-                    Label("Complete", systemImage: "arrow.forward.circle.fill")
+                    Label("ad_pending_complete", systemImage: "arrow.forward.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
@@ -593,9 +596,9 @@ private struct StoreAdCreationSheet: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.25)
-            Text("Verifying payment...")
+            Text("ad_payment_verifying_title")
                 .font(.headline)
-            Text("The advertisement form will open only after Stripe confirms the payment.")
+            Text("ad_payment_verifying_subtitle")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -658,7 +661,7 @@ private struct StoreAdCreationSheet: View {
 
         if paymentCancelled {
             step = .payment
-            showPaymentToast("Payment was cancelled. The advertisement form will stay closed.", .error)
+            showPaymentToast(localised("ad_payment_cancelled"), .error)
             if !wasShowingSafari { isHandlingCheckoutReturn = false }
             return
         }
@@ -667,7 +670,7 @@ private struct StoreAdCreationSheet: View {
               let sessionId,
               isValidStripeCheckoutSessionId(sessionId) else {
             step = .payment
-            showPaymentToast("Payment was not completed. The advertisement form will stay closed.", .error)
+            showPaymentToast(localised("ad_payment_incomplete"), .error)
             if !wasShowingSafari { isHandlingCheckoutReturn = false }
             return
         }
@@ -691,7 +694,7 @@ private struct StoreAdCreationSheet: View {
                 onVerifiedPayment(sessionId)
             }
             step = .form
-            showPaymentToast("Payment confirmed. You can now create your advertisement.", .success)
+            showPaymentToast(localised("ad_payment_confirmed"), .success)
         } catch {
             verifiedSessionId = nil
             step = .payment
@@ -708,7 +711,11 @@ private struct StoreAdCreationSheet: View {
         }
 
         guard verifiedSessionId == nil, step != .form else { return }
-        showPaymentToast("Payment was not completed. The advertisement form will stay closed.", .error)
+        showPaymentToast(localised("ad_payment_incomplete"), .error)
+    }
+
+    private func localised(_ key: String.LocalizationValue) -> String {
+        String(localized: key, bundle: L10n.bundle)
     }
 
     private func isValidStripeCheckoutSessionId(_ sessionId: String) -> Bool {

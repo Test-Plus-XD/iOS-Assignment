@@ -387,13 +387,275 @@
         }
       }
     },
+    "ad_delete_failed" : {
+      "comment" : "Toast message after failing to delete an ad.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to delete advertisement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除廣告失敗"
+          }
+        }
+      }
+    },
+    "ad_deleted" : {
+      "comment" : "Toast message after successfully deleting an ad.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertisement deleted"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "廣告已刪除"
+          }
+        }
+      }
+    },
+    "ad_payment_cancelled" : {
+      "comment" : "Toast shown when Stripe checkout is cancelled.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment was cancelled. The advertisement form will stay closed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款已取消，廣告表單將保持關閉。"
+          }
+        }
+      }
+    },
+    "ad_payment_confirmed" : {
+      "comment" : "Toast shown when Stripe payment is confirmed and the ad form opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment confirmed. You can now create your advertisement."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款已確認，您現在可以建立廣告。"
+          }
+        }
+      }
+    },
+    "ad_payment_incomplete" : {
+      "comment" : "Toast shown when payment was not completed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment was not completed. The advertisement form will stay closed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款尚未完成，廣告表單將保持關閉。"
+          }
+        }
+      }
+    },
+    "ad_payment_verifying_subtitle" : {
+      "comment" : "Subtitle while waiting for Stripe to verify a payment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The advertisement form will open only after Stripe confirms the payment."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stripe 確認付款後，廣告表單才會開啟。"
+          }
+        }
+      }
+    },
+    "ad_payment_verifying_title" : {
+      "comment" : "Heading while waiting for Stripe to verify a payment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifying payment…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在驗證付款……"
+          }
+        }
+      }
+    },
+    "ad_pending_complete" : {
+      "comment" : "Button label to resume a pending ad creation flow.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
+    },
+    "ad_pending_subtitle" : {
+      "comment" : "Subtitle on the pending ad payment banner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your payment was received, but the advertisement has not been published yet."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已收到您的付款，但廣告尚未發佈。"
+          }
+        }
+      }
+    },
+    "ad_pending_time_remaining %@" : {
+      "comment" : "Label showing how much time is left to complete a pending ad creation. %@ is the remaining time, e.g. '1h 30m'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time remaining: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩餘時間：%@"
+          }
+        }
+      }
+    },
+    "ad_pending_title" : {
+      "comment" : "Heading on the pending ad payment banner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertisement placement pending"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "廣告投放待處理"
+          }
+        }
+      }
+    },
     "ad_status_active" : {
       "comment" : "A label for an active ad.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用中"
+          }
+        }
+      }
     },
     "ad_status_inactive" : {
       "comment" : "A label for an inactive advertisement.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inactive"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已停用"
+          }
+        }
+      }
+    },
+    "ad_toggled" : {
+      "comment" : "Toast message after toggling an ad's active state.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertisement updated"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "廣告已更新"
+          }
+        }
+      }
+    },
+    "ad_update_failed" : {
+      "comment" : "Toast message after failing to update an ad.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to update advertisement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新廣告失敗"
+          }
+        }
+      }
     },
     "Add" : {
 
@@ -412,9 +674,6 @@
 
     },
     "Address (English)" : {
-
-    },
-    "Advertisement placement pending" : {
 
     },
     "already_have_account" : {
@@ -1364,9 +1623,6 @@
           }
         }
       }
-    },
-    "Complete" : {
-
     },
     "confirm_password" : {
       "extractionState" : "manual",
@@ -2362,7 +2618,22 @@
       }
     },
     "error_invalid_rating" : {
-
+      "comment" : "Validation error shown when a review rating is outside 1-5.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please select a rating between 1 and 5 stars."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請選擇 1 至 5 星的評分。"
+          }
+        }
+      }
     },
     "error_invalid_response" : {
       "extractionState" : "manual",
@@ -2506,7 +2777,22 @@
       }
     },
     "error_review_too_short" : {
-
+      "comment" : "Validation error shown when a review comment is shorter than 10 characters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your review must be at least 10 characters long."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "評論最少需要 10 個字元。"
+          }
+        }
+      }
     },
     "error_server" : {
       "extractionState" : "manual",
@@ -6536,14 +6822,75 @@
     },
     "review_photo_add" : {
       "comment" : "A label for adding a photo to a review.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a photo"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增相片"
+          }
+        }
+      }
     },
     "review_photo_label" : {
-
+      "comment" : "Section header for the optional photo attachment in a review.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo (Optional)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相片（可選）"
+          }
+        }
+      }
+    },
+    "review_photo_optional_hint" : {
+      "comment" : "Footer hint clarifying that the review photo is optional.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos are optional — you can submit your review without one."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相片並非必須，您可以在沒有相片的情況下提交評論。"
+          }
+        }
+      }
     },
     "review_photo_remove" : {
       "comment" : "A button that removes a photo from a review.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除相片"
+          }
+        }
+      }
     },
     "review_rating_label" : {
       "extractionState" : "manual",
@@ -6597,7 +6944,22 @@
       }
     },
     "review_validation_error" : {
-
+      "comment" : "Generic validation error shown when a review cannot be submitted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please check your review and try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請檢查您的評論後再試。"
+          }
+        }
+      }
     },
     "review_write_button" : {
       "extractionState" : "manual",
@@ -6917,71 +7279,345 @@
     },
     "store_ad_content_en" : {
       "comment" : "A label for the English version of the ad content.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content (English)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "內容（英文）"
+          }
+        }
+      }
     },
     "store_ad_content_tc" : {
-
+      "comment" : "A label for the Traditional Chinese version of the ad content.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content (Chinese)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "內容（中文）"
+          }
+        }
+      }
     },
     "store_ad_feature_ai" : {
       "comment" : "Feature bullet text for the AI feature of the store ad.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generate content with Gemini AI"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由 Gemini AI 自動生成內容"
+          }
+        }
+      }
     },
     "store_ad_feature_bilingual" : {
-
+      "comment" : "Feature bullet text describing bilingual support.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilingual title and description"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "雙語標題與描述"
+          }
+        }
+      }
     },
     "store_ad_feature_image" : {
       "comment" : "Feature bullet text for the \"Image\" feature of the store ad.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eye-catching cover image"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "醒目的封面圖片"
+          }
+        }
+      }
     },
     "store_ad_feature_toggle" : {
       "comment" : "Feature bullet text for the \"toggle\" feature.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause or resume any time"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可隨時暫停或恢復"
+          }
+        }
+      }
     },
     "store_ad_form_title" : {
       "comment" : "The title of the ad form.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertisement Details"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "廣告內容"
+          }
+        }
+      }
     },
     "store_ad_generate_ai" : {
       "comment" : "A button to generate ad content with Gemini AI.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generate with AI"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由 AI 生成"
+          }
+        }
+      }
     },
     "store_ad_generate_ai_hint" : {
-
+      "comment" : "Hint shown under the Generate with AI button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini will fill the title and description in both languages based on your restaurant profile and menu."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini 會根據餐廳資料及菜單，自動填寫雙語標題和描述。"
+          }
+        }
+      }
     },
     "store_ad_new" : {
       "comment" : "The title of the new ad creation screen.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Advertisement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增廣告"
+          }
+        }
+      }
     },
     "store_ad_pay_stripe" : {
       "comment" : "A button label for the \"Pay with Stripe\" button.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pay with Stripe"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 Stripe 付款"
+          }
+        }
+      }
     },
     "store_ad_payment_subtitle" : {
       "comment" : "A description of the price of a store ad.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place a bilingual advertisement on the home page to attract more diners."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在主頁投放雙語廣告，吸引更多食客光顧。"
+          }
+        }
+      }
     },
     "store_ad_payment_title" : {
-
+      "comment" : "Title of the payment step of the ad creation flow.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promote Your Restaurant"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "推廣您的餐廳"
+          }
+        }
+      }
     },
     "store_ad_per_listing" : {
       "comment" : "A description of the price of a listing.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "per advertisement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每則廣告"
+          }
+        }
+      }
     },
     "store_ad_section_content" : {
-
+      "comment" : "Form section header for the ad content body.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "描述"
+          }
+        }
+      }
     },
     "store_ad_section_title" : {
-
+      "comment" : "Form section header for the ad title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標題"
+          }
+        }
+      }
     },
     "store_ad_title_en" : {
-
+      "comment" : "Form field label for the English ad title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title (English)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標題（英文）"
+          }
+        }
+      }
     },
     "store_ad_title_tc" : {
-
+      "comment" : "Form field label for the Traditional Chinese ad title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title (Chinese)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標題（中文）"
+          }
+        }
+      }
     },
     "store_ad_untitled" : {
       "comment" : "A placeholder title for a store ad that has not been named.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untitled advertisement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未命名廣告"
+          }
+        }
+      }
     },
     "store_add_button" : {
       "extractionState" : "manual",
@@ -7002,18 +7638,75 @@
     },
     "store_ads" : {
       "comment" : "The title of the advertisement management screen.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertisements"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "廣告"
+          }
+        }
+      }
     },
     "store_ads_create" : {
-
+      "comment" : "Button label to create a new advertisement.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Advertisement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立廣告"
+          }
+        }
+      }
     },
     "store_ads_empty" : {
       "comment" : "A title describing the empty state of the advertisement list.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No advertisements yet"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無廣告"
+          }
+        }
+      }
     },
     "store_ads_empty_subtitle" : {
       "comment" : "A description of the empty state of the advertisement list.",
-      "isCommentAutoGenerated" : true
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place an advertisement on the home page to reach more diners across Hong Kong."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在主頁投放廣告，接觸全港更多食客。"
+          }
+        }
+      }
     },
     "store_bookings_accept" : {
       "extractionState" : "manual",
@@ -8259,9 +8952,6 @@
         }
       }
     },
-    "The advertisement form will open only after Stripe confirms the payment." : {
-
-    },
     "theme_dark" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8312,9 +9002,6 @@
           }
         }
       }
-    },
-    "Time remaining: %@" : {
-
     },
     "time_1_day_ago" : {
       "extractionState" : "manual",
@@ -9122,9 +9809,6 @@
         }
       }
     },
-    "Verifying payment..." : {
-
-    },
     "visit_website" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9399,9 +10083,6 @@
           }
         }
       }
-    },
-    "Your payment was received, but the advertisement has not been published yet." : {
-
     },
     "中文名稱" : {
 

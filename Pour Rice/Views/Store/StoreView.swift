@@ -225,7 +225,7 @@ struct StoreView: View {
                         Text(booking.diner?.displayName ?? "store_unknown_diner")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                        Text("\(booking.formattedDate) · \(booking.numberOfGuests) \("booking_guests_label")")
+                        Text("\(booking.formattedDate) · \(booking.numberOfGuests) \(Text("booking_guests_label"))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
